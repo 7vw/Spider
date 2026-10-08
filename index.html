@@ -634,7 +634,7 @@ select{width:100%;font:inherit;font-size:15px;padding:10px 12px;border-radius:14
       <button id="btnJoin" style="flex:none;padding:0 24px">ادخل</button>
     </div>
     <p class="err hidden" id="onlineErr" role="alert"></p>
-    <p class="hint">صاحبك يحتاج حساب Claude، وتدعوه للعبة من زر المشاركة.</p>
+    <p class="hint" id="onlineHint">صاحبك يحتاج حساب Claude، وتدعوه للعبة من زر المشاركة.</p>
   </div>
 
   <div class="card">
@@ -740,7 +740,7 @@ select{width:100%;font:inherit;font-size:15px;padding:10px 12px;border-radius:14
     <span class="lbl">كود الغرفة</span>
     <div class="code" id="lobbyCode">----</div>
     <button class="wide" id="btnCopy">انسخ رسالة الدعوة</button>
-    <p class="hint">ادعُ صاحبك للعبة من زر المشاركة، وخله يدخل الكود هذا.</p>
+    <p class="hint" id="lobbyInviteHint">ادعُ صاحبك للعبة من زر المشاركة، وخله يدخل الكود هذا.</p>
   </div>
   <div class="card">
     <h2>اللاعبين</h2>
@@ -2364,7 +2364,7 @@ const FAQ=[
   ["وش يصير لو تراجعت ضد الكمبيوتر؟","المباراة تصير تدريب وما تعطي مكافآت."],
   ["وش العناصر السرية؟","عناصر نادرة ما ينكشف شكلها ولا طريقة فتحها، تلقاها من أكواد أو فعاليات خاصة."],
   ["أقدر أستخدم الكود السري أكثر من مرة؟","لا، كل كود مرة وحدة لكل حساب."],
-  ["كيف ألعب مع صاحبي أون لاين؟","سوّ غرفة من الرئيسية، ادعه للعبة من زر المشاركة، وخله يدخل كود الغرفة. لازم يكون عنده حساب Claude."]
+  ["كيف ألعب مع صاحبي أون لاين؟","سوّ غرفة من الرئيسية وأرسل لصاحبك رابط اللعبة وكود الغرفة. في نسخة Claude تدعوه من زر المشاركة ولازم يكون عنده حساب Claude، وفي نسخة الموقع يدخل بدون حساب."]
 ];
 function renderFaq(){const f=$("faq");f.textContent="";for(const [q,a] of FAQ)f.append(h("details",{},h("summary",{},q),h("p",{},a)))}
 /* ================= daily login ================= */
@@ -3040,14 +3040,57 @@ function renderOwner(){
 $("owBack").addEventListener("click",()=>show("profile"));
 
 /* ================= platform (Claude-only features stay behind this) ================= */
-const Platform={user:null,room:null,db:null,ready:null};
+/* Online outside Claude (GitHub Pages etc.) goes through Supabase Realtime presence.
+   The publishable key is meant to be public; never put a secret/service_role key here. */
+const ONLINE_CONFIG={url:"https://xaqcqeenythjxadyflmr.supabase.co",key:"sb_publishable_4FL2grSmTjbiLa4SHXhpNg_i3w-k3GG"};
+const SUPABASE_JS="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js";
+const Platform={user:null,room:null,db:null,kind:"none",ready:null};
+function loadScript(src){return new Promise((ok,bad)=>{const s=document.createElement("script");s.src=src;s.async=true;s.onload=()=>ok();s.onerror=()=>bad(new Error("load"));document.head.append(s)})}
+/* wraps one Supabase channel in the same shape the game already uses for Claude rooms */
+function supaRoom(client,name){
+  let mine={},ph=[],chs=[],connected=false,errShown=false;
+  const ch=client.channel(name,{config:{presence:{key:cid}}});
+  const snapshot=()=>{
+    const st=ch.presenceState()||{},arr=[];
+    for(const key of Object.keys(st)){const list=st[key];const last=list&&list[list.length-1];if(!last)continue;
+      const pr=Object.assign({},last);delete pr.presence_ref;
+      arr.push({peer:key,by:null,isMe:key===cid,sameTab:key===cid,kind:"viewer",guest:false,presence:pr,updatedAt:Date.now()})}
+    if(!arr.some(x=>x.isMe))arr.push({peer:cid,by:null,isMe:true,sameTab:true,kind:"viewer",guest:false,presence:mine,updatedAt:Date.now()});
+    return arr;
+  };
+  const fire=()=>{const s=snapshot();for(const h of ph)h({peers:s,joined:[],left:[],updated:[]})};
+  ch.on("presence",{event:"sync"},fire);
+  ch.subscribe(st=>{
+    const was=connected;connected=st==="SUBSCRIBED";
+    if(connected)ch.track(mine).catch(()=>{});
+    if((st==="CHANNEL_ERROR"||st==="TIMED_OUT")&&!errShown){errShown=true;toast("تعذّر الاتصال بالغرفة، تأكد من الإنترنت","bad")}
+    if(was!==connected)for(const h of chs)h(connected);
+  });
+  return {name,
+    presence:async patch=>{mine=Object.assign({},mine,JSON.parse(JSON.stringify(patch)));fire();if(connected)await ch.track(mine)},
+    peers:snapshot,
+    onPeers:h=>{ph.push(h);setTimeout(fire,0);return ()=>{ph=ph.filter(x=>x!==h)}},
+    onConnection:h=>{chs.push(h);setTimeout(()=>h(connected),0);return ()=>{chs=chs.filter(x=>x!==h)}},
+    connected:()=>connected,
+    leave:async()=>{try{await ch.untrack()}catch(e){}try{client.removeChannel(ch)}catch(e){}}};
+}
 Platform.ready=(async()=>{
-  const C=window.claude;if(!C||typeof C.use!=="function")return;
-  let u=null,r=null,d=null;
-  try{u=await C.use("user")}catch(e){}
-  try{r=await C.use("room")}catch(e){}
-  try{d=await C.use("db")}catch(e){}
-  Platform.user=u;Platform.room=r;Platform.db=d;
+  const C=window.claude;
+  if(C&&typeof C.use==="function"){
+    let u=null,r=null,d=null;
+    try{u=await C.use("user")}catch(e){}
+    try{r=await C.use("room")}catch(e){}
+    try{d=await C.use("db")}catch(e){}
+    Platform.user=u;Platform.room=r;Platform.db=d;
+    if(r){Platform.kind="claude";return}
+  }
+  if(!ONLINE_CONFIG.url||!ONLINE_CONFIG.key)return;
+  try{
+    if(!(window.supabase&&window.supabase.createClient))await loadScript(SUPABASE_JS);
+    const sb=window.supabase;if(!sb||!sb.createClient)return;
+    const client=sb.createClient(ONLINE_CONFIG.url,ONLINE_CONFIG.key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+    Platform.room={join:async n=>supaRoom(client,n)};Platform.kind="supabase";
+  }catch(e){}
 })();
 const BOT_NAMES=["الرتيلاء","الصياد","أبو شبكة"];
 const stepsTxt=d=>d>=99?"الطريق مسكّر":d===1?"باقي خطوة":d===2?"باقي خطوتين":d<=10?"باقي "+fmt(d)+" خطوات":"باقي "+fmt(d)+" خطوة";
@@ -3074,7 +3117,7 @@ function setBusy(b){$("btnCreate").disabled=b;$("btnJoin").disabled=b;$("btnCrea
 async function enterRoom(code,creator){
   onlineErr("");setBusy(true);
   await Platform.ready;
-  if(!Platform.room){setBusy(false);onlineErr("التحدي أون لاين يشتغل لما تفتح اللعبة من رابطها داخل Claude وأنت مسجّل دخول. تقدر تلعب ضد الكمبيوتر أو على نفس الجوال الحين.");return}
+  if(!Platform.room){setBusy(false);onlineErr(window.claude?"التحدي أون لاين يشتغل لما تفتح اللعبة من رابطها داخل Claude وأنت مسجّل دخول. تقدر تلعب ضد الكمبيوتر أو على نفس الجوال الحين.":"ما قدرت أتصل بخادم الأونلاين. تأكد من الإنترنت وجرّب مرة ثانية.");return}
   let r;
   try{r=await Platform.room.join("spider-"+code.toLowerCase())}
   catch(e){setBusy(false);onlineErr("ما قدرت أدخل الغرفة. تأكد إن صاحب اللعبة دعاك لها، وجرّب مرة ثانية.");return}
@@ -3622,7 +3665,8 @@ joinEl.addEventListener("keydown",e=>{if(e.key==="Enter")$("btnJoin").click()});
 $("btnJoin").onclick=()=>{const c=joinEl.value.trim().toUpperCase();if(!/^[A-Z0-9]{4}$/.test(c)){onlineErr("كود الغرفة ٤ حروف وأرقام، تأكد منه.");return}enterRoom(c,false)};
 $("btnStart").onclick=startOnline;
 $("btnCopy").onclick=async()=>{
-  const txt="تعال نلعب سبايدر 🕷️ كود الغرفة: "+roomCode;let ok=false;
+  const link=Platform.kind==="supabase"&&/^https?:/.test(location.href)?" "+location.href.split("#")[0]:"";
+  const txt="تعال نلعب سبايدر 🕷️"+link+" كود الغرفة: "+roomCode;let ok=false;
   try{await navigator.clipboard.writeText(txt);ok=true}catch(e){
     try{const ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";document.body.append(ta);ta.select();ok=document.execCommand("copy");ta.remove()}catch(_){}}
   $("btnCopy").textContent=ok?"انسخت ✓":"ما قدرت أنسخ، اكتب الكود لصاحبك";
@@ -3657,6 +3701,12 @@ saveProfile();
 cornerWeb($("heroWeb"),0,0,1,1,150,"currentColor",.8);
 renderFaq();renderSound();show("home");
 if(bootOut.items.length)setTimeout(()=>{sfx("unlock");toast("👑 فزت ببطل الأسبوع الماضي! شارتك ولقبك في حسابك","good")},600);
+Platform.ready.then(()=>{
+  if(Platform.kind==="supabase"){
+    $("onlineHint").textContent="صاحبك يفتح نفس رابط اللعبة ويدخل كود الغرفة، بدون أي حساب.";
+    $("lobbyInviteHint").textContent="أرسل رابط اللعبة لصاحبك، وخله يدخل الكود هذا.";
+  }
+});
 Platform.ready.then(async()=>{
   const u=Platform.user,db=Platform.db;
   if(db)LocalCodeProvider.remote=async code=>{const s=await db.collection("codes").doc(code).get();return s.exists?s.data():null};
