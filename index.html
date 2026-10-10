@@ -2247,7 +2247,7 @@ function sfx(kind,packId,force){
     else if(kind==="emote")note(880,1100,0,.08,"sine",.08);
   }catch(e){}
 }
-const buzz=p=>{try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}};
+const buzz=p=>{try{const ua=navigator.userActivation;if(navigator.vibrate&&(!ua||ua.hasBeenActive))navigator.vibrate(p)}catch(e){}};
 
 /* ================= toasts & sheets ================= */
 function toast(msg,kind){
@@ -2335,6 +2335,8 @@ function renderHome(){
   const ls=loginStatus();
   if(!ls.claimedToday)b.append(h("button",{class:"banner glow",onclick:openLogin},h("span",{class:"e"},"🎁"),h("span",{class:"grow"},"مكافأة اليوم "+fmt(ls.next)+" من ٧ جاهزة"),h("span",{class:"go"},"‹")));
   ensureMissions();const dm=P.dailyMissions,done=dm.list.filter(m=>m.done).length;
+  if(Platform.kind==="web"&&Cloud.offline&&!Cloud.booting)b.append(h("button",{class:"banner",onclick:()=>cloudStart()},h("span",{class:"e"},"⚠️"),h("span",{class:"grow"},"ما فيه اتصال بالخادم. اضغط للمحاولة مرة ثانية"),h("span",{class:"go"},"↻")));
+  else if(Platform.kind==="web"&&Cloud.on&&Cloud.user&&(Cloud.user.is_anonymous||!Cloud.user.email))b.append(h("button",{class:"banner",onclick:()=>show("profile")},h("span",{class:"e"},"☁️"),h("span",{class:"grow"},"اربط حسابك بإيميلك عشان تدخل من أي جهاز"),h("span",{class:"go"},"‹")));
   b.append(h("button",{class:"banner",onclick:()=>{pfTab="missions";show("profile")}},h("span",{class:"e"},"🎯"),h("span",{class:"grow"},done===dm.list.length?"خلّصت مهام اليوم 👏":"مهام اليوم"),h("span",{class:"pill"},fmt(done)+" / "+fmt(dm.list.length)),h("span",{class:"go"},"‹")));
   seg("botCount",P.settings.botCount,v=>{P.settings.botCount=v;saveProfile();renderHome()});
   seg("botLevel",P.settings.botLevel,v=>{P.settings.botLevel=v;saveProfile();renderHome()});
@@ -2377,8 +2379,8 @@ function loginCalendar(box,onClaim){
   });
   box.append(cal);
   if(st.claimedToday)box.append(h("p",{class:"hint center"},"استلمت مكافأة اليوم. ارجع بعد "+leftText(dayEndsAt()-clock.now())+" 👋"));
-  else box.append(h("button",{class:"primary wide",onclick:()=>{const r=claimLogin();if(!r)return;sfx("coin");buzz(15);
-    toast("استلمت مكافأة اليوم "+fmt(r.day)+" 🎁","good");onClaim&&onClaim(r);afterGains(r.out)}},"استلم مكافأة اليوم "+fmt(st.next)));
+  else box.append(h("button",{class:"primary wide",onclick:async e=>{e.target.disabled=true;let r;try{r=await Act.claimLogin()}catch(x){toast(x.message,"bad");e.target.disabled=false;return}
+    sfx("coin");buzz(15);toast("استلمت مكافأة اليوم "+fmt(r.day)+" 🎁","good");onClaim&&onClaim(r);afterGains(r.out)}},"استلم مكافأة اليوم "+fmt(st.next)));
   box.append(h("p",{class:"hint center"},"إذا فوّت يوم ترجع لليوم الأول."));
 }
 function openLogin(){
@@ -2388,6 +2390,7 @@ function openLogin(){
 
 /* ================= leaderboard ================= */
 function renderLeaders(){
+  if(Platform.kind==="web"&&Cloud.on)return renderNetLeaders();
   const out=newOut();if(weeklyRollover(out)){saveProfile();if(out.items.length){sfx("unlock");toast("👑 فزت ببطل الأسبوع الماضي!","good")}}
   $("lbCountdown").textContent="⏳ ينتهي الأسبوع بعد: "+leftText(weekEndsAt()-clock.now());
   const body=$("lbBody");body.textContent="";
@@ -2417,6 +2420,32 @@ function renderLeaders(){
     h("p",{style:"margin:0"},"الترتيب هنا من المباريات الأونلاين اللي لعبتها، ومحفوظ على جهازك. الترتيب العالمي لكل اللاعبين يحتاج سيرفر، واللعبة جاهزة تنربط فيه."));
 }
 
+
+function renderNetLeaders(){
+  $("lbCountdown").textContent="⏳ ينتهي الأسبوع بعد: "+leftText(weekEndsAt()-clock.now());
+  const body=$("lbBody");body.textContent="";
+  if(!lbCache||Date.now()-(lbCache.at||0)>20000)loadNetLeaders();
+  if(!lbCache){body.append(h("div",{class:"card empty"},"يحمّل الترتيب…"));return}
+  if(lbCache.error){body.append(h("div",{class:"card empty"},h("p",{},lbCache.error),h("button",{onclick:()=>{lbCache=null;loadNetLeaders()}},"حاول مرة ثانية")));return}
+  const rows=lbCache.rows.map((x,i)=>{const c=x.card||{},pub=c.pub||{};return {id:x.id,w:x.w,g:x.g,n:c.nickname||"لاعب",s:Number.isInteger(pub.sk)?pub.sk:0,f:pub.fr,b:pub.bd,t:pub.th,d:pub.dc,l:c.level||1,owner:!!c.is_owner,me:x.id===cid}});
+  rows.forEach(r=>r.rank=1+rows.filter(x=>x.w>r.w).length);
+  if(!rows.length){body.append(h("div",{class:"card empty"},h("div",{class:"big"},"🕸️"),h("p",{style:"margin:0 0 4px;font-weight:700;color:var(--ink)"},"ما فيه نتائج هالأسبوع للحين"),h("p",{class:"hint",style:"margin:0 0 14px"},"العب أون لاين، وكل فوز يرفعك في الترتيب."),h("button",{class:"primary",onclick:()=>show("home")},"العب الحين")))}
+  else{
+    const pod=h("div",{class:"podium"});
+    rows.slice(0,3).forEach((r,i)=>pod.append(h("div",{class:"pod p"+(i+1)+(r.me?" me":"")},h("div",{class:"medal"},["🥇","🥈","🥉"][i]),avatar((SKINS[r.s]||SKINS[0]).id,r.f,i===0?58:48,r.d),
+      h("div",{class:"nm"},nameEl(r.n,r.t)),h("div",{class:"ptitle"},(r.b?((findItem("badge",r.b)||{}).e||"")+" ":"")+"المستوى "+fmt(r.l)),r.owner?ownerTag():null,h("span",{class:"pill"},plural(r.w,"فوز واحد","فوزين","انتصارات","فوز")))));
+    body.append(pod);
+    const list=h("div",{class:"list",style:"margin-bottom:12px"});
+    rows.slice(3).forEach(r=>list.append(h("div",{class:"lrow"+(r.me?" me":"")},h("span",{class:"rk"},fmt(r.rank)),avatar((SKINS[r.s]||SKINS[0]).id,r.f,38,r.d),
+      h("div",{class:"grow"},h("div",{class:"pname",style:"font-size:15px"},nameEl(r.n,r.t),badgeEl(r.b)),h("div",{class:"ptitle"},"المستوى "+fmt(r.l))),h("span",{class:"w"},fmt(r.w)+" 🏆"))));
+    if(rows.length>3)body.append(list);
+  }
+  const me=lbCache.me;$("lbNote").textContent="";
+  add($("lbNote"),h("p",{style:"margin:0 0 8px;color:var(--ink);font-weight:700"},"انتصاراتك الأونلاين هالأسبوع: "+fmt(me?me.w:0)),
+    P.championWeeks.length?h("p",{style:"margin:0 0 8px"},"👑 صرت بطل الأسبوع "+plural(P.championWeeks.length,"مرة وحدة","مرتين","مرات","مرة")+"."):null,
+    h("p",{style:"margin:0 0 8px"},"لما يتجدد الأسبوع، صاحب أكثر انتصارات (٣ على الأقل) ياخذ شارة ولقب 👑 بطل الأسبوع."),
+    h("p",{style:"margin:0"},"هذا الترتيب العالمي لكل اللاعبين، ويحسبه الخادم من المباريات الأونلاين."));
+}
 
 /* ================= store ================= */
 let stTab="all";
@@ -2466,7 +2495,7 @@ function actionBtn(t,it,after){
     if(t==="emote")return h("button",{disabled:true},"عندك ✓");
     if(P.equipped[t]===it.id&&eff(t)===it.id)return h("button",{disabled:true},"مستخدم ✓");
     if(isOwnerItem(it)&&!Owner.verified)return h("button",{disabled:true},"حصري للمالك");
-    return h("button",{onclick:stop(()=>{equip(t,it.id,Owner.verified);sfx("move");toast("صار "+CAT_MINE[t]+": "+it.name,"good");onEquipChanged();if(after)after();else refreshPage()})},"استخدام");
+    return h("button",{onclick:stop(async()=>{try{await Act.equip(t,it.id)}catch(x){toast(x.message,"bad");return}sfx("move");toast("صار "+CAT_MINE[t]+": "+it.name,"good");onEquipChanged();if(after)after();else refreshPage()})},"استخدام");
   }
   if(it.how!=="store")return h("button",{disabled:true},"🔒 "+howText(t,it));
   if(cb.why==="level")return h("button",{disabled:true},"🔒 المستوى "+fmt(it.lvl));
@@ -2482,7 +2511,8 @@ function storeNote(t,it){
 function heartBtn(t,it,onChange){
   const on=isWished(t,it.id);
   const b=h("button",{class:"heart"+(on?" on":""),"aria-label":on?"شيله من المفضلة":"أضفه للمفضلة","aria-pressed":String(on)},on?"❤️":"🤍");
-  b.addEventListener("click",e=>{e.stopPropagation();const now=toggleWish(t,it.id);b.textContent=now?"❤️":"🤍";b.classList.toggle("on",now);b.setAttribute("aria-pressed",String(now));sfx("move");toast(now?"انضاف للمفضلة":"انشال من المفضلة");if(onChange)onChange()});
+  b.addEventListener("click",async e=>{e.stopPropagation();const now=!isWished(t,it.id);b.textContent=now?"❤️":"🤍";b.classList.toggle("on",now);b.setAttribute("aria-pressed",String(now));sfx("move");toast(now?"انضاف للمفضلة":"انشال من المفضلة");
+    try{await Act.wish(t,it.id)}catch(x){toast(x.message,"bad")}if(onChange)onChange()});
   return b;
 }
 function storeCard(t,it){
@@ -2529,9 +2559,7 @@ $("stSearch").addEventListener("input",()=>{SF.q=$("stSearch").value;renderStore
 $("stFilterBtn").addEventListener("click",()=>{const f=$("stFilters"),open=f.classList.contains("hidden");f.classList.toggle("hidden",!open);$("stFilterBtn").setAttribute("aria-expanded",String(open))});
 function tryBuy(t,it,after){
   const free=freeCoins();
-  const go=()=>{const r=buy(t,it.id,free);
-    if(!r.ok){sfx("bad");toast(r.why==="coins"?"رصيدك ما يكفي":r.why==="owned"?"عندك هذا من قبل":r.why==="level"?"يحتاج المستوى "+fmt(r.lvl):"ما ينفع تشتريه","bad");refreshPage();return}
-    if(free)ownerLog("FREEBUY",t+":"+it.id);
+  const go=async()=>{let r;try{r=await Act.buy(t,it.id)}catch(x){sfx("bad");toast(x.message,"bad");refreshPage();return}
     sfx("coin");setTimeout(()=>sfx("unlock"),120);buzz(15);toast("صار عندك "+it.name+" 🎉","good");
     if(after)after();refreshPage();
     const card=document.querySelector('[data-k="'+t+":"+it.id+'"]');if(card)card.classList.add("bought");
@@ -2566,9 +2594,7 @@ function openBundleSheet(b){
       if(!bi.complete){
         c.append(h("p",{style:"margin:6px 0 12px;font-weight:700"},free?"مجانًا لأن رصيدك غير محدود ∞":"بدل "+fmt(bi.full)+" تدفع "+fmt(bi.price)+" 🕷️، وتوفّر "+fmt(bi.saving)+"."));
         const locked=bi.lvl&&P.level<bi.lvl,can=!locked&&(free||P.coins>=bi.price);
-        const buyIt=()=>{const r=buyBundle(b.id,free);
-          if(!r.ok){sfx("bad");toast(r.why==="coins"?"رصيدك ما يكفي":r.why==="level"?"يحتاج المستوى "+fmt(r.lvl):"عندك كل عناصرها","bad");render();return}
-          if(free)ownerLog("FREEBUNDLE",b.id);
+        const buyIt=async()=>{let r;try{r=await Act.buyBundle(b.id)}catch(x){sfx("bad");toast(x.message,"bad");render();return}
           sfx("coin");setTimeout(()=>sfx("unlock"),120);buzz(20);toast("صارت عندك "+b.name+" 🎉","good");render();afterGains(r.out)};
         c.append(h("div",{class:"row"},h("button",{class:can?"primary":null,disabled:!can,onclick:()=>{if(!free&&bi.price>=500){close();confirmSheet("تأكيد الشراء","تشتري "+b.name+" بـ "+fmt(bi.price)+" 🕷️؟ يبقى معك "+fmt(P.coins-bi.price)+" 🕷️.","اشترِ",()=>{buyIt();openBundleSheet(b)})}else buyIt()}},
           locked?"🔒 المستوى "+fmt(bi.lvl):can?(free?"خذها ∞":"اشترِ الحزمة"):"ناقصك "+fmt(bi.price-P.coins)+" 🕷️"),h("button",{onclick:close,style:"flex:none;padding:0 18px"},"إغلاق")));
@@ -2592,15 +2618,11 @@ async function submitCode(inp,msg,btn){
   if(codeBusy)return;codeBusy=true;btn.disabled=true;
   const fail=t=>{say(t,"err");inp.classList.remove("shake");void inp.offsetWidth;inp.classList.add("shake");sfx("bad");buzz(30)};
   try{
-    const code=CodeService.normalize(inp.value);
-    if(OWNER_CMDS.has(code)){
-      if(!Owner.verified){fail("الكود غير صحيح أو غير متاح 🕷️");return}
-      inp.value="";msg.classList.add("hidden");runOwnerCmd(code);return;
-    }
-    const r=await CodeService.redeem(inp.value);
-    if(!r.ok){fail(r.err==="used"?"استخدمت هذا الكود من قبل.":"الكود غير صحيح أو غير متاح 🕷️");return}
+    let r;try{r=await Act.redeem(inp.value)}catch(x){fail(x.message);return}
+    if(r.ok&&r.ownerCmd){inp.value="";msg.classList.add("hidden");runOwnerCmd(r.ownerCmd);return}
+    if(!r.ok){fail(r.err==="used"?"استخدمت هذا الكود من قبل.":r.err==="slow"?"استنى شوي وجرّب مرة ثانية.":"الكود غير صحيح أو غير متاح 🕷️");return}
     inp.value="";msg.classList.add("hidden");
-    if(r.def.founder)founderReveal(r.out);else codeReveal(r);
+    if(r.founder)founderReveal(r.out);else codeReveal({out:r.out,def:{bundle:r.label||""}});
   }finally{codeBusy=false;btn.disabled=false}
 }
 function revealList(box,out,step){
@@ -2617,7 +2639,7 @@ function codeReveal(r){
   openSheet((c,close)=>{
     add(c,h("div",{class:"bigemo"},"🎁"),h("h3",{class:"center"},hasItems?"فتحت عنصرًا سريًا! 🎁":"تم تفعيل الكود! 🎁"),r.def.bundle?h("p",{class:"lead center"},r.def.bundle):null);
     const box=h("div",{class:"reveal"});c.append(box);coinsRow(box,out,revealList(box,out,.35));
-    c.append(h("div",{class:"row"},one?h("button",{class:"primary",onclick:()=>{equip(first.t,first.id,Owner.verified);onEquipChanged();close();toast("لبست "+findItem(first.t,first.id).name,"good")}},"استخدمه الحين"):null,
+    c.append(h("div",{class:"row"},one?h("button",{class:"primary",onclick:async()=>{try{await Act.equip(first.t,first.id)}catch(x){toast(x.message,"bad");return}onEquipChanged();close();toast("لبست "+findItem(first.t,first.id).name,"good")}},"استخدمه الحين"):null,
       h("button",{class:one?"":"primary",onclick:close},"تمام")));
   },()=>afterGains(out));
 }
@@ -2627,7 +2649,7 @@ function bundleReveal(out,title,sub,list,label,sound){
     c.append(title,h("p",{class:"lead center"},sub));
     const box=h("div",{class:"reveal"});c.append(box);const d=revealList(box,out,.5);coinsRow(box,out,d);
     if(!out.items.length)box.append(h("p",{class:"hint center"},"كل عناصرها عندك من قبل."));
-    c.append(h("div",{class:"row"},h("button",{class:"primary",onclick:()=>{for(const [t,id] of list)equip(t,id,Owner.verified);onEquipChanged();close();toast(label,"good")}},"لبّسها الحين"),h("button",{onclick:close},"بعدين")));
+    c.append(h("div",{class:"row"},h("button",{class:"primary",onclick:async()=>{const items={};for(const [t,id] of list)if(t!=="emote")items[t]=id;try{await Act.equipMany(items)}catch(x){toast(x.message,"bad");return}onEquipChanged();close();toast(label,"good")}},"لبّسها الحين"),h("button",{onclick:close},"بعدين")));
   },()=>afterGains(out));
 }
 const FOUNDER_LIST=[["skin","founder"],["frame","founder"],["badge","founder"],["theme","founder"],["title","founder"]];
@@ -2665,10 +2687,11 @@ function renderProfileHead(){
       h("div",{class:"bar2"},h("i",{style:"width:"+Math.round(li.pct*100)+"%"}))));
   if(editingName){const i=$("nameIn");i.addEventListener("keydown",e=>{if(e.key==="Enter")saveName();if(e.key==="Escape"){editingName=false;renderProfileHead()}})}
 }
-function saveName(){const i=$("nameIn");P.nickname=(i?i.value:"").trim().slice(0,16);saveProfile();editingName=false;if(room)pushPresence();renderProfileHead();toast("انحفظ اسمك","good")}
+async function saveName(){const i=$("nameIn"),v=(i?i.value:"").trim().slice(0,16);try{await Act.setNick(v)}catch(x){toast(x.message,"bad");return}editingName=false;if(room)pushPresence();onEquipChanged();renderProfileHead();toast("انحفظ اسمك","good")}
 function renderProfile(){
   renderProfileHead();
   $("pfOwner").classList.toggle("hidden",!Owner.verified);
+  const ac=$("acctCard");if(ac)ac.remove();const acn=accountCard();if(acn)$("pfTabs").before(acn);
   tabs($("pfTabs"),PF_TABS,pfTab,id=>{pfTab=id;renderProfile()});
   const b=$("pfBody");b.textContent="";
   ({stats:pfStats,collection:pfCollection,loadouts:pfLoadouts,ach:pfAch,missions:pfMissions,levels:pfLevels,history:pfHistory,settings:pfSettings}[pfTab]||pfStats)(b);
@@ -2725,25 +2748,25 @@ function loadoutCard(l){
       miss.length?h("div",{class:"miss"},"ناقص "+plural(miss.length,"عنصر","عنصرين","عناصر","عنصر")+": "+miss.map(([t,id])=>{const it=findItem(t,id);return it?it.name:"?"}).join("، ")):null),
     (()=>{const s=miniBoard(I("board"),{n:3,web:I("web")});s.style.width="54px";return s})()));
   card.append(h("div",{class:"acts"},
-    h("button",{class:"primary",onclick:()=>{const r=equipLoadout(l.id,Owner.verified);onEquipChanged();sfx("unlock");toast(r.missing.length?"لبست التنسيق، وفيه "+plural(r.missing.length,"عنصر","عنصرين","عناصر","عنصر")+" ما تملكه":"لبست «"+l.name+"» 👌",r.missing.length?"bad":"good");renderProfile()}},"لبّسه"),
+    h("button",{class:"primary",onclick:async()=>{let r;try{r=await Act.loadoutEquip(l.id)}catch(x){toast(x.message,"bad");return}r.missing=r.missing||[];onEquipChanged();sfx("unlock");toast(r.missing.length?"لبست التنسيق، وفيه "+plural(r.missing.length,"عنصر","عنصرين","عناصر","عنصر")+" ما تملكه":"لبست «"+l.name+"» 👌",r.missing.length?"bad":"good");renderProfile()}},"لبّسه"),
     h("button",{onclick:edit},"تعديل"),
     h("button",{onclick:()=>renameSheet(l)},"إعادة تسمية"),
-    h("button",{onclick:()=>confirmSheet("حذف التنسيق","تحذف «"+l.name+"»؟ ما ينحذف أي عنصر تملكه.","احذف",()=>{deleteLoadout(l.id);toast("انحذف التنسيق");refreshPage()})},"حذف")));
+    h("button",{onclick:()=>confirmSheet("حذف التنسيق","تحذف «"+l.name+"»؟ ما ينحذف أي عنصر تملكه.","احذف",async()=>{try{await Act.loadoutDelete(l.id)}catch(x){toast(x.message,"bad");return}toast("انحذف التنسيق");refreshPage()})},"حذف")));
   return card;
 }
 function renameSheet(l){
   openSheet((c,close)=>{const inp=h("input",{maxlength:"24",value:l?l.name:"","aria-label":"اسم التنسيق",placeholder:"اسم التنسيق"});
-    const go=()=>{const v=inp.value.trim();if(!v){inp.classList.add("shake");return}
-      if(l){updateLoadout(l.id,{name:v});toast("تغيّر الاسم","good")}close()};
+    const go=async()=>{const v=inp.value.trim();if(!v){inp.classList.add("shake");return}
+      if(l){try{await Act.loadoutUpdate(l.id,{name:v})}catch(x){toast(x.message,"bad");return}toast("تغيّر الاسم","good")}close()};
     inp.addEventListener("keydown",e=>{if(e.key==="Enter")go()});
     c.append(h("h3",{},"اسم التنسيق"),inp,h("div",{class:"row",style:"margin-top:12px"},h("button",{class:"primary",onclick:go},"حفظ"),h("button",{onclick:close},"إلغاء")))});
 }
 function newLoadoutSheet(items,after){
   if(P.loadouts.length>=6){toast("عندك ٦ تنسيقات، احذف وحدة أول","bad");return}
   openSheet((c,close)=>{const inp=h("input",{maxlength:"24",placeholder:"مثلاً: الليل الملكي","aria-label":"اسم التنسيق"});
-    const go=()=>{const v=inp.value.trim();if(!v){inp.classList.remove("shake");void inp.offsetWidth;inp.classList.add("shake");return}
-      const before=P.claimedAchievements.length,l=saveLoadout(v,items);close();
-      if(l){sfx("unlock");toast("انحفظ «"+l.name+"»","good");for(const id of P.claimedAchievements.slice(before))toast("🏅 إنجاز جديد: "+ACH_INDEX[id].name,"good");if(after)after(l);refreshPage()}};
+    const go=async()=>{const v=inp.value.trim();if(!v){inp.classList.remove("shake");void inp.offsetWidth;inp.classList.add("shake");return}
+      let r;try{r=await Act.loadoutSave(v,items)}catch(x){toast(x.message,"bad");return}close();
+      sfx("unlock");toast("انحفظ «"+v+"»","good");for(const id of ((r.out&&r.out.ach)||[]))toast("🏅 إنجاز جديد: "+ACH_INDEX[id].name,"good");if(after)after();refreshPage()};
     inp.addEventListener("keydown",e=>{if(e.key==="Enter")go()});
     c.append(h("h3",{},"تنسيق جديد"),h("p",{class:"lead"},"يحفظ كل اللي لابسه: الكرة والإطار والزينة والخلفية والطاولة والخيوط والتأثيرات والأصوات."),inp,
       h("div",{class:"row",style:"margin-top:12px"},h("button",{class:"primary",onclick:go},"احفظ"),h("button",{onclick:close},"إلغاء")))});
@@ -2821,9 +2844,9 @@ function pfSettings(b){
   const sw=(on,fn)=>{const s=h("button",{class:"switch"+(on?" on":""),role:"switch","aria-checked":String(on),onclick:()=>{fn();renderProfile()}});return s};
   const card=h("div",{class:"card"});
   card.append(
-    h("div",{class:"setrow"},h("div",{},h("div",{class:"t"},"الصوت"),h("div",{class:"d"},"أصوات الحركة والخيوط والفوز")),sw(!P.settings.mute,()=>{P.settings.mute=!P.settings.mute;saveProfile();renderSound();if(!P.settings.mute)sfx("move")})),
-    h("div",{class:"setrow"},h("div",{},h("div",{class:"t"},"المؤثرات الكاملة"),h("div",{class:"d"},"إذا طفّيتها: آثار الحركة وتأثيرات الفوز الكبيرة ما تطلع، والأداء أخف")),sw(P.settings.fx!=="lite",()=>{P.settings.fx=P.settings.fx==="lite"?"full":"lite";saveProfile()})),
-    h("div",{class:"setrow"},h("div",{},h("div",{class:"t"},"تفاعلات اللاعبين الثانيين"),h("div",{class:"d"},"تشوف التفاعلات اللي يرسلها خصومك أثناء المباراة")),sw(!P.settings.muteEmotes,()=>{P.settings.muteEmotes=!P.settings.muteEmotes;saveProfile()})),
+    h("div",{class:"setrow"},h("div",{},h("div",{class:"t"},"الصوت"),h("div",{class:"d"},"أصوات الحركة والخيوط والفوز")),sw(!P.settings.mute,()=>{Act.settings({mute:!P.settings.mute});renderSound();if(!P.settings.mute)sfx("move")})),
+    h("div",{class:"setrow"},h("div",{},h("div",{class:"t"},"المؤثرات الكاملة"),h("div",{class:"d"},"إذا طفّيتها: آثار الحركة وتأثيرات الفوز الكبيرة ما تطلع، والأداء أخف")),sw(P.settings.fx!=="lite",()=>{Act.settings({fx:P.settings.fx==="lite"?"full":"lite"})})),
+    h("div",{class:"setrow"},h("div",{},h("div",{class:"t"},"تفاعلات اللاعبين الثانيين"),h("div",{class:"d"},"تشوف التفاعلات اللي يرسلها خصومك أثناء المباراة")),sw(!P.settings.muteEmotes,()=>{Act.settings({muteEmotes:!P.settings.muteEmotes})})),
     h("div",{class:"setrow"},h("div",{},h("div",{class:"t"},"حزمة الأصوات"),h("div",{class:"d"},effItem("sound").name)),h("button",{class:"small",onclick:()=>{czStart();czTab="sound";show("customize")}},"غيّر")));
   b.append(card);
   if(reduceMotion())b.append(h("p",{class:"hint"},"جهازك مضبوط على تقليل الحركة، فالمؤثرات تطلع خفيفة دايمًا."));
@@ -2867,13 +2890,12 @@ $("czTryMove").addEventListener("click",()=>{if(!czBoardSvg)return;const id=czDr
   const p=czBoardSvg._pawn;trailFx(czBoardSvg._fx,[4,2],[3,2],id,czBoardSvg._b.glow);p.style.transition="transform .32s cubic-bezier(.3,1.35,.5,1)";p.style.transform=`translate(${2.5*S}px,${3.5*S}px)`;
   setTimeout(()=>{trailFx(czBoardSvg._fx,[3,2],[4,2],id,czBoardSvg._b.glow);p.style.transform=`translate(${2.5*S}px,${4.5*S}px)`},700)});
 $("czTryWin").addEventListener("click",()=>{if(!czBoardSvg)return;const sk=findItem("skin",czDraft.skin)||SKINS[0];victoryFx(czBoardSvg._fx,2.5*S,4.5*S,czDraft.win,sk.c,czBoardSvg._b.glow);sfx("win",czDraft.sound)});
-$("czSave").addEventListener("click",()=>{
-  if(czLoadout){updateLoadout(czLoadout,{items:czDraft})}
-  for(const t of EQUIP_TYPES)if(czDraft[t])equip(t,czDraft[t],Owner.verified);
+$("czSave").addEventListener("click",async()=>{
+  try{if(czLoadout)await Act.loadoutUpdate(czLoadout,{items:czDraft});await Act.equipMany(czDraft)}catch(x){toast(x.message,"bad");return}
   onEquipChanged();sfx("unlock");toast("انحفظ مظهرك ✨","good");czDraft=null;czLoadout=null;pfTab=pfTab||"stats";show("profile");
 });
-$("czSaveLo").addEventListener("click",()=>{
-  if(czLoadout){updateLoadout(czLoadout,{items:czDraft});toast("تحدّث التنسيق","good");czDraft=null;czLoadout=null;pfTab="loadouts";show("profile");return}
+$("czSaveLo").addEventListener("click",async()=>{
+  if(czLoadout){try{await Act.loadoutUpdate(czLoadout,{items:czDraft})}catch(x){toast(x.message,"bad");return}toast("تحدّث التنسيق","good");czDraft=null;czLoadout=null;pfTab="loadouts";show("profile");return}
   newLoadoutSheet(Object.assign({},czDraft),()=>{pfTab="loadouts"});
 });
 const czExit=()=>{czDraft=null;czLoadout=null;show("profile")};
@@ -2896,28 +2918,32 @@ function amountSheet(title,label,onOk){
     inp.addEventListener("keydown",e=>{if(e.key==="Enter")go()});
     c.append(h("h3",{},title),h("span",{class:"lbl"},label),inp,h("div",{class:"row",style:"margin-top:12px"},h("button",{class:"primary",onclick:go},"أضف"),h("button",{onclick:close},"إلغاء")))});
 }
-function ownerDone(out,msg){toast(msg,"good");sfx("unlock");if(out)afterGains(out);refreshPage()}
+function ownerDone(out,msg){if(msg)toast(msg,"good");sfx("unlock");if(out)afterGains(out);refreshPage()}
+async function ownerCall(cmd,extra,msg,reveal){
+  let r;try{r=await Act.owner(cmd,extra)}catch(x){toast(x.message,"bad");return null}
+  if(reveal)reveal(r.out||newOut());else ownerDone(r.out,msg);
+  return r;
+}
 function runOwnerCmd(code){
   if(!ownerGuard())return;
   switch(code){
     case "GODMODE":show("owner");toast("👑 لوحة المالك","good");break;
-    case "MAXLEVEL":ownerDone(ownerSetLevel(MAX_LEVEL),"وصلت للمستوى "+fmt(MAX_LEVEL));break;
-    case "INFINITECOINS":{const on=ownerToggle("infinite","INFINITECOINS");toast(on?"الرصيد صار غير محدود ∞":"رجع الرصيد العادي","good");refreshPage();break}
-    case "ADDCOINS":amountSheet("إضافة عملات","كم عملة؟",n=>ownerDone(ownerAddCoins(n),"انضاف "+fmt(n)+" 🕷️"));break;
-    case "ADDXP":amountSheet("إضافة XP","كم XP؟",n=>ownerDone(ownerAddXp(n),"انضاف "+fmt(n)+" XP"));break;
-    case "UNLOCKALL":ownerDone(ownerUnlock(()=>true,"UNLOCKALL"),"انفتح كل شي في اللعبة");break;
-    case "SECRETALL":ownerDone(ownerUnlock((t,it)=>it.rar==="secret","SECRETALL"),"انفتحت كل العناصر السرية");break;
-    case "ALLACHIEVEMENTS":ownerDone(ownerAllAchievements(),"انفتحت كل الإنجازات");break;
-    case "XPBOOST":{const on=ownerToggle("xpBoost","XPBOOST");toast(on?"XP ×١٠ شغّال":"XP ×١٠ طافي","good");refreshPage();break}
-    case "COINBOOST":{const on=ownerToggle("coinBoost","COINBOOST");toast(on?"العملات ×١٠ شغّال":"العملات ×١٠ طافي","good");refreshPage();break}
-    case "FOUNDERONLY":{const out=ownerGrant(SECRET_CODES.MOHAMMED.rewards.filter(r=>r.id).map(r=>[r.t,r.id]),"FOUNDERONLY");founderReveal(out);break}
-    case "CREATOR":{const out=ownerGrant(CREATOR_BUNDLE,"CREATOR");creatorReveal(out);break}
+    case "MAXLEVEL":ownerCall("MAXLEVEL",null,"وصلت للمستوى "+fmt(MAX_LEVEL));break;
+    case "INFINITECOINS":ownerCall("INFINITECOINS",null,null).then(r=>{if(r)toast(P.owner.infinite?"الرصيد صار غير محدود ∞":"رجع الرصيد العادي","good")});break;
+    case "ADDCOINS":amountSheet("إضافة عملات","كم عملة؟",n=>ownerCall("ADDCOINS",{n},"انضاف "+fmt(n)+" 🕷️"));break;
+    case "ADDXP":amountSheet("إضافة XP","كم XP؟",n=>ownerCall("ADDXP",{n},"انضاف "+fmt(n)+" XP"));break;
+    case "UNLOCKALL":ownerCall("UNLOCKALL",null,"انفتح كل شي في اللعبة");break;
+    case "SECRETALL":ownerCall("SECRETALL",null,"انفتحت كل العناصر السرية");break;
+    case "ALLACHIEVEMENTS":ownerCall("ALLACHIEVEMENTS",null,"انفتحت كل الإنجازات");break;
+    case "XPBOOST":ownerCall("XPBOOST",null,null).then(r=>{if(r)toast(P.owner.xpBoost?"XP ×١٠ شغّال":"XP ×١٠ طافي","good")});break;
+    case "COINBOOST":ownerCall("COINBOOST",null,null).then(r=>{if(r)toast(P.owner.coinBoost?"العملات ×١٠ شغّال":"العملات ×١٠ طافي","good")});break;
+    case "FOUNDERONLY":ownerCall("FOUNDERONLY",null,null,founderReveal);break;
+    case "CREATOR":ownerCall("CREATOR",null,null,creatorReveal);break;
   }
 }
 function ownerGrantIdentity(){
-  if(!Owner.verified)return;
-  const missing=[["badge","owner"],["title","owner"]].filter(([t,id])=>!isOwned(t,id));
-  if(missing.length){ownerGrant(missing,"OWNER_VERIFIED");toast("👑 تحقق Claude إنك صاحب اللعبة. شارة ولقب OWNER صارت لك","good")}
+  if(!Owner.verified||(isOwned("badge","owner")&&isOwned("title","owner")))return;
+  Act.owner("IDENTITY").then(()=>{toast("👑 تحقق إنك صاحب اللعبة. شارة ولقب OWNER صارت لك","good");refreshPage()}).catch(()=>{});
 }
 /* ----- shared codes (Claude database) ----- */
 let owCodes=null,owCodesErr="";
@@ -2977,8 +3003,9 @@ const OW_TABS=[["account","الحساب"],["items","المقتنيات"],["ident
 function renderOwner(){
   const b=$("owBody");b.textContent="";
   if(!Owner.verified){b.append(h("div",{class:"card empty"},"هذي الصفحة لصاحب اللعبة بس."));return}
-  b.append(h("div",{class:"card ocard"},h("div",{class:"ostat"},h("span",{},"✅"),h("span",{},"Claude متحقق إنك صاحب هذي اللعبة")),
-    h("p",{class:"hint",style:"margin:6px 0 0"},"الأدوات هنا تحفظ على حسابك في هذا الجهاز. المزامنة بين الأجهزة تحتاج سيرفر.")));
+  const web=Platform.kind==="web";
+  b.append(h("div",{class:"card ocard"},h("div",{class:"ostat"},h("span",{},"✅"),h("span",{},web?"الخادم متحقق إن حسابك مالك اللعبة":"Claude متحقق إنك صاحب هذي اللعبة")),
+    h("p",{class:"hint",style:"margin:6px 0 0"},web?"كل أداة هنا تنفذ على الخادم وتنحفظ في حسابك، وتطلع لك في أي جهاز تدخل منه. وكل عملية تنسجل في سجل الخادم.":"الأدوات هنا تحفظ على حسابك في هذا الجهاز. المزامنة بين الأجهزة تحتاج سيرفر.")));
   const tb=h("div",{class:"tabs"});tabs(tb,OW_TABS,owTab,id=>{owTab=id;renderOwner()});b.append(tb);
   const card=h("div",{class:"card ocard"});b.append(card);
   const li=levelInfo(P.xp);
@@ -2986,7 +3013,7 @@ function renderOwner(){
     const lvIn=h("input",{type:"number",min:"1",max:String(MAX_LEVEL),value:String(li.L),"aria-label":"المستوى"});
     const sw=(on,key,cmd)=>h("button",{class:"switch"+(on?" on":""),role:"switch","aria-checked":String(on),onclick:()=>runOwnerCmd(cmd)});
     card.append(h("h3",{},"الحساب"),h("div",{class:"chips",style:"margin-bottom:12px"},h("span",{class:"pill"},"المستوى "+fmt(li.L)),h("span",{class:"pill coins"},"🕷️ "+coinsText()),h("span",{class:"pill"},fmt(P.xp)+" XP")),
-      h("span",{class:"lbl"},"عدّل المستوى (١ إلى ٥٠)"),h("div",{class:"row"},lvIn,h("button",{class:"primary small",style:"min-height:48px",onclick:()=>{if(!ownerGuard())return;const L=Math.floor(Number(lvIn.value));if(!(L>=1&&L<=MAX_LEVEL)){toast("المستوى من ١ إلى ٥٠","bad");return}ownerDone(ownerSetLevel(L),"صار مستواك "+fmt(L))}},"طبّق")),
+      h("span",{class:"lbl"},"عدّل المستوى (١ إلى ٥٠)"),h("div",{class:"row"},lvIn,h("button",{class:"primary small",style:"min-height:48px",onclick:()=>{if(!ownerGuard())return;const L=Math.floor(Number(lvIn.value));if(!(L>=1&&L<=MAX_LEVEL)){toast("المستوى من ١ إلى ٥٠","bad");return}ownerCall("SETLEVEL",{n:L},"صار مستواك "+fmt(L))}},"طبّق")),
       h("div",{class:"okgrid",style:"margin-top:10px"},h("button",{onclick:()=>runOwnerCmd("ADDXP")},"＋ XP"),h("button",{onclick:()=>runOwnerCmd("ADDCOINS")},"＋ عملات"),h("button",{onclick:()=>runOwnerCmd("MAXLEVEL")},"أعلى مستوى")),
       h("div",{class:"setrow",style:"margin-top:8px"},h("div",{},h("div",{class:"t"},"رصيد غير محدود ∞"),h("div",{class:"d"},"تشتري من المتجر بدون ما ينقص رصيدك")),sw(P.owner.infinite,"infinite","INFINITECOINS")),
       h("div",{class:"setrow"},h("div",{},h("div",{class:"t"},"XP ×١٠"),h("div",{class:"d"},"على مكافآت المباريات")),sw(P.owner.xpBoost,"xpBoost","XPBOOST")),
@@ -2995,18 +3022,19 @@ function renderOwner(){
   }else if(owTab==="items"){
     card.append(h("h3",{},"افتح المقتنيات"),h("div",{class:"okgrid"},
       h("button",{class:"primary",onclick:()=>runOwnerCmd("UNLOCKALL")},"كل شي"),h("button",{onclick:()=>runOwnerCmd("SECRETALL")},"كل السرّي"),h("button",{onclick:()=>runOwnerCmd("ALLACHIEVEMENTS")},"كل الإنجازات"),
-      ...Object.keys(CATS).map(t=>h("button",{onclick:()=>{if(!ownerGuard())return;ownerDone(ownerUnlock(tt=>tt===t,"UNLOCK_"+t.toUpperCase()),"انفتحت كل "+CAT_NAME[t])}},"كل "+CAT_NAME[t]))),
+      ...Object.keys(CATS).map(t=>h("button",{onclick:()=>{if(!ownerGuard())return;ownerCall("UNLOCKTYPE",{t},"انفتحت كل "+CAT_NAME[t])}},"كل "+CAT_NAME[t]))),
       h("button",{class:"wide",style:"margin-top:12px",onclick:()=>{czStart();show("customize")}},"🎨 جهّز أي عنصر تملكه"));
   }else if(owTab==="identity"){
     const owned=[];for(const t in CATS)for(const it of CATS[t])if(isOwnerItem(it)&&isOwned(t,it.id))owned.push({t,id:it.id});
     card.append(h("h3",{},"هوية المالك"),h("div",{class:"okgrid"},
       h("button",{class:"primary",onclick:()=>runOwnerCmd("CREATOR")},"👑 حزمة الخالق"),h("button",{onclick:()=>runOwnerCmd("FOUNDERONLY")},"حزمة المؤسس"),
-      h("button",{onclick:()=>{if(!ownerGuard())return;ownerGrantIdentity();equip("badge","owner",true);onEquipChanged();ownerDone(null,"لبست شارة OWNER")}},"لبّس شارة OWNER"),
-      h("button",{onclick:()=>{if(!ownerGuard())return;if(!isOwned("badge","founder")){toast("افتح حزمة المؤسس أول","bad");return}for(const [t,id] of FOUNDER_LIST)equip(t,id,true);onEquipChanged();ownerDone(null,"لبست حزمة المؤسس")}},"لبّس المؤسس"),
-      h("button",{onclick:()=>{if(!ownerGuard())return;if(!isOwned("skin","creator")){toast("افتح حزمة الخالق أول","bad");return}for(const [t,id] of CREATOR_BUNDLE)if(t!=="emote")equip(t,id,true);onEquipChanged();ownerDone(null,"لبست حزمة الخالق")}},"لبّس الخالق"),
+      h("button",{onclick:async()=>{if(!ownerGuard())return;try{if(!isOwned("badge","owner"))await Act.owner("IDENTITY");await Act.equip("badge","owner")}catch(x){toast(x.message,"bad");return}onEquipChanged();ownerDone(null,"لبست شارة OWNER")}},"لبّس شارة OWNER"),
+      h("button",{onclick:async()=>{if(!ownerGuard())return;if(!isOwned("badge","founder")){toast("افتح حزمة المؤسس أول","bad");return}const it={};for(const [t,id] of FOUNDER_LIST)it[t]=id;try{await Act.equipMany(it)}catch(x){toast(x.message,"bad");return}onEquipChanged();ownerDone(null,"لبست حزمة المؤسس")}},"لبّس المؤسس"),
+      h("button",{onclick:async()=>{if(!ownerGuard())return;if(!isOwned("skin","creator")){toast("افتح حزمة الخالق أول","bad");return}const it={};for(const [t,id] of CREATOR_BUNDLE)if(t!=="emote")it[t]=id;try{await Act.equipMany(it)}catch(x){toast(x.message,"bad");return}onEquipChanged();ownerDone(null,"لبست حزمة الخالق")}},"لبّس الخالق"),
       h("button",{onclick:()=>{czStart();show("customize")}},"اختر سكن وإطار ولون وتأثير")),
       h("div",{class:"sec-h"},h("h3",{},"مكافآت المالك"),h("span",{},fmt(owned.length))),
       owned.length?rwChips(owned):h("p",{class:"hint"},"ما فتحت عناصر حصرية للحين."));
+  }else if(owTab==="codes"&&Platform.kind==="web"){renderNetOwnerCodes(card)
   }else if(owTab==="codes"){
     card.append(h("h3",{},"الأكواد السرية"));
     if(!Platform.db){card.append(h("p",{class:"hint"},"إنشاء الأكواد يحتاج قاعدة بيانات Claude، وما هي متاحة في هذا العرض. خارج Claude تحتاج سيرفر."));}
@@ -3039,57 +3067,70 @@ function renderOwner(){
 }
 $("owBack").addEventListener("click",()=>show("profile"));
 
+/* ----- codes on the web version: stored and checked on the server ----- */
+let netCodes=null,netCodesErr="";
+async function loadNetCodes(){try{const r=await api("owner_codes",{});netCodes=r.codes;netCodesErr=""}catch(e){netCodesErr=e.message}if(screen==="owner"&&owTab==="codes")renderOwner()}
+async function netCodeCall(action,payload,ok){try{const r=await api(action,payload);netCodes=r.codes;if(ok)toast(ok,"good");renderOwner()}catch(e){toast(e.message,"bad")}}
+function renderNetOwnerCodes(card){
+  card.append(h("h3",{},"الأكواد السرية"),h("p",{class:"hint",style:"margin-top:0"},"الكود يتحقق منه الخادم، وكل لاعب يستخدمه مرة وحدة. تقدر تحدد عدد الاستخدامات وتاريخ الانتهاء."));
+  const draft={rewards:[]};
+  const codeIn=h("input",{maxlength:"24",placeholder:"الكود (حروف إنجليزية وأرقام)",style:"direction:ltr;text-align:center;letter-spacing:.1em;text-transform:uppercase","aria-label":"الكود"});
+  const typeSel=h("select",{"aria-label":"نوع المكافأة"},h("option",{value:"coins"},"عملات"),h("option",{value:"xp"},"XP"),...Object.keys(CATS).map(t=>h("option",{value:t},CAT_ONE[t])));
+  const valBox=h("div",{}),list=h("div",{class:"crow"});
+  const fill=()=>{valBox.textContent="";const t=typeSel.value;
+    if(t==="coins"||t==="xp")valBox.append(h("input",{type:"number",min:"1",max:"100000",placeholder:"الكمية","aria-label":"الكمية",id:"owAmt"}));
+    else valBox.append(h("select",{id:"owItem","aria-label":"العنصر"},CATS[t].filter(it=>!isOwnerItem(it)&&it.how!=="free").map(it=>h("option",{value:it.id},it.name+" ("+RARITY[it.rar]+")"))))};
+  typeSel.addEventListener("change",fill);fill();
+  const show=()=>{list.textContent="";draft.rewards.forEach((r,i)=>list.append(h("button",{class:"rwc",style:"min-height:30px;border-radius:999px;flex:none",onclick:()=>{draft.rewards.splice(i,1);show()}},rewardText(r)+" ✕")));if(!draft.rewards.length)list.append(h("span",{class:"hint",style:"margin:0"},"ما أضفت مكافآت للحين"))};show();
+  const addBtn=h("button",{class:"small",onclick:()=>{const t=typeSel.value;
+    if(t==="coins"||t==="xp"){const n=Math.floor(Number($("owAmt").value));if(!(n>0&&n<=100000)){toast("اكتب كمية من ١ إلى ١٠٠٬٠٠٠","bad");return}draft.rewards.push({t,n})}
+    else{const id=$("owItem").value;if(!findItem(t,id)||draft.rewards.some(r=>r.t===t&&r.id===id))return;draft.rewards.push({t,id})}show()}},"＋ أضف مكافأة");
+  const uses=h("input",{type:"number",min:"1",placeholder:"بدون حد","aria-label":"عدد الاستخدامات"});
+  const exp=h("input",{type:"date","aria-label":"تاريخ الانتهاء"});
+  const label=h("input",{maxlength:"40",placeholder:"اسم يظهر للاعب (اختياري)","aria-label":"اسم الكود"});
+  const save=h("button",{class:"primary wide",onclick:async()=>{
+    if(!draft.rewards.length){toast("أضف مكافأة وحدة على الأقل","bad");return}
+    save.disabled=true;await netCodeCall("owner_code_save",{code:codeIn.value,rewards:draft.rewards,max_uses:uses.value?Number(uses.value):null,expires:exp.value?exp.value+"T23:59:59+03:00":null,label:label.value},"انحفظ الكود");save.disabled=false}},"احفظ الكود");
+  card.append(h("span",{class:"lbl"},"الكود"),codeIn,h("span",{class:"lbl mt"},"المكافآت"),typeSel,h("div",{style:"margin-top:8px"},valBox),h("div",{style:"margin-top:8px"},addBtn),list,
+    h("span",{class:"lbl mt"},"عدد الاستخدامات لكل اللاعبين (اختياري)"),uses,h("span",{class:"lbl mt"},"ينتهي (اختياري، بتوقيت السعودية)"),exp,h("span",{class:"lbl mt"},"اسم يظهر عند الفتح"),label,h("div",{style:"margin-top:12px"},save));
+  if(netCodes===null&&!netCodesErr){card.append(h("p",{class:"hint"},"يحمّل الأكواد…"));loadNetCodes()}
+  if(netCodesErr)card.append(h("p",{class:"err"},netCodesErr));
+  const all=netCodes||[];
+  card.append(h("div",{class:"sec-h"},h("h3",{},"كل الأكواد"),h("span",{},fmt(all.length))));
+  const l=h("div",{class:"list"});
+  for(const c of all)l.append(h("div",{class:"li"},h("div",{class:"grow"},h("div",{class:"t",style:"direction:ltr;text-align:right"},c.code+(c.builtin?" ★":"")),
+    h("div",{class:"d"},cleanRewards(c.rewards).map(rewardText).join("، ")),
+    h("div",{class:"d"},"استُخدم "+fmt(c.uses||0)+(c.max_uses?" من "+fmt(c.max_uses):"")+(c.expires_at?"، ينتهي "+String(c.expires_at).slice(0,10):"")+(c.active?"":"، موقوف"))),
+    h("button",{class:"small",onclick:()=>netCodeCall("owner_code_set",{code:c.code,active:!c.active},c.active?"انوقف الكود":"اشتغل الكود")},c.active?"أوقف":"شغّل"),
+    c.builtin?null:h("button",{class:"small",onclick:()=>confirmSheet("حذف الكود","تحذف "+c.code+"؟ اللي فعّلوه يبقى معهم.","احذف",()=>netCodeCall("owner_code_set",{code:c.code,delete:true},"انحذف الكود"))},"حذف")));
+  card.append(l);
+}
+
 /* ================= platform (Claude-only features stay behind this) ================= */
-/* Online outside Claude (GitHub Pages etc.) goes through Supabase Realtime presence.
-   The publishable key is meant to be public; never put a secret/service_role key here. */
+/* The web version (GitHub Pages) talks to this Supabase project. The publishable key is
+   meant to be public; never put a secret/service_role key here. */
 const ONLINE_CONFIG={url:"https://xaqcqeenythjxadyflmr.supabase.co",key:"sb_publishable_4FL2grSmTjbiLa4SHXhpNg_i3w-k3GG"};
 const SUPABASE_JS="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js";
 const Platform={user:null,room:null,db:null,kind:"none",ready:null};
 function loadScript(src){return new Promise((ok,bad)=>{const s=document.createElement("script");s.src=src;s.async=true;s.onload=()=>ok();s.onerror=()=>bad(new Error("load"));document.head.append(s)})}
-/* wraps one Supabase channel in the same shape the game already uses for Claude rooms */
-function supaRoom(client,name){
-  let mine={},ph=[],chs=[],connected=false,errShown=false;
-  const ch=client.channel(name,{config:{presence:{key:cid}}});
-  const snapshot=()=>{
-    const st=ch.presenceState()||{},arr=[];
-    for(const key of Object.keys(st)){const list=st[key];const last=list&&list[list.length-1];if(!last)continue;
-      const pr=Object.assign({},last);delete pr.presence_ref;
-      arr.push({peer:key,by:null,isMe:key===cid,sameTab:key===cid,kind:"viewer",guest:false,presence:pr,updatedAt:Date.now()})}
-    if(!arr.some(x=>x.isMe))arr.push({peer:cid,by:null,isMe:true,sameTab:true,kind:"viewer",guest:false,presence:mine,updatedAt:Date.now()});
-    return arr;
-  };
-  const fire=()=>{const s=snapshot();for(const h of ph)h({peers:s,joined:[],left:[],updated:[]})};
-  ch.on("presence",{event:"sync"},fire);
-  ch.subscribe(st=>{
-    const was=connected;connected=st==="SUBSCRIBED";
-    if(connected)ch.track(mine).catch(()=>{});
-    if((st==="CHANNEL_ERROR"||st==="TIMED_OUT")&&!errShown){errShown=true;toast("تعذّر الاتصال بالغرفة، تأكد من الإنترنت","bad")}
-    if(was!==connected)for(const h of chs)h(connected);
-  });
-  return {name,
-    presence:async patch=>{mine=Object.assign({},mine,JSON.parse(JSON.stringify(patch)));fire();if(connected)await ch.track(mine)},
-    peers:snapshot,
-    onPeers:h=>{ph.push(h);setTimeout(fire,0);return ()=>{ph=ph.filter(x=>x!==h)}},
-    onConnection:h=>{chs.push(h);setTimeout(()=>h(connected),0);return ()=>{chs=chs.filter(x=>x!==h)}},
-    connected:()=>connected,
-    leave:async()=>{try{await ch.untrack()}catch(e){}try{client.removeChannel(ch)}catch(e){}}};
-}
 Platform.ready=(async()=>{
+  await Promise.resolve();
   const C=window.claude;
   if(C&&typeof C.use==="function"){
+    Platform.kind="claude";
     let u=null,r=null,d=null;
     try{u=await C.use("user")}catch(e){}
     try{r=await C.use("room")}catch(e){}
     try{d=await C.use("db")}catch(e){}
     Platform.user=u;Platform.room=r;Platform.db=d;
-    if(r){Platform.kind="claude";return}
+    return;
   }
   if(!ONLINE_CONFIG.url||!ONLINE_CONFIG.key)return;
   try{
     if(!(window.supabase&&window.supabase.createClient))await loadScript(SUPABASE_JS);
     const sb=window.supabase;if(!sb||!sb.createClient)return;
-    const client=sb.createClient(ONLINE_CONFIG.url,ONLINE_CONFIG.key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
-    Platform.room={join:async n=>supaRoom(client,n)};Platform.kind="supabase";
+    Cloud.sb=sb.createClient(ONLINE_CONFIG.url,ONLINE_CONFIG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    Platform.kind="web";
   }catch(e){}
 })();
 const BOT_NAMES=["الرتيلاء","الصياد","أبو شبكة"];
@@ -3105,6 +3146,8 @@ const isOwnerId=id=>!!Owner.ownerId&&id===Owner.ownerId;
 /* owner-only looks are shown only for the seat Claude confirms belongs to the artifact owner */
 function seatIsOwner(i){
   const p=G&&G.players[i];if(!p||p.bot)return false;
+  if(mode==="solo")return p.id===cid&&Owner.verified;
+  if(mode==="room")return p.id===cid?Owner.verified:netRoster().some(r=>r.id===p.id&&r.owner);
   if(mode!=="online")return p.id==="L0"&&Owner.verified;
   if(p.id===cid)return Owner.verified;
   return isOwnerId(p.id)&&roster().some(r=>r.id===p.id&&r.owner);
@@ -3117,6 +3160,7 @@ function setBusy(b){$("btnCreate").disabled=b;$("btnJoin").disabled=b;$("btnCrea
 async function enterRoom(code,creator){
   onlineErr("");setBusy(true);
   await Platform.ready;
+  if(Platform.kind==="web"){setBusy(false);return netRoomEnter(creator,code)}
   if(!Platform.room){setBusy(false);onlineErr(window.claude?"التحدي أون لاين يشتغل لما تفتح اللعبة من رابطها داخل Claude وأنت مسجّل دخول. تقدر تلعب ضد الكمبيوتر أو على نفس الجوال الحين.":"ما قدرت أتصل بخادم الأونلاين. تأكد من الإنترنت وجرّب مرة ثانية.");return}
   let r;
   try{r=await Platform.room.join("spider-"+code.toLowerCase())}
@@ -3135,6 +3179,7 @@ function leaveRoom(){
   peers=[];connected=false;
 }
 function roster(){
+  if(mode==="room")return netRoster();
   const m=new Map();
   for(const p of peers){
     const pr=p.presence||{};
@@ -3151,7 +3196,7 @@ function roster(){
 }
 const pubMap=()=>{const o={};for(const r of roster())o[r.id]=r.pub;return o};
 function hostEntry(r){r=r||roster();return r.find(p=>p.host)||r.slice().sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0)[0]||null}
-function amHost(){if(mode!=="online")return false;if(isCreator)return true;const x=hostEntry();return !!x&&x.id===cid}
+function amHost(){if(mode==="room")return !!NG.room&&NG.room.host===cid;if(mode!=="online")return false;if(isCreator)return true;const x=hostEntry();return !!x&&x.id===cid}
 function onPeers(){
   let best=null,bestBy=null;
   for(const p of peers){const g=sanitize(p.presence&&p.presence.g);if(g&&(!best||g.seq>best.seq)){best=g;bestBy=p.by||null}}
@@ -3167,7 +3212,7 @@ function onPeers(){
 function renderConn(){
   $("connL").classList.toggle("on",connected);$("connGd").classList.toggle("on",connected);
   $("connLt").textContent=connected?"متصل":"يتصل…";
-  $("connG").classList.toggle("hidden",mode!=="online");$("roomTag").textContent=roomCode;
+  $("connG").classList.toggle("hidden",!(mode==="online"||mode==="room"));$("roomTag").textContent=roomCode;
 }
 function renderLobby(){
   if(screen!=="lobby")return;
@@ -3180,22 +3225,23 @@ function renderLobby(){
     list.append(h("li",{},avatar(SKINS[p.skin].id,pub.fr,40,pub.dc),
       h("div",{class:"who"},h("span",{class:"nm"},nameEl(p.nick,pub.th),badgeEl(pub.bd),(p.isMe?Owner.verified:p.owner)?ownerTag():null,p.isMe?h("span",{class:"tag"},"(أنت)"):null),
         h("span",{class:"sub"},(t?t.name+"، ":"")+"المستوى "+fmt(pub.lv))),
-      h("span",{class:"tag"},(hst&&p.id===hst.id?"صاحب الغرفة":"")+(k>=4?"يتفرّج":""))));
+      h("span",{class:"tag"},(hst&&p.id===hst.id?"صاحب الغرفة":"")+(k>=4?"يتفرّج":"")+(p.here===false?" غير متصل":""))));
   });
-  const lt=host?eff("lobby"):(hst?hst.lt:"classic");
+  const rs=mode==="room"&&NG.room?(NG.room.settings||{}):null;
+  const lt=rs?(rs.lt||"classic"):host?eff("lobby"):(hst?hst.lt:"classic");
   for(const c of [...$("lobby").classList])if(c.startsWith("lt-"))$("lobby").classList.remove(c);
   $("lobby").classList.add("lt-"+lt);
   const th=$("lobbyThemes");th.textContent="";
   for(const it of LOBBIES){if(host&&!isOwned("lobby",it.id))continue;if(!host&&it.id!==lt)continue;
-    th.append(h("button",{class:"tab"+(it.id===lt?" on":""),disabled:!host,"aria-pressed":String(it.id===lt),onclick:()=>{equip("lobby",it.id);pushPresence();renderLobby()}},LOBBY_LABEL[it.id]+" "+it.name))}
-  const bsName=(findItem("board",host?eff("board"):(hst?hst.bs:"classic"))||BOARDS[0]).name;
+    th.append(h("button",{class:"tab"+(it.id===lt?" on":""),disabled:!host,"aria-pressed":String(it.id===lt),onclick:async()=>{if(mode==="room"){try{await Act.equip("lobby",it.id);await api("room_me",{code:roomCode})}catch(x){toast(x.message,"bad")}return}equip("lobby",it.id);pushPresence();renderLobby()}},LOBBY_LABEL[it.id]+" "+it.name))}
+  const bsName=(findItem("board",rs?(rs.bs||"classic"):host?eff("board"):(hst?hst.bs:"classic"))||BOARDS[0]).name;
   $("lobbyBoard").textContent=host?"طاولة المباراة: "+bsName+". تغيّرها من «تخصيص المظهر».":"طاولة المباراة: "+bsName+" (يختارها صاحب الغرفة)";
   const sk=$("skinsLobby");sk.textContent="";
   for(const id of P.owned.skin){const it=findItem("skin",id),on=eff("skin")===id;if(isOwnerItem(it)&&!Owner.verified)continue;
     sk.append(h("button",{type:"button",class:"skin"+(on?" sel":""),"aria-pressed":String(on),"aria-label":it.name,title:it.name,
-      onclick:()=>{equip("skin",id,Owner.verified);pushPresence();renderLobby()}},ballSvg(it)))}
-  const tv=host?P.settings.timer:(hst?hst.timer:0);
-  seg("timerSeg",tv,v=>{P.settings.timer=v;saveProfile();pushPresence();renderLobby()},!host);
+      onclick:async()=>{if(mode==="room"){try{await Act.equip("skin",id);await api("room_me",{code:roomCode})}catch(x){toast(x.message,"bad")}return}equip("skin",id,Owner.verified);pushPresence();renderLobby()}},ballSvg(it)))}
+  const tv=rs?(rs.timer||0):host?P.settings.timer:(hst?hst.timer:0);
+  seg("timerSeg",tv,v=>{if(mode==="room"){Act.settings({timer:v});api("room_settings",{code:roomCode,timer:v}).catch(x=>toast(x.message,"bad"));return}P.settings.timer=v;saveProfile();pushPresence();renderLobby()},!host);
   $("btnStart").classList.toggle("hidden",!host);$("btnStart").disabled=r.length<2;
   $("lobbyHint").textContent=host
     ?(r.length<2?"ننتظر لاعب ثاني على الأقل…":r.length>4?"أول ٤ لاعبين يلعبون، والباقي يتفرّجون.":"جاهزين؟ ابدأ متى ما تبي.")
@@ -3213,7 +3259,7 @@ function startOnline(){
   afterChange(prev,"me");pushPresence();show("game");render();
 }
 /* changing cosmetics while in a room or game updates what others see */
-function onEquipChanged(){if(room)pushPresence();if(G&&screen==="game")render()}
+function onEquipChanged(){if(mode==="room"&&NG.room)api("room_me",{code:NG.room.code}).catch(()=>{});if(room)pushPresence();if(G&&screen==="game")render()}
 
 /* ================= local games ================= */
 function beginLocal(players){
@@ -3226,12 +3272,15 @@ function startLocal(n){
   beginLocal(pl);
 }
 function startBots(){
+  if(Platform.kind==="web"&&Cloud.on)return netSoloStart(false);
   const pl=[{id:"L0",nick:P.nickname?myNick():"أنت",skin:skinIdx(eff("skin")),bot:0}];
   for(let k=0;k<P.settings.botCount;k++)pl.push({id:"B"+k,nick:BOT_NAMES[k],skin:k+1,bot:P.settings.botLevel});
   beginLocal(pl);
 }
 function again(){
   if(!G)return;
+  if(mode==="solo")return netSoloStart(true);
+  if(mode==="room"){if(amHost())netRoomCall("room_rematch");return}
   if(mode==="local"){
     clearBot();const prev=G;hist=[];
     const pl=prev.players.map(p=>Object.assign({},p));
@@ -3245,6 +3294,8 @@ function again(){
 function mySeat(){if(!G)return -1;if(mode==="local")return G.turn;return G.players.findIndex(p=>p.id===cid)}
 function canAct(){
   if(!G||G.winner!=null)return false;
+  if((mode==="solo"||mode==="room")&&NG.busy)return false;
+  if(mode==="solo")return G.turn===0&&!G.players[0].bot;
   if(mode==="local")return !G.players[G.turn].bot;
   return mySeat()===G.turn;
 }
@@ -3262,7 +3313,7 @@ function afterChange(prev,src){
   if(!G)return;
   if(G.winner!=null){
     if(!prev||prev.winner==null||prev.round!==G.round){
-      const seat=mode==="online"?mySeat():(hasBots()?0:-1);
+      const seat=(mode==="online"||mode==="room")?mySeat():(hasBots()?0:-1);
       if(seat>=0&&G.winner!==seat){sfx("lose");buzz(60)}else{sfx("win");buzz([40,60,40,60,90])}
     }
     return;
@@ -3290,6 +3341,7 @@ function scheduleBot(){
 let undoArm=0;
 function resetUndoBtn(){const b=$("btnUndo");b.textContent="تراجع عن آخر حركة";b.classList.remove("arm")}
 function undo(){
+  if(mode==="solo")return netSoloUndo();
   if(mode!=="local"||!hist.length)return;
   if(M&&M.mode==="bot"&&!M.practice&&!M.done){
     if(Date.now()-undoArm>3000){undoArm=Date.now();const b=$("btnUndo");b.textContent="اضغط مرة ثانية: المباراة تصير تدريب بدون مكافآت";b.classList.add("arm");
@@ -3305,7 +3357,7 @@ function undo(){
 
 /* ================= match tracking & rewards ================= */
 function trackMatch(){
-  if(!G)return;
+  if(!G||mode==="solo"||mode==="room")return;
   if(!M||M.mid!==G.mid){
     const bots=G.players.filter(p=>p.bot);
     M={mid:G.mid,mode:mode==="online"?"online":(bots.length?"bot":"local"),seat:mode==="online"?mySeat():(bots.length?0:-1),
@@ -3341,11 +3393,14 @@ function endMatch(){
 }
 /* leaving a real match halfway counts as a loss, so quitting can't protect a streak */
 function wouldForfeit(){
+  if(mode==="solo")return !!(G&&G.winner==null&&NG.solo&&!NG.solo.practice&&((M&&M.moves)||0)+G.walls.filter(w=>w[3]===0).length>=3);
+  if(mode==="room")return !!(G&&G.winner==null&&mySeat()>=0&&G.seq-(G.s0||G.seq)>=6);
   if(!G||G.winner!=null||!M||M.done||M.practice||M.seat<0||M.mode==="local")return false;
   const acts=M.mode==="online"?G.seq-G.s0:M.moves+G.walls.filter(w=>w[3]===M.seat).length;
   return acts>=(M.mode==="online"?6:3);
 }
 function forfeit(){
+  if(mode==="solo"||mode==="room")return;
   if(!wouldForfeit())return;
   M.done=true;const out=finishMatch(matchCtx(false));
   if(out)toast("انحسبت خسارة لأنك طلعت من المباراة","bad");
@@ -3397,7 +3452,7 @@ function drawMoves(){
     const cx=c*S+S/2,cy=r*S+S/2;
     mk("circle",{cx,cy,r:"1.9",fill:col,"fill-opacity":".2",stroke:col,"stroke-width":".7",class:"mv","pointer-events":"none"},L.moves);
     const hit=mk("rect",{x:c*S,y:r*S,width:S,height:S,fill:"transparent",style:"cursor:pointer","data-cell":r+","+c},L.moves);
-    hit.addEventListener("click",()=>{if(canAct()&&tool==="move")commit(doMove(G,G.turn,[r,c]))});
+    hit.addEventListener("click",()=>{if(tool==="move")playAction({t:"m",to:[r,c]})});
   }
 }
 function drawGhost(){
@@ -3459,22 +3514,24 @@ function updateGhostUI(){
 
 /* ================= game panels ================= */
 function pubFor(p){
+  if(mode==="room"){if(p.id===cid)return myPub(Owner.verified);const r=netRoster().find(x=>x.id===p.id);return r?r.pub:null}
+  if(mode==="solo")return p.id===cid?myPub(Owner.verified):null;
   if(mode==="online"){if(p.id===cid)return myPub(Owner.verified);const r=roster().find(x=>x.id===p.id);return r?r.pub:null}
   return p.id==="L0"?myPub(Owner.verified):null;
 }
 function renderPlayers(){
   const box=$("players");box.textContent="";
-  const ws=wset(G.walls),present=mode==="online"?new Set(roster().map(p=>p.id)):null;
+  const ws=wset(G.walls),present=mode==="online"?new Set(roster().map(p=>p.id)):(mode==="room"&&NG.online.size?NG.online:null);
   G.players.forEach((p,i)=>{
     const sk=skinOf(i),pub=pubFor(p),bd=pub&&findItem("badge",pub.bd);
     const wins=G.score[p.id]||0;
     const wl=h("span",{class:"wl","aria-label":"الخيوط الباقية: "+fmt(G.left[i])});
     for(let k=0;k<wallsPer(G.n);k++)wl.append(h("i",{class:k>=G.left[i]?"used":null}));
     const d=h("div",{class:"pc"+((G.winner==null?G.turn===i:G.winner===i)?" turn":"")+(present&&!present.has(p.id)?" away":"")},ballSvg(sk,26),
-      h("div",{class:"meta"},h("span",{class:"nm"},p.nick+(bd?" "+bd.e:"")+(p.bot?" 🤖":"")+(mode==="online"&&p.id===cid?" (أنت)":"")),
+      h("div",{class:"meta"},h("span",{class:"nm"},p.nick+(bd?" "+bd.e:"")+(p.bot?" 🤖":"")+((mode==="online"||mode==="room")&&p.id===cid?" (أنت)":"")),
         h("span",{class:"sub"},(G.winner===i?"وصل! 🏆":stepsTxt(distMap(ws,i)[G.pos[i][0]*N+G.pos[i][1]]))+(wins?"، 🏆"+fmt(wins):"")),wl));
     d.style.setProperty("--c",sk.c);
-    if(seatIsOwner(i)&&mode==="online")d.querySelector(".nm").append(" ",ownerTag());
+    if(seatIsOwner(i)&&(mode==="online"||mode==="room"))d.querySelector(".nm").append(" ",ownerTag());
     const bb=bubbles[i];if(bb&&Date.now()<bb.until){const it=findItem("emote",bb.id);if(it)d.append(h("span",{class:"emo"+(Date.now()-bb.at<350?" a-"+it.anim:"")},it.t))}
     box.append(d);
   });
@@ -3482,10 +3539,10 @@ function renderPlayers(){
 function renderStatus(){
   const s=$("status");s.textContent="";
   let txt;
-  if(G.winner!=null){const w=G.players[G.winner];txt=(mode==="online"&&w.id===cid)||(hasBots()&&!w.bot)?"فزت! 🏆":"فاز "+w.nick+" 🏆"}
+  if(G.winner!=null){const w=G.players[G.winner];txt=((mode==="online"||mode==="room")&&w.id===cid)||(hasBots()&&!w.bot)?"فزت! 🏆":"فاز "+w.nick+" 🏆"}
   else{
     const p=G.players[G.turn];
-    if(mode==="local")txt=p.bot?p.nick+" يفكّر…":hasBots()?"دورك! حرّك كرتك أو مدّ خيط":"دور "+p.nick+": حرّك كرتك أو مدّ خيط";
+    if(mode==="local"||mode==="solo")txt=p.bot?p.nick+" يفكّر…":hasBots()?"دورك! حرّك كرتك أو مدّ خيط":"دور "+p.nick+": حرّك كرتك أو مدّ خيط";
     else txt=mySeat()===G.turn?"دورك! حرّك كرتك أو مدّ خيط":mySeat()<0?"تتفرّج الحين، دور "+p.nick:"ننتظر "+p.nick+" يلعب…";
   }
   add(s,h("span",{class:"sdot"}),h("span",{},txt),M&&M.practice&&G.winner==null?h("span",{class:"pill"},"تدريب"):null);
@@ -3503,14 +3560,18 @@ function renderControls(){
   svg.classList.toggle("wallmode",wallOn);
   if(wallOn)updateGhostUI();
   $("endRow").classList.toggle("hidden",!(over&&winDismissed===G.seq));
-  $("btnAgain2").classList.toggle("hidden",!(mode==="local"||amHost()));
+  $("btnAgain2").classList.toggle("hidden",!(mode==="local"||mode==="solo"||amHost()));
   $("btnAgain2").textContent=againLabel();
-  $("btnUndo").classList.toggle("hidden",!(mode==="local"&&hist.length>0&&(over||!G.players[G.turn].bot)));
+  $("btnUndo").classList.toggle("hidden",!((mode==="local"&&hist.length>0&&(over||!G.players[G.turn].bot))||(mode==="solo"&&G.seq>(G.s0||G.seq)&&(over||!G.players[G.turn].bot))));
   $("btnPass").classList.toggle("hidden",!(can&&stuck(G,G.turn)));
   updateSkip();
 }
 function updateSkip(){
   let showIt=false;
+  if(G&&mode==="room"&&G.winner==null&&mySeat()>=0&&mySeat()!==G.turn){
+    const pid=G.players[G.turn].id,away=NG.online.size>0&&!NG.online.has(pid),el=(Date.now()-seenAt)/1000;
+    if((G.timer&&el>G.timer+5)||(away&&el>92))showIt=true;
+  }
   if(G&&mode==="online"&&G.winner==null&&mySeat()>=0&&mySeat()!==G.turn){
     const pid=G.players[G.turn].id,away=!roster().some(p=>p.id===pid),key=G.seq+":"+pid;
     if(away){if(awayKey!==key){awayKey=key;awaySince=Date.now()}if(Date.now()-awaySince>4000)showIt=true}else awayKey="";
@@ -3587,7 +3648,7 @@ function renderWin(){
   const ul=$("scores");ul.textContent="";
   G.players.map((q,k)=>({q,k,w:G.score[q.id]||0})).sort((a,b)=>b.w-a.w).forEach(({q,k,w})=>
     ul.append(h("li",{},ballSvg(skinOf(k),24),h("span",{},q.nick+(q.bot?" 🤖":"")),h("b",{},"🏆 "+fmt(w)))));
-  const canAgain=mode==="local"||amHost();
+  const canAgain=mode==="local"||mode==="solo"||amHost();
   $("btnAgain").textContent=againLabel();
   $("btnAgain").classList.toggle("hidden",!canAgain);$("againHint").classList.toggle("hidden",canAgain);
 }
@@ -3600,7 +3661,7 @@ function render(){
 
 /* ================= emotes =================
    Sent through presence (the room's live state): at most one every 2.5 s and six a minute. */
-function emoteSeat(){if(!G)return -1;if(mode==="online")return mySeat();return G.players.findIndex(p=>p.id==="L0")}
+function emoteSeat(){if(!G)return -1;if(mode==="online"||mode==="room"||mode==="solo")return mySeat();return G.players.findIndex(p=>p.id==="L0")}
 function showBubble(seat,id){if(seat<0)return;bubbles[seat]={id,at:Date.now(),until:Date.now()+2600};if(screen==="game")renderPlayers();setTimeout(()=>{if(bubbles[seat]&&Date.now()>=bubbles[seat].until){delete bubbles[seat];if(G&&screen==="game")renderPlayers()}},2700)}
 function sendEmote(id){
   const now=Date.now();emoTimes=emoTimes.filter(t=>now-t<60000);
@@ -3608,6 +3669,7 @@ function sendEmote(id){
   if(emoTimes.length>=6){toast("وصلت الحد، جرّب بعد دقيقة");return}
   emoTimes.push(now);emoN++;emoteState={id,n:emoN};
   showBubble(emoteSeat(),id);sfx("emote");if(room)pushPresence();
+  if(mode==="room"&&NG.ch){try{NG.ch.send({type:"broadcast",event:"emote",payload:{from:cid,e:id}})}catch(e){}}
 }
 function checkEmotes(){
   for(const r of roster()){
@@ -3621,7 +3683,7 @@ function renderEmoteTray(){
   const tr=$("emoteTray");tr.textContent="";
   for(const it of EMOTES){if(!isOwned("emote",it.id)||(isOwnerItem(it)&&!Owner.verified))continue;tr.append(h("button",{onclick:()=>sendEmote(it.id),"aria-label":"أرسل "+it.name},it.t))}
   $("btnMuteEmo").textContent=P.settings.muteEmotes?"🔕 تفاعلات الآخرين مكتومة":"🔔 تفاعلات الآخرين";
-  $("emoteHint").textContent=mode==="online"?"يطلع فوق اسمك عند الكل.":"يطلع فوق اسمك.";
+  $("emoteHint").textContent=(mode==="online"||mode==="room")?"يطلع فوق اسمك عند الكل.":"يطلع فوق اسمك.";
 }
 $("btnEmote").addEventListener("click",()=>{const b=$("emoteBox"),open=b.classList.contains("hidden");b.classList.toggle("hidden",!open);$("btnEmote").setAttribute("aria-expanded",String(open));if(open)renderEmoteTray()});
 $("btnMuteEmo").addEventListener("click",()=>{P.settings.muteEmotes=!P.settings.muteEmotes;saveProfile();renderEmoteTray()});
@@ -3638,6 +3700,7 @@ function tick(){
     const rem=Math.max(0,G.timer-(Date.now()-seenAt)/1000);
     $("tfill").style.transform="scaleX("+(rem/G.timer)+")";
     if(rem<=0&&mode==="online"&&mySeat()===G.turn&&autoSkipSeq!==G.seq){autoSkipSeq=G.seq;commit(doSkip(G),"me");return}
+    if(rem<=0&&mode==="room"&&mySeat()===G.turn&&autoSkipSeq!==G.seq){autoSkipSeq=G.seq;setTimeout(()=>{if(G&&G.seq===autoSkipSeq&&mode==="room")netRoomSkip()},1300);return}
   }
   updateSkip();
 }
@@ -3649,10 +3712,10 @@ $("btnSound").onclick=()=>{P.settings.mute=!P.settings.mute;saveProfile();render
 $("mMove").onclick=()=>{tool="move";ghost=null;render()};
 $("mWall").onclick=()=>{tool="wall";ghost=null;render()};
 $("btnRot").onclick=()=>{if(!canAct())return;ghost=ghost?[ghost[0],ghost[1],ghost[2]^1]:[3,3,0];updateGhostUI()};
-$("btnPlace").onclick=()=>{if(!canAct()||!ghost)return;if(wallError(G,ghost)){sfx("bad");return}const w=ghost;tool="move";commit(doWall(G,G.turn,w))};
+$("btnPlace").onclick=()=>{if(!canAct()||!ghost)return;if(wallError(G,ghost)){sfx("bad");return}const w=[ghost[0],ghost[1],ghost[2]];tool="move";ghost=null;playAction({t:"w",w})};
 $("btnUndo").onclick=undo;
-$("btnPass").onclick=()=>{if(canAct())commit(doSkip(G))};
-$("btnSkip").onclick=()=>{if(G&&G.winner==null&&mode==="online"){awayKey="";commit(doSkip(G))}};
+$("btnPass").onclick=()=>playAction({t:"s"});
+$("btnSkip").onclick=()=>{if(mode==="room"){netRoomSkip();return}if(G&&G.winner==null&&mode==="online"){awayKey="";commit(doSkip(G))}};
 $("btnAgain").onclick=again;$("btnAgain2").onclick=again;
 $("btnView").onclick=()=>{if(G){winDismissed=G.seq;render()}};
 $("btnScore").onclick=()=>{winDismissed=-1;render()};
@@ -3663,9 +3726,9 @@ const joinEl=$("joinCode");
 joinEl.addEventListener("input",()=>{const v=joinEl.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,4);if(v!==joinEl.value)joinEl.value=v});
 joinEl.addEventListener("keydown",e=>{if(e.key==="Enter")$("btnJoin").click()});
 $("btnJoin").onclick=()=>{const c=joinEl.value.trim().toUpperCase();if(!/^[A-Z0-9]{4}$/.test(c)){onlineErr("كود الغرفة ٤ حروف وأرقام، تأكد منه.");return}enterRoom(c,false)};
-$("btnStart").onclick=startOnline;
+$("btnStart").onclick=()=>{if(mode==="room")netRoomCall("room_start");else startOnline()};
 $("btnCopy").onclick=async()=>{
-  const link=Platform.kind==="supabase"&&/^https?:/.test(location.href)?" "+location.href.split("#")[0]:"";
+  const link=Platform.kind==="web"&&/^https?:/.test(location.href)?" "+location.href.split("#")[0]:"";
   const txt="تعال نلعب سبايدر 🕷️"+link+" كود الغرفة: "+roomCode;let ok=false;
   try{await navigator.clipboard.writeText(txt);ok=true}catch(e){
     try{const ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";document.body.append(ta);ta.select();ok=document.execCommand("copy");ta.remove()}catch(_){}}
@@ -3673,6 +3736,9 @@ $("btnCopy").onclick=async()=>{
   setTimeout(()=>{$("btnCopy").textContent="انسخ رسالة الدعوة"},2200);
 };
 function goHome(){
+  if(mode==="solo")netSoloForfeit();
+  if(mode==="room")netRoomLeave();
+  NG.solo=null;
   forfeit();
   clearBot();$("winBox").classList.add("hidden");
   const wasOnline=mode==="online";
@@ -3693,6 +3759,328 @@ $("btnQuit").onclick=()=>{
 $("btnLeaveLobby").onclick=goHome;$("btnHome").onclick=goHome;
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&ghost&&$("sheet").classList.contains("hidden")){ghost=null;updateGhostUI()}});
 
+
+/* ================= cloud (web version: Supabase backend) =================
+   Inside Claude the game keeps using Claude's rooms and saves on the device.
+   Everywhere else (GitHub Pages) the server owns the data: every change goes
+   through the "spider" Edge Function and the browser only shows the result. */
+const Cloud={on:false,sb:null,user:null,role:"player",offline:false,booting:false};
+let actQ=Promise.resolve();
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function withTimeout(p,ms){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(Object.assign(new Error("الخادم تأخر في الرد، جرّب مرة ثانية"),{code:"timeout"})),ms))])}
+async function api(action,payload){
+  if(!Cloud.sb)throw Object.assign(new Error("ما فيه اتصال بالخادم"),{code:"offline"});
+  let r;
+  try{r=await withTimeout(Cloud.sb.functions.invoke("spider",{body:{action,payload:payload||{}}}),15000)}
+  catch(e){throw e.code?e:Object.assign(new Error("تعذّر الاتصال بالخادم، تأكد من الإنترنت"),{code:"net"})}
+  if(r.error){
+    let code="net",msg="تعذّر الاتصال بالخادم، تأكد من الإنترنت";
+    try{const j=await r.error.context.json();code=j.error||code;msg=j.message||msg}catch(e){}
+    throw Object.assign(new Error(msg),{code});
+  }
+  return r.data;
+}
+function applyProfile(prof){
+  if(!prof||typeof prof!=="object")return;
+  if(P.__ver&&prof.__ver&&prof.__ver<P.__ver)return;
+  P=normalizeProfile(prof);P.__ver=prof.__ver;if(Cloud.user)P.id=Cloud.user.id;saveProfile();
+}
+/* what changed between two copies of the profile, for the end-of-match screen */
+function diffOut(a,b){
+  const out={xp:Math.max(0,b.xp-a.xp),coins:b.coins-a.coins,items:[],levelUps:[],ach:[],missions:[],streak:b.currentWinStreak>a.currentWinStreak?b.currentWinStreak:0,firstWinBonus:0,xpBefore:a.xp,levelBefore:a.level};
+  for(const t in b.owned)for(const id of b.owned[t])if(!(a.owned[t]||[]).includes(id))out.items.push({t,id});
+  for(const id of b.claimedAchievements)if(!a.claimedAchievements.includes(id))out.ach.push(id);
+  for(let L=a.level+1;L<=b.level;L++)out.levelUps.push({L,rewards:levelRewards(L)});
+  return out;
+}
+const err=t=>{throw Object.assign(new Error(t),{code:"bad"})};
+/* one entry point for every change to the player's data: the server when online, the device otherwise */
+const Act={
+  q(fn){const p=actQ.then(fn,fn);actQ=p.catch(()=>{});return p},
+  async run(action,payload,local){
+    if(!Cloud.on)return local();
+    return this.q(async()=>{const r=await api(action,payload);if(r&&r.profile)applyProfile(r.profile);return r||{}});
+  },
+  equip(t,id){return this.run("equip",{t,id},()=>{if(!equip(t,id,Owner.verified))err("ما تقدر تلبس هذا");return {}})},
+  equipMany(items){return this.run("equip_many",{items},()=>{for(const t of EQUIP_TYPES)if(items[t])equip(t,items[t],Owner.verified);return {}})},
+  wish(t,id){return this.run("wish",{t,id},()=>({on:toggleWish(t,id)}))},
+  buy(t,id){return this.run("buy",{t,id},()=>{const r=buy(t,id,freeCoins());if(!r.ok)err(r.why==="coins"?"رصيدك ما يكفي":r.why==="owned"?"عندك هذا من قبل":r.why==="level"?"يحتاج المستوى "+fmt(r.lvl):"ما ينفع تشتريه");if(freeCoins())ownerLog("FREEBUY",t+":"+id);return {out:r.out}})},
+  buyBundle(id){return this.run("buy_bundle",{id},()=>{const r=buyBundle(id,freeCoins());if(!r.ok)err(r.why==="coins"?"رصيدك ما يكفي":r.why==="level"?"يحتاج المستوى "+fmt(r.lvl):"عندك كل عناصرها");return {out:r.out}})},
+  loadoutSave(name,items){return this.run("loadout_save",{name,items},()=>{const before=P.claimedAchievements.length,l=saveLoadout(name,items);if(!l)err("عندك ٦ تنسيقات، احذف وحدة أول");const out=newOut();out.ach=P.claimedAchievements.slice(before);return {out}})},
+  loadoutUpdate(id,patch){return this.run("loadout_update",Object.assign({id},patch),()=>{if(!updateLoadout(id,patch))err("ما لقيت التنسيق");return {}})},
+  loadoutDelete(id){return this.run("loadout_delete",{id},()=>{deleteLoadout(id);return {}})},
+  loadoutEquip(id){return this.run("loadout_equip",{id},()=>{const r=equipLoadout(id,Owner.verified);if(!r)err("ما لقيت التنسيق");return {missing:r.missing}})},
+  claimLogin(){return this.run("claim_login",{},()=>{const r=claimLogin();if(!r)err("استلمت مكافأة اليوم");return r})},
+  setNick(nick){return this.run("set_nick",{nick},()=>{P.nickname=String(nick||"").trim().slice(0,16);saveProfile();return {}})},
+  settings(patch){Object.assign(P.settings,patch);saveProfile();if(!Cloud.on)return Promise.resolve({});return this.q(()=>api("settings",patch).catch(()=>({})))},
+  async redeem(input){
+    if(!Cloud.on){
+      const code=CodeService.normalize(input);
+      if(OWNER_CMDS.has(code))return Owner.verified?{ok:true,ownerCmd:code}:{ok:false,err:"invalid"};
+      const r=await CodeService.redeem(input);return r.ok?{ok:true,out:r.out,founder:!!r.def.founder,label:r.def.bundle||"",code:r.code}:r;
+    }
+    return this.q(async()=>{const r=await api("redeem",{code:input});if(r.profile)applyProfile(r.profile);return r});
+  },
+  owner(cmd,extra){return this.run("owner",Object.assign({cmd},extra||{}),()=>{
+    if(!Owner.verified)err("الكود غير صحيح أو غير متاح 🕷️");
+    const n=extra&&extra.n;
+    switch(cmd){
+      case "MAXLEVEL":return {out:ownerSetLevel(MAX_LEVEL)};
+      case "SETLEVEL":return {out:ownerSetLevel(n)};
+      case "ADDCOINS":{const o=ownerAddCoins(n);if(!o)err("الكمية غير صحيحة");return {out:o}}
+      case "ADDXP":{const o=ownerAddXp(n);if(!o)err("الكمية غير صحيحة");return {out:o}}
+      case "INFINITECOINS":ownerToggle("infinite","INFINITECOINS");return {};
+      case "XPBOOST":ownerToggle("xpBoost","XPBOOST");return {};
+      case "COINBOOST":ownerToggle("coinBoost","COINBOOST");return {};
+      case "UNLOCKALL":return {out:ownerUnlock(()=>true,"UNLOCKALL")};
+      case "SECRETALL":return {out:ownerUnlock((t,it)=>it.rar==="secret","SECRETALL")};
+      case "UNLOCKTYPE":return {out:ownerUnlock(tt=>tt===extra.t,"UNLOCK_"+String(extra.t).toUpperCase())};
+      case "ALLACHIEVEMENTS":return {out:ownerAllAchievements()};
+      case "FOUNDERONLY":return {out:ownerGrant(SECRET_CODES.MOHAMMED.rewards.filter(r=>r.id).map(r=>[r.t,r.id]),"FOUNDERONLY")};
+      case "CREATOR":return {out:ownerGrant(CREATOR_BUNDLE,"CREATOR")};
+      case "IDENTITY":return {out:ownerGrant([["badge","owner"],["title","owner"]],"OWNER_IDENTITY")};
+    }
+    err("أمر غير معروف");
+  })}
+};
+
+/* ---------- start-up: session (guest first), then the server copy of the profile ---------- */
+async function cloudStart(){
+  if(Platform.kind!=="web"||!Cloud.sb||Cloud.booting)return;
+  Cloud.booting=true;Cloud.offline=false;
+  try{
+    let {data}=await withTimeout(Cloud.sb.auth.getSession(),10000);
+    let session=data&&data.session;
+    if(!session){const r=await withTimeout(Cloud.sb.auth.signInAnonymously(),10000);if(r.error)throw r.error;session=r.data.session}
+    Cloud.user=session.user;cid=session.user.id;
+    const legacy=P.__ver?null:{nickname:P.nickname,settings:P.settings};
+    const r=await api("boot",{legacy});
+    applyProfile(r.profile);Cloud.role=r.role;Owner.verified=r.role==="owner";Owner.id=cid;Cloud.on=true;
+    if(Owner.verified&&!isOwned("badge","owner"))Act.owner("IDENTITY").then(()=>refreshPage()).catch(()=>{});
+    if(r.out&&r.out.items&&r.out.items.length)toast("👑 فزت ببطل الأسبوع الماضي!","good");
+    resumeRoom();
+  }catch(e){
+    Cloud.on=false;Cloud.offline=true;
+  }finally{Cloud.booting=false;refreshPage()}
+}
+function onAuthChange(){
+  if(!Cloud.sb)return;
+  Cloud.sb.auth.onAuthStateChange((ev,session)=>{
+    const id=session&&session.user&&session.user.id;
+    if(ev==="USER_UPDATED"&&session){Cloud.user=session.user;refreshPage();return}
+    if(id&&Cloud.user&&id!==Cloud.user.id){Cloud.user=session.user;P=normalizeProfile(null);saveProfile();setTimeout(cloudStart,0)}
+  });
+}
+/* ---------- account card (profile page) ---------- */
+function accountCard(){
+  if(Platform.kind!=="web")return null;
+  const box=h("div",{class:"card",id:"acctCard"});
+  if(!Cloud.on){
+    box.append(h("h3",{},"☁️ الحفظ السحابي"),h("p",{class:"lead"},Cloud.booting?"يتصل بالخادم…":"ما قدرت أتصل بالخادم. تقدر تلعب، بس تقدمك ما ينحفظ على حسابك لين يرجع الاتصال."),
+      Cloud.booting?null:h("button",{class:"wide",onclick:()=>cloudStart()},"حاول مرة ثانية"));
+    return box;
+  }
+  const u=Cloud.user||{},guest=!!u.is_anonymous||!u.email,pending=u.new_email;
+  const mail=h("input",{type:"email",placeholder:"إيميلك","aria-label":"الإيميل",autocomplete:"email",style:"direction:ltr;text-align:left"});
+  const here=location.origin+location.pathname;
+  const msg=h("p",{class:"hint hidden",role:"status"});
+  const say=(t,cls)=>{msg.textContent=t;msg.className=cls||"hint";msg.classList.remove("hidden")};
+  const valid=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  if(guest){
+    box.append(h("h3",{},"☁️ حسابك"),h("p",{class:"lead",style:"margin-bottom:10px"},pending?"أرسلنا رابط تأكيد لـ "+pending+". افتحه من إيميلك عشان يكتمل الربط.":"تلعب الحين كضيف، وتقدمك محفوظ على الخادم. اربط حسابك بإيميلك عشان تدخل من أي جهاز وما يضيع تقدمك."),
+      h("div",{class:"row"},mail,h("button",{class:"primary",style:"flex:none;padding:0 16px",onclick:async e=>{
+        const v=mail.value.trim();if(!valid(v)){say("اكتب إيميل صحيح","err");return}e.target.disabled=true;
+        const r=await Cloud.sb.auth.updateUser({email:v},{emailRedirectTo:here});e.target.disabled=false;
+        if(r.error)say(r.error.message.includes("already")?"هذا الإيميل مسجّل من قبل. استخدم «عندك حساب؟» تحت.":"ما قدرت أرسل الرابط: "+r.error.message,"err");
+        else say("أرسلنا رابط تأكيد لإيميلك، افتحه من نفس الجهاز عشان يكتمل الربط.","ok")}},"اربط")),msg,
+      h("button",{class:"link",onclick:()=>loginSheet()},"عندك حساب؟ ادخل بإيميلك"));
+  }else{
+    box.append(h("h3",{},"☁️ حسابك"),h("p",{class:"lead",style:"margin-bottom:10px;direction:ltr;text-align:right"},u.email),
+      h("p",{class:"hint",style:"margin-top:0"},"تقدمك ومقتنياتك محفوظة على الخادم، وتقدر تدخل من أي جهاز."),
+      h("button",{class:"wide",onclick:()=>confirmSheet("تسجيل خروج","تطلع من حسابك على هالجهاز؟ تقدر ترجع تدخل بإيميلك أي وقت.","اطلع",async()=>{await Cloud.sb.auth.signOut();Cloud.user=null;P=normalizeProfile(null);saveProfile();Owner.verified=false;await cloudStart()})},"تسجيل خروج"));
+  }
+  return box;
+}
+function loginSheet(){
+  openSheet((c,close)=>{
+    const mail=h("input",{type:"email",placeholder:"إيميلك","aria-label":"الإيميل",autocomplete:"email",style:"direction:ltr;text-align:left"});
+    const msg=h("p",{class:"hidden",role:"status"});
+    const go=async e=>{const v=mail.value.trim();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){msg.textContent="اكتب إيميل صحيح";msg.className="err";return}
+      e.target.disabled=true;const r=await Cloud.sb.auth.signInWithOtp({email:v,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});e.target.disabled=false;
+      msg.className=r.error?"err":"ok";msg.textContent=r.error?"ما لقينا حساب بهالإيميل، أو صار خطأ: "+r.error.message:"أرسلنا رابط دخول لإيميلك. افتحه من هالجهاز."};
+    c.append(h("h3",{},"ادخل بإيميلك"),h("p",{class:"lead"},"نرسل لك رابط دخول. تقدمك كضيف على هالجهاز ما ينضاف للحساب، إلا إذا ربطته قبل."),mail,
+      h("div",{class:"row",style:"margin-top:12px"},h("button",{class:"primary",onclick:go},"أرسل الرابط"),h("button",{onclick:close},"إغلاق")),msg);
+  });
+}
+
+/* ---------- matches the server runs ---------- */
+const NG={solo:null,room:null,busy:false,ch:null,poll:null,online:new Set(),connected:false,lastRowAt:0,myResult:null,skipSeq:-1};
+function setNetBusy(b){NG.busy=b;if(G&&screen==="game")renderControls()}
+async function playSteps(steps,mine){
+  for(let i=0;i<steps.length;i++){
+    const prev=G;G=steps[i];afterChange(prev,i===0&&mine?"me":"bot");render();
+    if(i<steps.length-1)await sleep(i===0&&mine?420:650);
+  }
+}
+function netMatchMeta(modeName,seat){
+  const bots=G.players.filter(p=>p.bot);
+  M={mid:G.mid,mode:modeName,seat,startedAt:Date.now(),moves:0,practice:false,done:false,minOpp:99,botLevel:bots.reduce((m,p)=>Math.max(m,p.bot||0),0),bots:bots.length};
+  lastResult=null;winBuiltMid=null;winDismissed=-1;tool="move";ghost=null;NG.myResult=null;
+}
+async function netSoloStart(rematch){
+  if(NG.busy)return;setNetBusy(true);
+  try{
+    const r=rematch?await api("solo_rematch",{id:NG.solo.id}):await api("solo_start",{bots:P.settings.botCount,level:P.settings.botLevel});
+    clearBot();mode="solo";hist=[];NG.solo={id:r.id,practice:false};
+    G=r.state;netMatchMeta("bot",0);show("game");render();
+  }catch(e){toast(e.message,"bad")}
+  finally{setNetBusy(false);if(G&&screen==="game")render()}
+}
+async function netSoloAct(a){
+  if(NG.busy)return;setNetBusy(true);
+  try{
+    const r=await api("solo_act",{id:NG.solo.id,gseq:G.seq,a});
+    if(a.t==="m")M.moves++;
+    await playSteps(r.steps,true);
+    G=r.state;
+    if(r.result){applyProfile(r.result.profile);lastResult={mid:G.mid,out:r.result.out,won:G.winner===0};M.done=true;winBuiltMid=null}
+    else if(G.winner!=null){M.done=true;lastResult={mid:G.mid,skipped:NG.solo.practice||r.practice?"practice":"short"};winBuiltMid=null}
+  }catch(e){toast(e.message,"bad");if(e.code==="stale"||e.code==="no_match"){/* the server copy wins */}}
+  finally{setNetBusy(false);if(G)render()}
+}
+let undoArmNet=0;
+async function netSoloUndo(){
+  if(NG.busy||!NG.solo)return;
+  if(!NG.solo.practice){
+    if(Date.now()-undoArmNet>3000){undoArmNet=Date.now();const b=$("btnUndo");b.textContent="اضغط مرة ثانية: المباراة تصير تدريب بدون مكافآت";b.classList.add("arm");setTimeout(()=>{if(Date.now()-undoArmNet>=2900){b.textContent="تراجع عن آخر حركة";b.classList.remove("arm")}},3000);return}
+  }
+  undoArmNet=0;setNetBusy(true);
+  try{const r=await api("solo_undo",{id:NG.solo.id});G=r.state;NG.solo.practice=true;M.practice=true;M.done=false;lastResult=null;winDismissed=-1;toast("صارت المباراة تدريب، بدون مكافآت","bad");sfx("skip")}
+  catch(e){toast(e.message,"bad")}
+  finally{const b=$("btnUndo");b.textContent="تراجع عن آخر حركة";b.classList.remove("arm");setNetBusy(false);render()}
+}
+function netSoloForfeit(){
+  if(!NG.solo||!G||G.winner!=null||NG.solo.practice)return;
+  const id=NG.solo.id;api("solo_forfeit",{id}).then(r=>{if(r&&r.profile)applyProfile(r.profile);if(r&&r.counted)toast("انحسبت خسارة لأنك طلعت من المباراة","bad")}).catch(()=>{});
+}
+/* ---- online rooms ---- */
+async function netRoomEnter(create,code){
+  onlineErr("");setBusy(true);
+  try{
+    if(!Cloud.on)await cloudStart();
+    if(!Cloud.on){onlineErr("ما قدرت أتصل بالخادم. تأكد من الإنترنت وجرّب مرة ثانية.");return}
+    const r=create?await api("room_create",{}):await api("room_join",{code});
+    openNetRoom(r.room);
+  }catch(e){onlineErr(e.message)}
+  finally{setBusy(false)}
+}
+function openNetRoom(row){
+  leaveRoom();clearBot();mode="room";NG.room=null;NG.myResult=null;G=null;M=null;roomCode=row.code;
+  try{localStorage.setItem("spider_room",row.code)}catch(e){}
+  $("lobbyCode").textContent=row.code;subscribeNetRoom(row.code);onRoomRow(row,true);renderConn();
+}
+function subscribeNetRoom(code){
+  unsubscribeNetRoom();
+  const ch=Cloud.sb.channel("room-"+code,{config:{broadcast:{self:false},presence:{key:cid}}});
+  ch.on("postgres_changes",{event:"*",schema:"public",table:"rooms",filter:"code=eq."+code},pl=>{
+    if(pl.eventType==="DELETE"){netRoomGone();return}
+    if(pl.new&&pl.new.code===code)onRoomRow(pl.new)});
+  ch.on("broadcast",{event:"emote"},msg=>onNetEmote(msg&&msg.payload));
+  ch.on("presence",{event:"sync"},()=>{NG.online=new Set(Object.keys(ch.presenceState()||{}));if(screen==="lobby")renderLobby();else if(G&&screen==="game")renderPlayers()});
+  ch.subscribe(async st=>{
+    NG.connected=connected=st==="SUBSCRIBED";renderConn();
+    if(NG.connected){try{await ch.track({id:cid})}catch(e){}refreshNetRoom()}
+  });
+  NG.ch=ch;
+  NG.poll=setInterval(()=>{if(mode==="room"&&NG.room&&(!NG.connected||Date.now()-NG.lastRowAt>8000))refreshNetRoom()},4000);
+}
+function unsubscribeNetRoom(){
+  if(NG.poll){clearInterval(NG.poll);NG.poll=null}
+  if(NG.ch){const c=NG.ch;NG.ch=null;try{c.untrack()}catch(e){}try{Cloud.sb.removeChannel(c)}catch(e){}}
+  NG.online=new Set();NG.connected=false;
+}
+async function refreshNetRoom(){
+  if(!NG.room)return;
+  try{const r=await api("room_get",{code:NG.room.code});onRoomRow(r.room)}
+  catch(e){if(e.code==="no_room")netRoomGone()}
+}
+function netRoomGone(){
+  if(mode!=="room")return;
+  unsubscribeNetRoom();NG.room=null;try{localStorage.removeItem("spider_room")}catch(e){}
+  toast("الغرفة انقفلت","bad");G=null;M=null;mode="local";show("home");
+}
+function onRoomRow(row,force){
+  if(!row||mode!=="room")return;
+  NG.lastRowAt=Date.now();
+  if(!force&&NG.room&&row.seq<=NG.room.seq)return;
+  NG.room=row;roomCode=row.code;
+  if(!(row.member_ids||[]).includes(cid)){netRoomGone();return}
+  if(row.status==="lobby"||!row.state){G=null;if(screen!=="lobby")show("lobby");else renderLobby();renderConn();return}
+  const prev=G;G=row.state;
+  const seat=G.players.findIndex(p=>p.id===cid);
+  if(!prev||prev.mid!==G.mid)netMatchMeta("online",seat);
+  const mine=G.last&&G.players[G.last.i]&&G.players[G.last.i].id===cid;
+  afterChange(prev,mine?"me":"remote");
+  if(G.winner!=null&&M&&!M.done){M.done=true;if(seat>=0)netFetchResult(G,seat)}
+  if(screen!=="game")show("game");render();
+}
+async function netFetchResult(g,seat){
+  if(g.seq-(g.s0||g.seq)<6){lastResult={mid:g.mid,skipped:"short"};winBuiltMid=null;render();return}
+  for(let i=0;i<7;i++){
+    if(NG.myResult&&NG.myResult.mid===g.mid){lastResult=NG.myResult;winBuiltMid=null;if(screen==="game")render();api("profile").then(x=>applyProfile(x.profile)).catch(()=>{});return}
+    await sleep(i?900:500);
+    try{const r=await api("profile");const np=normalizeProfile(r.profile);
+      if(np.claimedMatches.includes(g.mid)){const out=diffOut(P,np);applyProfile(r.profile);lastResult={mid:g.mid,out,won:g.winner===seat};winBuiltMid=null;if(screen==="game"&&G&&G.mid===g.mid)render();return}}catch(e){}
+  }
+}
+async function netRoomCall(action,extra){
+  if(NG.busy||!NG.room)return null;setNetBusy(true);
+  try{const r=await api(action,Object.assign({code:NG.room.code},extra||{}));
+    if(r.mine&&r.room&&r.room.state)NG.myResult={mid:r.room.state.mid,out:r.mine,won:r.room.state.winner===r.room.state.players.findIndex(p=>p.id===cid)};
+    if(r.room)onRoomRow(r.room);return r}
+  catch(e){toast(e.message,"bad");if(["stale","not_your_turn","ended","not_playing"].includes(e.code))refreshNetRoom();return null}
+  finally{setNetBusy(false);if(G&&screen==="game")render()}
+}
+const netRoomAct=a=>{if(a.t==="m"&&M)M.moves++;return netRoomCall("room_act",{gseq:G.seq,a})};
+const netRoomSkip=()=>netRoomCall("room_skip",{gseq:G.seq});
+async function netRoomLeave(){
+  const code=NG.room&&NG.room.code;unsubscribeNetRoom();NG.room=null;try{localStorage.removeItem("spider_room")}catch(e){}
+  if(code)try{await api("room_leave",{code})}catch(e){}
+}
+async function resumeRoom(){
+  let code=null;try{code=localStorage.getItem("spider_room")}catch(e){}
+  if(!code||mode==="room")return;
+  try{const r=await api("room_get",{code});if(r&&r.room){openNetRoom(r.room);toast("رجعناك لغرفتك "+code,"good")}}
+  catch(e){try{localStorage.removeItem("spider_room")}catch(_){}}
+}
+function netRoster(){
+  if(!NG.room)return [];
+  const r=NG.room,known=NG.online.size>0;
+  return r.members.map(m=>({id:m.id,nick:String(m.nick||"لاعب").slice(0,16),skin:isInt0(m.skin)?m.skin:0,host:m.id===r.host,timer:(r.settings||{}).timer||0,
+    isMe:m.id===cid,owner:!!m.owner,pub:sanPub(m.pub,!!m.owner),lt:(r.settings||{}).lt||"classic",bs:(r.settings||{}).bs||"classic",em:null,here:!known||NG.online.has(m.id)||m.id===cid}));
+}
+const isInt0=v=>Number.isInteger(v)&&v>=0&&v<SKINS.length;
+function onNetEmote(p){
+  if(!p||typeof p!=="object"||!NG.room||!G)return;
+  const m=NG.room.members.find(x=>x.id===p.from),it=findItem("emote",p.e);
+  if(!m||!it||(isOwnerItem(it)&&!m.owner)||P.settings.muteEmotes)return;
+  const seat=G.players.findIndex(x=>x.id===p.from);if(seat>=0){showBubble(seat,p.e);sfx("emote")}
+}
+/* ---- shared by every mode: one place that turns a chosen action into a move ---- */
+function playAction(a){
+  if(!canAct())return;
+  if(mode==="solo")return netSoloAct(a);
+  if(mode==="room")return netRoomAct(a);
+  commit(a.t==="m"?doMove(G,G.turn,a.to):a.t==="w"?doWall(G,G.turn,a.w):doSkip(G));
+}
+/* ---- global weekly leaderboard from the server ---- */
+let lbCache=null,lbLoading=false;
+async function loadNetLeaders(){
+  if(lbLoading)return;lbLoading=true;
+  try{lbCache=await api("leaderboard",{});lbCache.at=Date.now()}catch(e){lbCache={error:e.message}}
+  finally{lbLoading=false;if(screen==="leaders")renderLeaders()}
+}
+
 /* ================= start ================= */
 P=loadProfile();cid=P.id;
 ensureMissions();
@@ -3702,7 +4090,7 @@ cornerWeb($("heroWeb"),0,0,1,1,150,"currentColor",.8);
 renderFaq();renderSound();show("home");
 if(bootOut.items.length)setTimeout(()=>{sfx("unlock");toast("👑 فزت ببطل الأسبوع الماضي! شارتك ولقبك في حسابك","good")},600);
 Platform.ready.then(()=>{
-  if(Platform.kind==="supabase"){
+  if(Platform.kind==="web"){onAuthChange();cloudStart();
     $("onlineHint").textContent="صاحبك يفتح نفس رابط اللعبة ويدخل كود الغرفة، بدون أي حساب.";
     $("lobbyInviteHint").textContent="أرسل رابط اللعبة لصاحبك، وخله يدخل الكود هذا.";
   }
