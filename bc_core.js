@@ -79,7 +79,7 @@ function heal(st,b,v){if(!b.alive||v<=0)return;var h=Math.min(v,b.maxHp-b.hp);b.
 function damage(st,src,tgt,amt,how,x,y){
   if(!tgt.alive||amt<=0)return 0;var K=tgt.K;
   if(K.dodge&&how!=="dot"&&st.R()<K.dodge){st.events.push({t:"dodge",i:tgt.i,x:tgt.x,y:tgt.y});return 0}
-  if(src){var SK=src.K;amt*=(SK.pw||1)*(src.boost||1);
+  if(src){var SK=src.K;amt*=(SK.pw||1)*(src.boost||1)*(src.aw||1);
     if(SK.berserk)amt*=1+(1-src.hp/src.maxHp)*SK.berserk;
     if(SK.crit&&how!=="dot"&&st.R()<SK.crit){amt*=2;st.events.push({t:"crit",x:x!=null?x:tgt.x,y:y!=null?y:tgt.y})}
     if(tgt.s.freeze>0&&hasSyn(st,src.team,"shatter"))amt*=1.3;
@@ -150,7 +150,8 @@ function ability(st,b,ab){
 function grow(st,b){var K=b.K,g=K.grow,c=K.cap;b.hits++;b.lvl++;
   for(var key in g){if(key==="addAt")continue;var cur=b[key]!=null?b[key]:0;b[key]=Math.min(cur+g[key],c[key]!=null?c[key]:cur+g[key])}
   if(g.addAt&&g.addAt.indexOf(b.hits)>=0&&b.count<(c.count||6)){b.count++;st.events.push({t:"up",i:b.i,what:K.addName||"قطعة إضافية"})}
-  if(b.lvl%5===0)st.events.push({t:"lvl",i:b.i,lvl:b.lvl})}
+  if(!b.awake&&b.hits>=8&&!b.summon){b.awake=true;b.aw=1.2;b.spin=b.spin*1.12;st.events.push({t:"awake",i:b.i})}
+  else if(b.lvl%5===0)st.events.push({t:"lvl",i:b.i,lvl:b.lvl})}
 /* ===== one fixed step ===== */
 function step(st){
   if(st.over)return st;st.events=[];var B=st.balls,n=B.length,i,j,a,b,k;
