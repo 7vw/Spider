@@ -1104,9 +1104,13 @@ button:disabled .ic{width:15px;height:15px;vertical-align:-2px;margin-inline-end
 .gtile .gc-icon{width:40px;height:40px;flex:none}.gtile .gc-icon svg{width:100%;height:100%}
 .gt-t{display:flex;flex-direction:column;min-width:0}.gt-t b{font:700 15px/1.2 var(--display);direction:ltr;text-align:right}.gt-t span{font-size:11.5px;color:var(--muted)}
 .dcard .di.g{background:none;padding:0}.dcard .di.g svg{width:100%;height:100%;border-radius:12px}
-.car-dots .car-dot{flex:none!important;width:8px!important;min-width:0!important;height:8px!important;min-height:0!important;padding:0!important}.car-dots .car-dot.on{width:22px!important}
-
-.car-dots{gap:2px}.car-dots .car-dot{width:24px!important;height:24px!important;background:none!important;display:grid;place-items:center}.car-dots .car-dot::before{content:"";width:8px;height:8px;border-radius:99px;background:rgba(255,255,255,.22);transition:width .25s var(--ease),background .25s}.car-dots .car-dot.on{width:30px!important}.car-dots .car-dot.on::before{width:22px;background:var(--primary)}.car-dots .car-dot::after{display:none}
+.car-dots{gap:0;margin-top:2px;max-width:100%;overflow-x:auto;scrollbar-width:none;justify-content:safe center}
+.car-dots::-webkit-scrollbar{display:none}
+.car-dots .car-dot{flex:none!important;width:44px!important;min-width:44px!important;height:44px!important;min-height:44px!important;padding:0!important;background:none!important;display:grid;place-items:center}
+.car-dots .car-dot::before{content:"";width:8px;height:8px;border-radius:99px;background:rgba(255,255,255,.28);transition:width .25s var(--ease),background .25s}
+.car-dots .car-dot.on{width:44px!important}
+.car-dots .car-dot.on::before{width:18px;background:var(--primary)}
+.car-dots .car-dot::after{display:none}
 
 /* ===================== install as an app ===================== */
 .inst-card{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:8px;border-radius:var(--rad-lg);background:linear-gradient(100deg,rgba(230,41,72,.16),rgba(141,101,246,.16)),var(--surface);border:1px solid rgba(230,41,72,.35)}

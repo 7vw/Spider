@@ -3,8 +3,8 @@
 #mg .pc.turn{box-shadow:0 0 0 1.5px var(--tc,var(--primary)),0 10px 26px -14px var(--tc,var(--primary))}
 .mg-board{margin:10px auto 0;max-width:520px;width:100%}
 .mgsvg{width:100%;height:auto;display:block;background:radial-gradient(circle at 50% 0%,rgba(141,101,246,.14),transparent 70%),var(--surface);border:1px solid var(--line);border-radius:var(--rad-lg);touch-action:manipulation}
-.wg .hit{fill:rgba(255,255,255,.04);cursor:pointer;transition:fill .15s}.wg .hit:hover,.wg .hit:focus,.wg .hit:focus-visible{fill:rgba(230,184,92,.42);outline:2px solid #E6B85C;outline-offset:1px}
-@media (hover:none){.wg .hit{fill:rgba(255,255,255,.07)}}
+.wg .hit{fill:rgba(255,255,255,.13);cursor:pointer;transition:fill .15s}.wg .hit:hover,.wg .hit:focus,.wg .hit:focus-visible{fill:rgba(230,184,92,.42);outline:2px solid #E6B85C;outline-offset:1px}
+@media (hover:none){.wg .hit{fill:rgba(255,255,255,.18)}}
 .wg line{filter:drop-shadow(0 0 1.4px currentColor)}.wg .lastln{animation:lastln 1s ease-in-out 2}
 @keyframes lastln{50%{stroke-width:2}}
 .xo{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;aspect-ratio:1;max-width:360px;margin:0 auto}
