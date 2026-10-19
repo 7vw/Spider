@@ -235,6 +235,7 @@ function step(st){
   return st;
 }
 function run(cfg){var st=create(cfg),guard=0;while(!st.over&&guard++<60*600)step(st);return st}
-return {KINDS:KINDS,ORDER:ORDER,def:def,create:create,step:step,run:run,parts:parts,dsin:dsin,dcos:dcos,DT:DT,TAU:TAU,SYN:SYN,GROUPS:{weapon:"أسلحة",nature:"طبيعة",power:"قوى خارقة",creature:"مخلوقات",tech:"تقنية",legend:"أسطورية"}};
+function teamShare(st,team){var s=0;for(var i=0;i<st.balls.length;i++){var b=st.balls[i];if(b.summon||b.team!==team)continue;s+=b.alive?b.hp/b.maxHp:0}return s}
+return {KINDS:KINDS,ORDER:ORDER,def:def,create:create,step:step,run:run,teamShare:teamShare,parts:parts,dsin:dsin,dcos:dcos,DT:DT,TAU:TAU,SYN:SYN,GROUPS:{weapon:"أسلحة",nature:"طبيعة",power:"قوى خارقة",creature:"مخلوقات",tech:"تقنية",legend:"أسطورية"}};
 })();
 if(typeof module!=="undefined")module.exports=BC;
