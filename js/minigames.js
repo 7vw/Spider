@@ -1,3 +1,10 @@
+/* Game rules for every title except WEBBOUND.
+   Loaded as a normal script (no eval). The shell sets globalThis.SPIDER_GAMES = {clock, newMid} first.
+   BC stays a global looked up when Ball Clash calls it, after bc_core.js has loaded. */
+(function (SP) {
+"use strict";
+const clock = SP.clock, newMid = SP.newMid;
+if (!clock || typeof newMid !== "function") throw new Error("games");
 /* ================= more games (shared by the browser and the server) =================
    Every game follows the same shape: new(players,opts) → state, legal(g,seat,a) → error text or null,
    apply(g,seat,a) → new state, bot(g) → action, skip(g) → new state. WEBBOUND keeps its own functions. */
@@ -421,4 +428,5 @@ const BCR={hidden:true,simultaneous:true,
   skip(g0,pv){return {g:g0,privs:pv}},bot(){return null}
 };
 GAME_RULES.ballclash=BCR;MAX_PLAYERS.ballclash=4;MIN_PLAYERS.ballclash=2;
-globalThis.__spiderGames={WG,XO,WW,WL,DM,BF,FH,WR,NST,NW,BCR,GAME_RULES,MIN_PLAYERS,MAX_PLAYERS,WW_CATS};
+SP.games={WG,XO,WW,WL,DM,BF,FH,WR,NST,NW,BCR,GAME_RULES,MIN_PLAYERS,MAX_PLAYERS,WW_CATS};
+})(globalThis.SPIDER_GAMES);

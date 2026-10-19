@@ -795,13 +795,11 @@ let GAME_RULES={};
 let MIN_PLAYERS={webbound:2};
 let MAX_PLAYERS={webbound:4};
 let WW_CATS={};
-function installGames(src){
-  eval(src);
-  const ex=globalThis.__spiderGames;
+function takeGames(){
+  const ex=globalThis.SPIDER_GAMES&&globalThis.SPIDER_GAMES.games;
   if(!ex||!ex.GAME_RULES)throw new Error("games");
   WG=ex.WG;XO=ex.XO;WW=ex.WW;WL=ex.WL;DM=ex.DM;BF=ex.BF;FH=ex.FH;WR=ex.WR;NST=ex.NST;NW=ex.NW;BCR=ex.BCR;
   GAME_RULES=ex.GAME_RULES;MIN_PLAYERS=ex.MIN_PLAYERS;MAX_PLAYERS=ex.MAX_PLAYERS;WW_CATS=ex.WW_CATS;
-  try{delete globalThis.__spiderGames}catch(e){}
 }
 let gamesCssP=null,gamesP=null;
 function ensureGamesCss(){
@@ -820,9 +818,16 @@ function ensureGames(){
   if(gamesP)return gamesP;
   gamesP=(async()=>{
     await ensureGamesCss();
-    const res=await fetch("js/minigames.js?v=3");
-    if(!res.ok)throw new Error("games");
-    installGames(await res.text());
+    await new Promise((ok,bad)=>{
+      if(globalThis.SPIDER_GAMES&&globalThis.SPIDER_GAMES.games){ok();return}
+      globalThis.SPIDER_GAMES={clock, newMid};
+      const s=document.createElement("script");
+      s.src="js/minigames.js?v=4";
+      s.onload=()=>ok();
+      s.onerror=()=>bad(new Error("games"));
+      document.head.append(s);
+    });
+    takeGames();
   })().catch(e=>{gamesP=null;throw e});
   return gamesP;
 }
