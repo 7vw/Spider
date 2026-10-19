@@ -245,8 +245,10 @@ function showWin(){
   var w=$("bcWin");if(!w)return;if(S.tour&&S.tour.live){var sv=S.mode;S.mode="tour";statsAdd(st);S.mode=sv;tourAfterLive(st);return}statsAdd(st);w.textContent="";w.classList.remove("hidden");
   var playing=S.mode!=="custom",title=st.draw?"تعادل!":playing?(st.winner===0?"فاز فريقك!":"فاز "+st.teams[st.winner].name):"فاز "+st.teams[st.winner].name+"!",mvp=st.balls.slice().sort(function(a,b){return b.dealt-a.dealt})[0];
   var tbl=h("div",{class:"bc-stats"});st.balls.forEach(function(b){tbl.append(h("div",{class:"bc-sr",style:"--tc:"+st.teams[b.team].color},previewCanvas(b.kind,34),h("b",{},b.K.ar),h("span",{},"ضرر "+fmt(Math.round(b.dealt))),h("span",{},"ضربات "+fmt(b.hits)),h("span",{class:b.alive?"ok":"ko"},b.alive?"صامد":"خرج")))});
-  w.append(h("div",{class:"card"},h("div",{class:"win",style:"color:"+(st.draw?"#fff":st.teams[st.winner].color)},title),
-    h("p",{class:"lead"},(st.timeout?"خلص الوقت، وفاز الأكثر صحة. ":"")+"أفضل كورة: "+mvp.K.ar+" بـ"+fmt(Math.round(mvp.dealt))+" ضرر"),tbl,
+  var youWon=!st.draw&&playing&&st.winner===0,kicker=st.draw?"تعادل":!playing?"انتهت":youWon?"فوز":"خسارة";
+  var lead=(st.draw&&st.timeout?"خلص الوقت والصحة متعادلة. ":st.timeout?"خلص الوقت، وفاز الأكثر صحة. ":"")+"أفضل كورة: "+mvp.K.ar+" بـ"+fmt(Math.round(mvp.dealt))+" ضرر";
+  w.append(h("div",{class:"card"},h("div",{class:"result-kicker"+(st.draw||!playing?"":youWon?" is-win":" is-loss")},kicker),h("div",{class:"win",style:"color:"+(st.draw?"#fff":st.teams[st.winner].color)},title),
+    h("p",{class:"lead"},lead),tbl,
     h("div",{id:"bcReward"},S.srv?h("div",{class:"skel",style:"height:40px"}):h("p",{class:"hint"},S.mode==="custom"?"المعركة المخصصة للمشاهدة، بدون مكافآت.":"معركة تدريب بدون مكافآت.")),
     h("div",{class:"row",style:"margin-top:10px"},h("button",{class:"primary",onclick:function(){startBattle(true)}},"معركة ثانية"),h("button",{onclick:function(){stop();renderPicker()}},"غيّر الكور")),
     h("button",{class:"wide",style:"margin-top:8px",onclick:function(){stop();SP.openGame("ballclash")}},"رجوع")));
@@ -282,12 +284,13 @@ function tourMatches(r){var T=S.tour,list=T.rounds[r],m=[];for(var i=0;i<list.le
 function tourPlay(r){
   var T=S.tour,ms=tourMatches(r),res=T.res[r]=T.res[r]||[],live=-1;
   ms.forEach(function(m,mi){if(res[mi]!=null)return;var a=T.ent[m[0]],b=T.ent[m[1]];if(a.me||b.me){live=mi;return}
-    var st=BC.run({seed:(T.seed+r*1009+mi*7919)>>>0,teams:[{balls:a.balls},{balls:b.balls}]});res[mi]=st.draw?(st.balls[0].hp>=st.balls[1].hp?m[0]:m[1]):(st.winner===0?m[0]:m[1])});
+    var st=BC.run({seed:(T.seed+r*1009+mi*7919)>>>0,teams:[{balls:a.balls},{balls:b.balls}]});res[mi]=tourPick(st,m)});
   if(live>=0){var m=ms[live].slice();if(T.ent[m[1]].me)m=[m[1],m[0]];S.tour.live={r:r,mi:live,m:m};S.teams=[{name:T.ent[m[0]].me?"مشاركك":T.ent[m[0]].name,color:"#E62948",size:T.ent[m[0]].balls.length,slots:T.ent[m[0]].balls.slice()},{name:T.ent[m[1]].me?"مشاركك":T.ent[m[1]].name,color:"#8D65F6",size:T.ent[m[1]].balls.length,slots:T.ent[m[1]].balls.slice()}];
     S.seed=(T.seed+r*1009+live*7919)>>>0;S.mode="tour-watch";startBattle(false);return}
   tourAdvance(r);
 }
-function tourAfterLive(st){var T=S.tour,L=T.live;T.live=null;S.mode="tour";var winIdx=st.draw?(st.balls[0].hp>=st.balls[1].hp?L.m[0]:L.m[1]):(st.winner===0?L.m[0]:L.m[1]);T.res[L.r][L.mi]=winIdx;stop();tourPlay(L.r)}
+function tourPick(st,m){if(!st.draw)return st.winner===0?m[0]:m[1];var a=BC.teamShare(st,0),b=BC.teamShare(st,1);return b>a+1e-9?m[1]:m[0]}
+function tourAfterLive(st){var T=S.tour,L=T.live;T.live=null;S.mode="tour";T.res[L.r][L.mi]=tourPick(st,L.m);stop();tourPlay(L.r)}
 function tourAdvance(r){var T=S.tour,res=T.res[r];if(res.length<tourMatches(r).length||res.some(function(x){return x==null}))return tourBracket();
   if(res.length===1){T.champ=res[0];T.stage="done";var s=statsGet();s.tours=(s.tours||0)+1;if(T.ent[res[0]].me)s.tourWins=(s.tourWins||0)+1;try{localStorage.setItem("bc_stats",JSON.stringify(s))}catch(e){}
     SP.sfx(T.ent[res[0]].me?"unlock":"bad");return tourBracket()}

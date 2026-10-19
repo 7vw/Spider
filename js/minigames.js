@@ -64,7 +64,7 @@ const XO={
     if(g.order[seat].length>=3){const old=g.order[seat].shift();g.cells[old]=0}
     g.cells[a.k]=seat+1;g.order[seat].push(a.k);g.mv[seat]=(g.mv[seat]||0)+1;g.seq++;g.last={i:seat,a:{t:"p",k:a.k}};
     if(XO.wins(g,seat)){g.winner=seat;gmScore(g)}else g.turn=1-seat;
-    if(g.seq-g.s0>=120&&g.winner==null){g.winner=g.turn;gmScore(g)}   /* safety: a very long game ends */
+    if(g.seq-g.s0>=120&&g.winner==null){g.winner=g.turn;g.long=true;gmScore(g)}   /* safety: a very long game ends on the player about to move */
     return g;
   },
   skip(g0){const g=dupe(g0);g.turn=1-g.turn;g.seq++;g.last={i:g0.turn,a:{t:"s"}};return g},
@@ -158,7 +158,7 @@ const WL={
     const eat=!!s.food&&nr===s.food[0]&&nc===s.food[1],body=eat?s.body:s.body.slice(0,-1);
     if(body.some(([r,c])=>r===nr&&c===nc)){s.alive=false;return s}
     s.body=[[nr,nc]].concat(body);
-    if(eat){s.score++;s.food=WL.place(s);if(!s.food)s.alive=false}
+    if(eat){s.score++;s.food=WL.place(s);if(!s.food){s.alive=false;s.clear=true}}
     return s},
   replay(seed,inputs,maxTicks){
     const s=WL.start(seed),lim=Math.min(maxTicks||20000,20000);let k=0;

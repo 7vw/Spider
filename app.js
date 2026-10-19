@@ -808,7 +808,7 @@ function ensureGamesCss(){
     let link=document.querySelector("link[data-games-css]");
     if(link&&link.rel==="stylesheet"){if(link.sheet){ok();return}link.addEventListener("load",()=>ok(),{once:true});link.addEventListener("error",()=>ok(),{once:true});return}
     link=document.createElement("link");
-    link.rel="stylesheet";link.href="games.css?v=3";link.setAttribute("data-games-css","");
+    link.rel="stylesheet";link.href="games.css?v=4";link.setAttribute("data-games-css","");
     link.onload=()=>ok();link.onerror=()=>ok();
     document.head.append(link);
   });
@@ -822,7 +822,7 @@ function ensureGames(){
       if(globalThis.SPIDER_GAMES&&globalThis.SPIDER_GAMES.games){ok();return}
       globalThis.SPIDER_GAMES={clock, newMid};
       const s=document.createElement("script");
-      s.src="js/minigames.js?v=4";
+      s.src="js/minigames.js?v=5";
       s.onload=()=>ok();
       s.onerror=()=>bad(new Error("games"));
       document.head.append(s);
@@ -2296,12 +2296,16 @@ function wbIconSvg(){
 /* ---------- navigation helpers ---------- */
 let wbMode="online",gameCat="all";
 async function openGame(id,mode){
-  if(id!=="webbound"){try{await ensureGames()}catch(e){toast("تعذّر تحميل اللعبة، تحقق من الاتصال وحاول مرة ثانية","bad");return}}
-  if(gameById(id).id!==curGame){curGame=gameById(id).id;roomsCache=null;roomsAt=0}
-  try{localStorage.setItem("spider_last",gameById(id).id)}catch(e){}
-  if(mode&&MODES[mode])wbMode=mode;
-  show("webbound");
-  if(mode==="help"){const hb=curGame==="webbound"?$("helpBox"):$("gmRules");if(hb.tagName==="DETAILS")hb.open=true;setTimeout(()=>hb.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}),50)}
+  const need=id!=="webbound"&&!(globalThis.SPIDER_GAMES&&globalThis.SPIDER_GAMES.games);
+  if(need){document.documentElement.classList.add("app-loading");document.documentElement.setAttribute("aria-busy","true")}
+  try{
+    if(id!=="webbound"){try{await ensureGames()}catch(e){toast("تعذّر تحميل اللعبة، تحقق من الاتصال وحاول مرة ثانية","bad");return}}
+    if(gameById(id).id!==curGame){curGame=gameById(id).id;roomsCache=null;roomsAt=0}
+    try{localStorage.setItem("spider_last",gameById(id).id)}catch(e){}
+    if(mode&&MODES[mode])wbMode=mode;
+    show("webbound");
+    if(mode==="help"){const hb=curGame==="webbound"?$("helpBox"):$("gmRules");if(hb.tagName==="DETAILS")hb.open=true;setTimeout(()=>hb.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}),50)}
+  }finally{if(need){document.documentElement.classList.remove("app-loading");document.documentElement.removeAttribute("aria-busy")}}
 }
 /* ---------- home ---------- */
 function rewardBit(r){
@@ -2414,8 +2418,22 @@ function renderGames(){
   for(const [id,name] of [["all","الكل"],...used.map(c=>[c,GAME_CATS[c]])]){
     const on=gameCat===id;cats.append(h("button",{class:"chip"+(on?" on":""),role:"tab","aria-selected":String(on),onclick:()=>{gameCat=id;renderGames()}},name));
   }
+  const feat=$("gameFeat");
+  if(feat){
+    feat.textContent="";
+    if(gameCat==="all"){
+      const row=h("div",{class:"hscroll game-feat"});
+      for(const id of ["webbound","ballclash","wordweb","webline"]){
+        const fg=GAMES.find(x=>x.id===id);if(!fg)continue;
+        row.append(h("button",{class:"gtile feat-tile",onclick:()=>openGame(fg.id)},htmlEl("span","gc-icon",iconSvg(fg.id)),h("span",{class:"gt-t"},h("b",{},fg.name),h("span",{},fg.nameAr))));
+      }
+      feat.append(h("div",{class:"sec-title"},h("h2",{},"مختارة")),row);
+    }
+  }
   const list=$("gameList");list.textContent="";
-  for(const g of GAMES.filter(g=>gameCat==="all"||g.category===gameCat))list.append(gameCard(g));
+  const shown=GAMES.filter(g=>gameCat==="all"||g.category===gameCat);
+  if(!shown.length)list.append(h("p",{class:"hint"},"ما فيه ألعاب في هالتصنيف."));
+  for(const g of shown)list.append(gameCard(g));
 }
 
 /* ---------- WEBBOUND entry ---------- */
@@ -2450,8 +2468,12 @@ function renderWebbound(){
 $("wbBack").addEventListener("click",()=>show("games"));
 $("wbModes").addEventListener("keydown",e=>{
   if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return;
-  const ms=["online","bot","local"],i=ms.indexOf(wbMode),d=e.key==="ArrowLeft"?1:-1;
-  wbMode=ms[(i+d+ms.length)%ms.length];renderWebbound();$("wbModes").querySelector('[data-mode="'+wbMode+'"]').focus();
+  const btns=[...$("wbModes").querySelectorAll("button")].filter(b=>!b.classList.contains("hidden"));
+  if(!btns.length)return;
+  e.preventDefault();
+  let i=btns.findIndex(b=>b.dataset.mode===wbMode);if(i<0)i=0;
+  const d=e.key==="ArrowLeft"?1:-1,n=btns[(i+d+btns.length)%btns.length];
+  wbMode=n.dataset.mode;renderWebbound();const f=$("wbModes").querySelector('[data-mode="'+wbMode+'"]');if(f)f.focus();
 });
 $("homeAv").addEventListener("click",()=>show("profile"));
 $("homeCoins").addEventListener("click",()=>show("store"));
@@ -3568,7 +3590,12 @@ const stepsTxt=d=>d>=99?"الطريق مسكّر":d===1?"باقي خطوة":d===
 let G=null,mode="local",tool="move",ghost=null,hist=[],winDismissed=-1;
 let cid=P.id;
 let room=null,roomCode="",isCreator=false,peers=[],unsubs=[],connected=false;
-let botTimer=null,botSeq=-1,seenSeq=-1,seenAt=0,autoSkipSeq=-1,awayKey="",awaySince=0;
+let botTimer=null,botSeq=-1,seenSeq=-1,seenAt=0,seenKey="",autoSkipSeq=-1,awayKey="",awaySince=0;
+function stampSeen(){
+  if(!G)return;
+  const k=(G.mid||"")+"|"+G.seq+"|"+(G.rnd||0);
+  if(k!==seenKey){seenKey=k;seenSeq=G.seq;seenAt=Date.now()}
+}
 let M=null,lastResult=null,winBuiltMid=null;
 let emoteState=null,emoN=0,emoTimes=[],bubbles={},lastEmo={},trailSeq=-1,GLOW="url(#glow)";
 const isOwnerId=id=>!!Owner.ownerId&&id===Owner.ownerId;
@@ -3727,7 +3754,7 @@ function mySeat(){if(!G)return -1;if(mode==="local")return G.turn;return G.playe
 function canAct(){
   if(G&&G.game==="ballclash"){const s=mySeat();return G.winner==null&&!NG.busy&&s>=0&&G.phase==="pick"}
   if(G&&G.game==="nightweb"){const s=mySeat();return G.winner==null&&!NG.busy&&s>=0&&G.alive[s]}
-  if(G&&G.game==="wordweb"){if(G.winner!=null||NG.busy)return false;const s=mode==="solo"?0:mySeat();if(s<0)return false;const p=G.prog[s];return !p.done&&!p.out}
+  if(G&&G.game==="wordweb"){if(G.winner!=null||NG.busy)return false;const s=mode==="solo"?0:mode==="local"?wwSeat():mySeat();if(s<0)return false;const p=G.prog[s];return !p.done&&!p.out}
   if(!G||G.winner!=null)return false;
   if((mode==="solo"||mode==="room")&&NG.busy)return false;
   if(mode==="solo")return G.turn===0&&!G.players[0].bot;
@@ -3769,9 +3796,11 @@ function scheduleBot(){
     botTimer=null;
     if(mode!=="local"||!G||G.seq!==botSeq||G.winner!=null||!G.players[G.turn].bot)return;
     const act=botPlay(G);
-    if(!act)commit(doSkip(G),"bot");
-    else if(act.t==="m")commit(doMove(G,G.turn,act.to),"bot");
-    else commit(doWall(G,G.turn,act.w),"bot");
+    const moveOk=a=>a&&a.to&&validMoves(G,G.turn).some(p=>p[0]===a.to[0]&&p[1]===a.to[1]);
+    if(act&&act.t==="m"&&moveOk(act))commit(doMove(G,G.turn,act.to),"bot");
+    else if(act&&act.t==="w"&&act.w&&!wallError(G,act.w))commit(doWall(G,G.turn,act.w),"bot");
+    else if(stuck(G,G.turn))commit(doSkip(G),"bot");
+    else clearBot();
   },600+Math.random()*450);
 }
 let undoArm=0;
@@ -3779,6 +3808,7 @@ function resetUndoBtn(){const b=$("btnUndo");b.textContent="تراجع عن آخ
 function undo(){
   if(mode==="solo")return netSoloUndo();
   if(mode!=="local"||!hist.length)return;
+  if(M&&M.done&&!M.practice){toast("المباراة انحسبت خلاص، والتراجع ما يلغي المكافأة","bad");return}
   if(M&&M.mode==="bot"&&!M.practice&&!M.done){
     if(Date.now()-undoArm>3000){undoArm=Date.now();const b=$("btnUndo");b.textContent="اضغط مرة ثانية: المباراة تصير تدريب بدون مكافآت";b.classList.add("arm");
       setTimeout(()=>{if(Date.now()-undoArm>=2900)resetUndoBtn()},3000);return}
@@ -3999,7 +4029,8 @@ function renderControls(){
   $("endRow").classList.toggle("hidden",!(over&&winDismissed===G.seq));
   $("btnAgain2").classList.toggle("hidden",!(mode==="local"||mode==="solo"||amHost()));
   $("btnAgain2").textContent=againLabel();
-  $("btnUndo").classList.toggle("hidden",!((mode==="local"&&hist.length>0&&(over||!G.players[G.turn].bot))||(mode==="solo"&&G.seq>(G.s0||G.seq)&&(over||!G.players[G.turn].bot))));
+  const recorded=!!(M&&M.done&&!M.practice);
+  $("btnUndo").classList.toggle("hidden",!!(recorded||!((mode==="local"&&hist.length>0&&(over||!G.players[G.turn].bot))||(mode==="solo"&&G.seq>(G.s0||G.seq)&&(over||!G.players[G.turn].bot)))));
   $("btnPass").classList.toggle("hidden",!(can&&stuck(G,G.turn)));
   updateSkip();
 }
@@ -4078,6 +4109,7 @@ function renderWin(){
     }else{fxs.classList.add("hidden");sp.classList.remove("hidden");sp.style.color=sk.c;sp.classList.remove("drop");void sp.getBoundingClientRect();sp.classList.add("drop")}
   }
   const seat=mySeatForResult(),counted=M&&M.mode!=="local"&&seat>=0;
+  paintKicker($("winKicker"),counted&&i===seat,counted?seat:-1);
   $("winText").textContent=counted?(i===seat?"فزت!":"خسرت"):"فاز "+p.nick+"!";
   $("winSub").textContent=counted&&i!==seat?"فاز "+p.nick+". تجيها المرة الجاية.":"";
   const wpub=pubFor(p),who=$("winWho");who.textContent="";
@@ -4129,10 +4161,17 @@ $("btnHint").addEventListener("click",()=>{
   else{hintCell=null;tool="wall";ghost=[a.w[0],a.w[1],a.w[2]];toast("التلميح: هذا أفضل مكان لخيط، اضغط «ثبّت الخيط»","good")}
   sfx("move");render();
 });
+function paintKicker(el,won,seat){
+  if(!el)return;
+  el.classList.remove("is-win","is-loss");
+  if(seat<0){el.textContent="انتهت";return}
+  el.textContent=won?"فوز":"خسارة";
+  el.classList.add(won?"is-win":"is-loss");
+}
 function render(){
+  if(G)stampSeen();
   if(G&&G.game){if(screen==="mg")mgRender();return}
   if(!G)return;
-  if(G.seq!==seenSeq){seenSeq=G.seq;seenAt=Date.now()}
   trackMatch();
   renderPlayers();renderStatus();renderBoard();renderControls();renderWin();renderConn();scheduleBot();tick();
   try{drawOwnerFx()}catch(e){}
@@ -4171,6 +4210,7 @@ $("btnMuteEmo").addEventListener("click",()=>{P.settings.muteEmotes=!P.settings.
 /* ================= timers ================= */
 let lbTick=0;
 function tick(){
+  if(G)stampSeen();
   if(screen==="leaders"&&Date.now()-lbTick>30000){lbTick=Date.now();const cd=document.querySelector("#lbCountdown .lb-cd");if(cd)cd.replaceChildren(ic("clock"),"ينتهي الأسبوع بعد "+leftText(weekEndsAt()-clock.now()))}
   if(G&&G.game&&screen==="mg"){
     if(G.winner!=null){const lr=lastResult&&lastResult.mid===G.mid?lastResult:null,key=G.mid+"|"+(lr?(lr.out?"out":lr.skipped||""):"wait");if($("mgRewards").dataset.k!==key)renderMgWin()}
@@ -4239,6 +4279,7 @@ $("btnCopy").onclick=async()=>{
   setTimeout(()=>{$("btnCopy").textContent="انسخ رسالة الدعوة"},2200);
 };
 function goHome(){
+  wwStop();
   if(mode==="solo")netSoloForfeit();
   if(mode==="room")netRoomLeave();
   NG.solo=null;
@@ -4246,6 +4287,7 @@ function goHome(){
   clearBot();$("winBox").classList.add("hidden");
   const wasOnline=mode==="online";
   G=null;M=null;hist=[];ghost=null;tool="move";mode="local";boardKey="";L=null;winBuiltMid=null;bubbles={};lastEmo={};emoteState=null;
+  NG.localPriv=null;NG.wwSecret=null;NG.wwMine=null;NG.ww=null;NG.hv=null;NG.wwFocus=null;
   $("emoteBox").classList.add("hidden");$("btnEmote").setAttribute("aria-expanded","false");
   if(wasOnline)leaveRoom();
   show("home");
@@ -4748,6 +4790,9 @@ function onNetEmote(p){
 /* ---- shared by every mode: one place that turns a chosen action into a move ---- */
 function playAction(a){
   if(!canAct())return;
+  if(a&&a.t==="m"){if(!a.to||!validMoves(G,G.turn).some(p=>p[0]===a.to[0]&&p[1]===a.to[1])){sfx("bad");return}}
+  else if(a&&a.t==="w"){if(!a.w||wallError(G,a.w)){sfx("bad");return}}
+  else if(a&&a.t==="s"){if(!stuck(G,G.turn)){sfx("bad");return}}
   if(mode==="solo")return netSoloAct(a);
   if(mode==="room")return netRoomAct(a);
   commit(a.t==="m"?doMove(G,G.turn,a.to):a.t==="w"?doWall(G,G.turn,a.w):doSkip(G));
@@ -4819,7 +4864,7 @@ function mgRender(){
   else if(G.winner!=null){const w=G.players[G.winner];t=(w.id===cid||(mode==="local"&&hasBots()&&!w.bot))?"فزت!":"فاز "+w.nick}
   else if(G.game==="ballclash"){const s=mySeat();t=G.phase==="battle"?"المعركة شغّالة":G.pick==="draft"?(G.turn===s?"دورك تختار كورة":"دور "+G.players[G.turn].nick+" يختار"):s>=0&&G.locked[s]?"قفلت تشكيلتك، ننتظر الباقين":"اختر "+fmt(G.size)+" كور وقفّل بالسر"}
   else if(G.game==="nightweb"){const s=mySeat();t=s<0?"تتفرّج":!G.alive[s]?"طلعت من اللعبة، تقدر تتفرّج":G.phase==="night"?"الليل "+fmt(G.day)+": أصحاب الأدوار يختارون بالسر":"النهار "+fmt(G.day)+": تناقشوا وصوّتوا"}
-  else if(G.game==="wordweb"){const s=mode==="solo"?0:mySeat(),q=s>=0?G.prog[s]:null;t=!q?"تتفرّج على المباراة":q.out?"انقطع خيطك، ننتظر الباقين…":"خمّن حرف من الكيبورد"}
+  else if(G.game==="wordweb"){const s=mode==="solo"?0:mode==="local"?wwSeat():mySeat(),q=s>=0?G.prog[s]:null;t=!q?"تتفرّج على المباراة":q.out?"انقطع خيطك، ننتظر الباقين…":(mode==="local"&&!hasBots()?"دور "+G.players[s].nick+" — خمّن حرف":"خمّن حرف من الكيبورد")}
   else if(mode==="local"&&!hasBots())t="دور "+p.nick+(G.game==="webwar"?": مد خيطك":G.game==="webgrid"?": ارسم خيط":G.game==="dama"?": حرّك قطعة":": اختر خانة");
   else if(p.bot)t=p.nick+" يفكّر…";
   else t=canAct()?(G.game==="bluff"?"دورك! زايد، أو قل كذّاب":G.game==="flyhunt"?"دورك! اضرب خانة في شبكة خصمك":G.game==="webwar"?"دورك! مد خيطك لخانة جنب أرضك":G.game==="webgrid"?"دورك! ارسم خيط بين نقطتين":G.game==="dama"?(dmHasCapture(G,G.turn)?"دورك! عندك أكل إجباري":"دورك! حرّك قطعة"):"دورك! اختر خانة"):"ننتظر "+p.nick+" يلعب…";
@@ -4834,10 +4879,10 @@ function renderWG(bd){
   for(let r=0;r<R;r++)for(let c=0;c<C;c++){const o=G.b[r*C+c];if(o)s+=`<rect x="${O+c*U+.7}" y="${O+r*U+.7}" width="${U-1.4}" height="${U-1.4}" rx="1.4" fill="${seatColor(o-1)}" opacity=".34"/>`}
   for(let r=0;r<=R;r++)for(let c=0;c<C;c++){const o=G.h[r*C+c];
     if(o)s+=`<line x1="${O+c*U}" y1="${O+r*U}" x2="${O+(c+1)*U}" y2="${O+r*U}" stroke="${seatColor(o-1)}" stroke-width="1.15" stroke-linecap="round" class="${L&&L.o==="h"&&L.r===r&&L.c===c?"lastln":""}"/>`;
-    else if(act)s+=`<rect class="hit" data-o="h" data-r="${r}" data-c="${c}" x="${O+c*U+1.4}" y="${O+r*U-1.7}" width="${U-2.8}" height="3.4" rx="1.6"><title>خيط أفقي</title></rect>`}
+    else if(act)s+=`<rect class="hit" role="button" tabindex="0" data-o="h" data-r="${r}" data-c="${c}" x="${O+c*U+1}" y="${O+r*U-4}" width="${U-2}" height="8" rx="2"><title>خيط أفقي</title></rect>`}
   for(let r=0;r<R;r++)for(let c=0;c<=C;c++){const o=G.v[r*(C+1)+c];
     if(o)s+=`<line x1="${O+c*U}" y1="${O+r*U}" x2="${O+c*U}" y2="${O+(r+1)*U}" stroke="${seatColor(o-1)}" stroke-width="1.15" stroke-linecap="round" class="${L&&L.o==="v"&&L.r===r&&L.c===c?"lastln":""}"/>`;
-    else if(act)s+=`<rect class="hit" data-o="v" data-r="${r}" data-c="${c}" x="${O+c*U-1.7}" y="${O+r*U+1.4}" width="3.4" height="${U-2.8}" rx="1.6"><title>خيط عمودي</title></rect>`}
+    else if(act)s+=`<rect class="hit" role="button" tabindex="0" data-o="v" data-r="${r}" data-c="${c}" x="${O+c*U-4}" y="${O+r*U+1}" width="8" height="${U-2}" rx="2"><title>خيط عمودي</title></rect>`}
   const hA=hintOn();if(hA&&hA.t==="l"){const x1=O+hA.c*U,y1=O+hA.r*U,x2=hA.o==="h"?x1+U:x1,y2=hA.o==="h"?y1:y1+U;s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#E6B85C" stroke-width="1.6" stroke-dasharray="1.2 .8" class="hintln"/>`}
   for(let r=0;r<=R;r++)for(let c=0;c<=C;c++)s+=`<circle cx="${O+c*U}" cy="${O+r*U}" r=".95" fill="#E8EAF4"/>`;
   bd.innerHTML=s+"</svg>";
@@ -4858,7 +4903,7 @@ function spiderMeter(w,max,out){
 }
 function renderWW(bd){
   if(!NG.ww||NG.wwMid!==G.mid)wwFetch();
-  const me=mode==="solo"?0:mySeat(),pr=me>=0?G.prog[me]:{wrong:0,found:0},v=NG.ww&&NG.wwMid===G.mid?NG.ww:null;
+  const me=mode==="solo"?0:mode==="local"?wwSeat():mySeat(),pr=me>=0?G.prog[me]:{wrong:0,found:0},v=NG.ww&&NG.wwMid===G.mid?NG.ww:null;
   const letters=G.reveal&&G.winner!=null?[...G.reveal]:(v?v.letters:Array(G.len).fill(null));
   if(v&&v.secret&&G.winner==null)bd.append(h("div",{class:"own-peek"},h("b",{},"الكلمة: "+v.secret),h("span",{},"تشوفها أنت بس")));
   bd.append(h("div",{class:"ww-top"},h("span",{class:"chip on sm"},WW_CATS[G.cat]?WW_CATS[G.cat].name:""),h("span",{class:"chip sm"},fmt(G.len)+" حروف")),
@@ -4908,14 +4953,15 @@ function renderBF(bd){
       h("div",{class:"row"},h("button",{class:"primary",disabled:!ok,onclick:()=>mgPlay({t:"bid",q:bfQ,f:bfF})},"زايد: "+fmt(bfQ)+" × "+fmt(bfF)),h("button",{class:"bf-call",disabled:!G.bid,onclick:()=>mgPlay({t:"call"})},"كذّاب!"))))}
 }
 function renderFH(bd){
-  hvFetch();const me=meSeat(),op=1-me,act=canAct(),v=NG.hv&&NG.hvKey===G.mid+":0"?NG.hv:null,L=G.last&&G.last.a&&G.last.a.t==="shot"?G.last:null;
+  hvFetch();let me=meSeat();if(me<0)me=0;const op=1-me,act=canAct(),v=NG.hv&&NG.hvKey===G.mid+":0"?NG.hv:null,L=G.last&&G.last.a&&G.last.a.t==="shot"?G.last:null;
   const big=h("div",{class:"fh-grid",role:"grid","aria-label":"شبكة خصمك"});
   const peekShips=new Set(v&&v.peek&&v.peek.ships?v.peek.ships.flat():[]);
-  for(let k=0;k<64;k++){const st=G.shots[op][k],cls=(peekShips.has(k)&&!st?"peek ":"")+"fh-c"+(st===1?" miss":st===2?" hit":st===3?" sunk":"")+(L&&L.i===me&&L.a.k===k?" last":"");
+  const shotsOp=G.shots[op]||[],shotsMe=G.shots[me]||[];
+  for(let k=0;k<64;k++){const st=shotsOp[k]||0,cls=(peekShips.has(k)&&!st?"peek ":"")+"fh-c"+(st===1?" miss":st===2?" hit":st===3?" sunk":"")+(L&&L.i===me&&L.a.k===k?" last":"");
     const b=h("button",{class:cls,"data-k":String(k),disabled:!(act&&!st),"aria-label":st===1?"فاضية":st>=2?"إصابة":"خانة"});
     if(st>=2)b.innerHTML=`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10m0-10L5 15" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>`;big.append(b)}
   const mine=h("div",{class:"fh-grid small","aria-label":"شبكتك"}),myShips=new Set(v?v.ships.flat():[]);
-  for(let k=0;k<64;k++){const st=G.shots[me][k];mine.append(h("span",{class:"fh-c"+(myShips.has(k)?" ship":"")+(st===1?" miss":st>=2?" hit":"")}))}
+  for(let k=0;k<64;k++){const st=shotsMe[k]||0;mine.append(h("span",{class:"fh-c"+(myShips.has(k)?" ship":"")+(st===1?" miss":st>=2?" hit":"")}))}
   bd.append(h("p",{class:"lbl"},"شبكة "+G.players[op].nick+(act?" (اضرب خانة)":"")),big,h("p",{class:"lbl mt"},"شبكتك وذبابك"),mine);
 }
 function renderWR(bd){
@@ -5024,53 +5070,149 @@ function renderXO(bd){
     if(o)b.innerHTML=`<svg viewBox="0 0 40 40" aria-hidden="true">${xoStyled(o-1,20,20,22,xoStyleOf(o-1),seatColor(o-1),1)}</svg>`;grid.append(b)}
   bd.append(grid,h("p",{class:"hint center",style:"margin:10px 0 0"},"العلامة الباهتة تختفي لما صاحبها يحط علامته الرابعة."));
 }
+function mgSub(seat){
+  const w=G.players[G.winner];
+  if(G.game==="nightweb")return (G.team==="flies"?"الذباب طلّعوا كل العناكب. ":"العناكب سيطروا على الشبكة. ")+"الأدوار: "+G.players.map((p,i)=>p.nick+" "+NW.ROLE[(G.roles||[])[i]]).join("، ");
+  if(G.game==="bluff")return "آخر واحد بقى معه نرد.";
+  if(G.game==="flyhunt")return "صاد كل الذباب.";
+  if(G.game==="webwar")return "الأرض: "+G.players.map((p,i)=>p.nick+" "+fmt(WR.count(G,i))).join("، ");
+  if(G.game==="wordweb")return "الكلمة: «"+(G.reveal||"")+"»";
+  if(G.game==="webgrid")return "المربعات: "+G.players.map((p,i)=>p.nick+" "+fmt(G.pts[i])).join("، ");
+  if(G.game==="dama")return "خلصت قطع الخصم، أو ما بقى له حركة.";
+  if(G.game==="xo")return G.long?"بعد ١٢٠ حركة فاز صاحب الدور الجاي.":"صفّيت ثلاث علامات!";
+  if(seat>=0&&G.winner!==seat)return "فاز "+w.nick+". تجيها المرة الجاية.";
+  return "";
+}
 function renderMgWin(){
   if(G&&G.game==="ballclash"&&G.winner!=null&&!(NG.bcDone&&NG.bcDone===G.mid)){$("mgWin").classList.add("hidden");return}
   const box=$("mgWin");if(!G||G.winner==null){box.classList.add("hidden");return}
   box.classList.remove("hidden");
   const w=G.players[G.winner],seat=mode==="local"?(hasBots()?0:-1):mySeat();
   const won=G.winners?G.winners.includes(seat):G.winner===seat;
+  paintKicker($("mgKicker"),!!won,seat);
   $("mgWinText").textContent=seat>=0?(won?"فزت!":"خسرت"):G.team?(G.team==="flies"?"فاز الذباب!":"فازت العناكب!"):"فاز "+w.nick+"!";
-  $("mgWinSub").textContent=G.game==="nightweb"?(G.team==="flies"?"الذباب طلّعوا كل العناكب. ":"العناكب سيطروا على الشبكة. ")+"الأدوار: "+G.players.map((p,i)=>p.nick+" "+NW.ROLE[(G.roles||[])[i]]).join("، "):G.game==="bluff"?"آخر واحد بقى معه نرد.":G.game==="flyhunt"?"صاد كل الذباب.":G.game==="webwar"?"الأرض: "+G.players.map((p,i)=>p.nick+" "+fmt(WR.count(G,i))).join("، "):G.game==="wordweb"?"الكلمة: «"+(G.reveal||"")+"»":G.game==="webgrid"?"المربعات: "+G.players.map((p,i)=>p.nick+" "+fmt(G.pts[i])).join("، "):(seat>=0&&G.winner!==seat?"فاز "+w.nick+". تجيها المرة الجاية.":"صفّيت ثلاث علامات!");
+  $("mgWinSub").textContent=mgSub(seat);
   const ul=$("mgScores");ul.textContent="";G.players.forEach((q,k)=>{const n=G.score[q.id]||0;ul.append(h("li",{},ballSvg(skinOf(k),22),h("span",{},q.nick,q.bot?ic("cpu","pc-bot"):null),h("b",{class:"wins"},ic("trophy"),fmt(n))))});
   const rb=$("mgRewards"),lr=lastResult&&lastResult.mid===G.mid?lastResult:null,key=G.mid+"|"+(lr?(lr.out?"out":lr.skipped||""):"wait");
   if(rb.dataset.k!==key){rb.dataset.k=key;rb.textContent="";
     if(lr&&lr.out){winBuiltMid=null;buildRewards(rb,lr)}
-    else if(lr&&lr.skipped)rb.append(h("p",{class:"hint center"},lr.skipped==="practice"?"مباراة تدريب، بدون مكافآت.":"المباراة قصيرة، فما انحسبت."));
+    else if(lr&&lr.skipped){const msg={local:"مباريات نفس الجوال للمتعة وما تدخل في حسابك.",practice:"مباراة تدريب، بدون مكافآت.",spectator:"",short:"المباراة كانت قصيرة جدًا عشان تنحسب.",dup:""}[lr.skipped];if(msg)rb.append(h("p",{class:"hint center"},msg))}
     else if(mode==="solo"||mode==="room")rb.append(h("div",{class:"skel",style:"height:54px"}))}
   const canAgain=mode==="local"||mode==="solo"||amHost();
   $("mgAgain").classList.toggle("hidden",!canAgain);$("mgAgainHint").classList.toggle("hidden",canAgain);
   $("mgLobby").classList.toggle("hidden",!(mode==="room"&&amHost()));
 }
 const isHidden=g0=>!!(g0&&GAME_RULES[g0.game]&&GAME_RULES[g0.game].hidden);
+let wwTimer=null;
+function wwStop(){if(wwTimer){clearTimeout(wwTimer);wwTimer=null}}
+function wwSeat(){
+  if(!G)return -1;
+  if(mode==="solo")return 0;
+  if(mode!=="local")return mySeat();
+  if(hasBots())return 0;
+  const alive=[];G.players.forEach((p,i)=>{if(G.prog[i]&&!G.prog[i].done&&!G.prog[i].out)alive.push(i)});
+  if(!alive.length)return 0;
+  if(NG.wwFocus==null||alive.indexOf(NG.wwFocus)<0)NG.wwFocus=alive[0];
+  return NG.wwFocus;
+}
+function syncWwView(){
+  if(!G||G.game!=="wordweb"||!NG.wwSecret)return;
+  if(G.winner!=null)G.reveal=NG.wwSecret;
+  const s=Math.max(0,wwSeat()),mine=(NG.wwMine&&NG.wwMine[s])||{tried:[],found:[]};
+  NG.ww=WW.view(NG.wwSecret,mine,G.winner!=null);NG.wwMid=G.mid;
+}
+function syncHiddenView(){
+  if(!G||!NG.localPriv)return;
+  const RU=GAME_RULES[G.game];if(!RU||!RU.view)return;
+  let seat=meSeat();if(seat<0)seat=0;
+  NG.hv=RU.view(G,seat,NG.localPriv);
+  NG.hvKey=G.mid+":"+(G.game==="flyhunt"?0:(G.rnd||0));
+}
+function mgBeginRewards(){
+  const bots=G.players.filter(p=>p.bot);
+  if(!bots.length){M=null;lastResult={mid:G.mid,skipped:"local"};return}
+  M={mid:G.mid,mode:"bot",seat:0,startedAt:Date.now(),moves:0,practice:false,done:P.claimedMatches.includes(G.mid),minOpp:99,
+    botLevel:bots.reduce((m,p)=>Math.max(m,p.bot||0),0),bots:bots.length};
+  lastResult=null;
+}
+function mgSettle(){if(!G||G.winner==null||!M||M.done||M.mode==="local")return;endMatch()}
+function wwLocalGuess(seat,ch){
+  if(!G||G.game!=="wordweb"||!NG.wwSecret||!NG.wwMine||!NG.wwMine[seat])return;
+  const mine=NG.wwMine[seat];
+  if(mine.tried.includes(ch)||G.prog[seat].done||G.prog[seat].out||G.winner!=null)return;
+  const r=WW.guess(NG.wwSecret,mine,ch);NG.wwMine[seat]=r.m;const prev=G;
+  G=WW.record(G,seat,r.pos,r.m.found.length,[...NG.wwSecret].length);
+  if(M&&seat===M.seat)M.moves++;
+  if(G.winner!=null){G.reveal=NG.wwSecret;wwStop()}
+  syncWwView();mgSound(prev);mgSettle();mgRender();wwArm();
+}
+function wwArm(){
+  if(wwTimer||mode!=="local"||!G||G.game!=="wordweb"||G.winner!=null||!NG.wwSecret)return;
+  const bots=[];G.players.forEach((p,i)=>{if(p.bot&&G.prog[i]&&!G.prog[i].done&&!G.prog[i].out)bots.push(i)});
+  if(!bots.length)return;
+  const seat=bots[0],lvl=G.players[seat].bot||2,delay=lvl>=3?700:lvl===2?1100:1500;
+  wwTimer=setTimeout(()=>{wwTimer=null;
+    if(mode!=="local"||!G||G.game!=="wordweb"||G.winner!=null)return;
+    if(!G.prog[seat]||G.prog[seat].done||G.prog[seat].out){wwArm();return}
+    const ch=WW.botLetter(G,seat,NG.wwMine[seat],[...NG.wwSecret].length);
+    if(ch)wwLocalGuess(seat,ch);
+  },delay);
+}
+function mgBotDelay(){return G&&G.game==="bluff"&&G.reveal&&!G.bid?1400:620}
 function mgPlay(a){
   if(!G||!G.game||!canAct())return;
   if(G.game==="nightweb"||G.game==="ballclash")return nwSend(a);
-  if(isHidden(G)){const e=GAME_RULES[G.game].legal(G,G.turn,a,null);if(e){sfx("bad");toast(e,"bad");return}
-    if(mode==="room")return netRoomCall("room_hact",{a});if(mode==="solo")return netHSolo(a);return}
+  if(isHidden(G)){
+    const pv=mode==="local"?NG.localPriv:null;
+    const e=GAME_RULES[G.game].legal(G,G.turn,a,pv);if(e){sfx("bad");toast(e,"bad");return}
+    if(mode==="room")return netRoomCall("room_hact",{a});
+    if(mode==="solo")return netHSolo(a);
+    if(mode!=="local"||!pv)return;
+    const RU=GAME_RULES[G.game],seat=G.turn,prev=G,res=RU.apply(G,seat,a,pv);
+    G=res.g;NG.localPriv=res.privs;if(M&&seat===M.seat)M.moves++;
+    syncHiddenView();mgSound(prev);mgSettle();mgRender();mgLocalBots();return}
   if(G.game==="wordweb"){
     if(mode==="room")return netRoomCall("room_guess",{ch:a.ch});
     if(mode==="solo")return netSoloAct(a);
+    if(mode==="local")wwLocalGuess(wwSeat(),a.ch);
     return;
   }
   const RU=GAME_RULES[G.game],e=RU.legal(G,G.turn,a);if(e){sfx("bad");toast(e,"bad");return}
   if(mode==="solo")return netSoloAct(a);
   if(mode==="room")return netRoomAct(a);
-  const prev=G;G=RU.apply(G,G.turn,a);mgSound(prev);mgRender();mgLocalBots();
+  const prev=G,seat=G.turn;G=RU.apply(G,seat,a);if(M&&seat===M.seat)M.moves++;mgSound(prev);mgSettle();mgRender();mgLocalBots();
 }
-function mgLocalBots(){
-  if(mode!=="local"||!G||!G.game||G.winner!=null||!G.players[G.turn].bot)return;
-  setTimeout(()=>{if(mode!=="local"||!G||!G.game||G.winner!=null||!G.players[G.turn].bot)return;
-    const RU=GAME_RULES[G.game],act=RU.bot(G),prev=G;G=act?RU.apply(G,G.turn,act):RU.skip(G);mgSound(prev);mgRender();mgLocalBots()},620);
+function mgLocalBots(delay){
+  if(mode!=="local"||!G||!G.game||G.winner!=null)return;
+  if(G.game==="wordweb"){wwArm();return}
+  if(!G.players[G.turn]||!G.players[G.turn].bot)return;
+  const wait=delay==null?mgBotDelay():delay;
+  setTimeout(()=>{
+    try{
+      if(mode!=="local"||!G||!G.game||G.winner!=null||!G.players[G.turn]||!G.players[G.turn].bot)return;
+      const RU=GAME_RULES[G.game],seat=G.turn,pv=NG.localPriv,prev=G;let act=null;
+      try{act=RU.hidden?RU.bot(G,seat,pv):RU.bot(G)}catch(e){act=null}
+      if(act){const err=RU.hidden?RU.legal(G,seat,act,pv):RU.legal(G,seat,act);if(err)act=null}
+      if(RU.hidden){const res=act?RU.apply(G,seat,act,pv):RU.skip(G,pv);G=res.g;if(res.privs)NG.localPriv=res.privs;syncHiddenView()}
+      else G=act?RU.apply(G,seat,act):RU.skip(G);
+      mgSound(prev);mgSettle();mgRender();
+      if(G&&G.winner==null&&G.players[G.turn]&&G.players[G.turn].bot)mgLocalBots();
+    }catch(e){}
+  },wait);
 }
 function mgStartLocal(withBots,n,prev){
-  clearBot();mode="local";hist=[];NG.solo=null;
-  const gm=gameById(curGame),RU=GAME_RULES[gm.id];let pl;
+  const gm=gameById(curGame);
+  if(gm.id==="nightweb"||gm.id==="ballclash"){toast("هاللعبة تبدأ من غرفة أونلاين","bad");return}
+  clearBot();wwStop();mode="local";hist=[];NG.solo=null;NG.localPriv=null;NG.wwSecret=null;NG.wwMine=null;NG.ww=null;NG.hv=null;NG.wwFocus=0;
+  const RU=GAME_RULES[gm.id];let pl;
   if(prev)pl=prev.players.map(x=>Object.assign({},x));
   else if(withBots){const k=Math.min(P.settings.botCount||1,gm.maxBots||3);pl=[{id:"L0",nick:P.nickname||"أنت",skin:skinIdx(eff("skin")),bot:0}];for(let i=0;i<k;i++)pl.push({id:"B"+i,nick:BOT_NAMES[i],skin:i+1,bot:P.settings.botLevel||2})}
-  else{n=Math.min(n||2,gm.maxLocal||4);pl=[...Array(n)].map((_,i)=>({id:"L"+i,nick:"لاعب "+fmt(i+1),skin:i===0?skinIdx(eff("skin")):i,bot:0}))}
-  G=RU.new(distinctSkins(pl),{seq:prev?prev.seq+1:1,round:prev?prev.round+1:1,score:prev?Object.assign({},prev.score):{}});
-  M=null;lastResult={mid:G.mid,skipped:"practice"};show("mg");mgRender();mgLocalBots();
+  else{n=Math.min(Math.max(n||2,gm.id==="wordweb"||gm.id==="bluff"||gm.id==="flyhunt"?2:2),gm.maxLocal||4);pl=[...Array(n)].map((_,i)=>({id:"L"+i,nick:"لاعب "+fmt(i+1),skin:i===0?skinIdx(eff("skin")):i,bot:0}))}
+  const cat=(prev&&prev.cat)||wwCat;
+  G=RU.new(distinctSkins(pl),{seq:prev?prev.seq+1:1,round:prev?prev.round+1:1,score:prev?Object.assign({},prev.score):{},cat});
+  if(gm.id==="wordweb"){NG.wwSecret=WW.pick(G.cat||cat);G.len=[...NG.wwSecret].length;NG.wwMine=G.players.map(()=>({tried:[],found:[]}));syncWwView()}
+  else if(RU.hidden&&RU.deal){NG.localPriv=RU.deal(G);syncHiddenView()}
+  mgBeginRewards();show("mg");mgRender();mgLocalBots();
 }
 $("mgBoard").addEventListener("click",e=>{
   const key=e.target.closest(".ww-k");if(key&&!key.disabled){mgPlay({t:"g",ch:key.dataset.ch});return}
@@ -5079,6 +5221,11 @@ $("mgBoard").addEventListener("click",e=>{
   const wc=e.target.closest(".wr-c");if(wc&&!wc.disabled){mgPlay({t:"p",k:+wc.dataset.k});return}
   const ln=e.target.closest("[data-o]");if(ln){mgPlay({t:"l",o:ln.dataset.o,r:+ln.dataset.r,c:+ln.dataset.c});return}
   const cell=e.target.closest(".xc");if(cell&&!cell.disabled)mgPlay({t:"p",k:+cell.dataset.k});
+});
+$("mgBoard").addEventListener("keydown",e=>{
+  if(e.key!=="Enter"&&e.key!==" ")return;
+  const ln=e.target.closest&&e.target.closest("[data-o]");if(!ln)return;
+  e.preventDefault();mgPlay({t:"l",o:ln.dataset.o,r:+ln.dataset.r,c:+ln.dataset.c});
 });
 $("mgQuit").addEventListener("click",()=>{
   if(G&&G.winner==null&&wouldForfeit()&&Date.now()-mgQuitArm>2500){mgQuitArm=Date.now();$("mgQuit").textContent="متأكد؟ تنحسب خسارة";setTimeout(()=>{$("mgQuit").textContent="طلوع"},2500);return}
@@ -5151,7 +5298,8 @@ function wlDraw(){
   if(!s.alive){x.fillStyle="rgba(230,41,72,.18)";x.fillRect(0,0,c.width,c.height)}
 }
 async function wlEnd(){
-  const s=WLG.s;$("wlWin").classList.remove("hidden");$("wlWinScore").textContent=s.score?fmt(s.score):"صفر";$("wlWinSub").textContent=WLG.mode==="daily"?"تحدي اليوم":"لعب حر";
+  const s=WLG.s;$("wlWin").classList.remove("hidden");$("wlWinScore").textContent=s.score?fmt(s.score):"صفر";$("wlWinSub").textContent=s.clear?"عبّيت الشبكة كاملة":(WLG.mode==="daily"?"تحدي اليوم":"لعب حر");
+  const wk=$("wlKicker");if(wk){wk.textContent="انتهت";wk.classList.remove("is-win","is-loss")}
   const rb=$("wlRewards");rb.textContent="";
   if(Platform.kind!=="web"){rb.append(h("p",{class:"hint"},"النتائج والمكافآت تنحفظ في نسخة الموقع."));return}
   rb.append(h("div",{class:"skel",style:"height:50px"}));
@@ -5169,7 +5317,7 @@ $("wlFree").addEventListener("click",()=>curGame==="webnest"?nsStart(false):wlSt
 $("wlAgain").addEventListener("click",()=>wlStart(WLG.mode==="daily"));
 $("wlHome").addEventListener("click",()=>{wlStop();openGame("webline")});
 $("wlQuit").addEventListener("click",()=>{wlStop();openGame("webline")});
-document.querySelectorAll(".wl-pad button").forEach(b=>b.addEventListener("click",()=>wlTurn(+b.dataset.d)));
+document.querySelectorAll("#wl .wl-pad button").forEach(b=>b.addEventListener("click",()=>wlTurn(+b.dataset.d)));
 $("wlWrap").addEventListener("click",()=>{if(WLG.paused)wlResume()});
 addEventListener("keydown",e=>{if(screen!=="wl"||!WLG.run)return;const k={ArrowUp:0,KeyW:0,ArrowRight:1,KeyD:1,ArrowDown:2,KeyS:2,ArrowLeft:3,KeyA:3}[e.code];
   if(k!=null){e.preventDefault();wlTurn(k)}else if(e.code==="Space"||e.code==="KeyP"){e.preventDefault();WLG.paused?wlResume():wlPause()}});
@@ -5195,6 +5343,7 @@ $("nsUndo").addEventListener("click",()=>{if(!NSG.run||!NSG.inputs.length)return
 function nsMove(d){if(!NSG.run)return;if(NST.move(NSG.s,d)){NSG.inputs.push(d);sfx("move");$("nsScore").textContent=fmt(NSG.s.score);nsDraw();nsUndoShow();if(!NSG.s.alive){NSG.run=false;sfx("bad");setTimeout(nsEnd,500)}}}
 async function nsEnd(){
   const s=NSG.s;$("nsWin").classList.remove("hidden");$("nsWinScore").textContent=s.score?fmt(s.score):"صفر";$("nsWinSub").textContent=NSG.mode==="daily"?"تحدي اليوم":"لعب حر";
+  const nk=$("nsKicker");if(nk){nk.textContent="انتهت";nk.classList.remove("is-win","is-loss")}
   $("nsWinMax").textContent="أكبر مرحلة وصلتها: "+(NST.STAGES[s.max]||"")+" ("+fmt(2**s.max)+")";
   const rb=$("nsRewards");rb.textContent="";
   if(Platform.kind!=="web"){rb.append(h("p",{class:"hint"},"النتائج والمكافآت تنحفظ في نسخة الموقع."));return}
@@ -5209,6 +5358,7 @@ async function nsEnd(){
 $("nsAgain").addEventListener("click",()=>nsStart(NSG.mode==="daily"));
 $("nsHome").addEventListener("click",()=>{NSG.run=false;openGame("webnest")});
 $("nsQuit").addEventListener("click",()=>{NSG.run=false;openGame("webnest")});
+document.querySelectorAll("#nsPad button").forEach(b=>b.addEventListener("click",()=>nsMove(+b.dataset.d)));
 addEventListener("keydown",e=>{if(screen!=="nst"||!NSG.run)return;const k={ArrowUp:0,KeyW:0,ArrowRight:1,KeyD:1,ArrowDown:2,KeyS:2,ArrowLeft:3,KeyA:3}[e.code];if(k!=null){e.preventDefault();nsMove(k)}});
 let nsTouch=null;
 $("nsWrap").addEventListener("touchstart",e=>{const t=e.touches[0];nsTouch=[t.clientX,t.clientY]},{passive:true});
@@ -5218,6 +5368,7 @@ $("nsWrap").addEventListener("touchend",e=>{if(!nsTouch)return;const t=e.changed
 window.SP={h,ic,htmlEl,fmt,show,toast,sfx,buzz,openSheet,openGame,api,applyProfile,coinEl,online:()=>Platform.kind==="web"&&!!Cloud.on,reduced:()=>matchMedia("(prefers-reduced-motion: reduce)").matches,get P(){return P},get screen(){return screen}};
 window.__spiderReady=true;
 document.documentElement.classList.remove("app-loading");
+document.documentElement.removeAttribute("aria-busy");
 const __intent=window.__spiderIntent;
 if(__intent){
   window.__spiderIntent=null;

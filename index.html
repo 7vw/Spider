@@ -1104,9 +1104,13 @@ button:disabled .ic{width:15px;height:15px;vertical-align:-2px;margin-inline-end
 .gtile .gc-icon{width:40px;height:40px;flex:none}.gtile .gc-icon svg{width:100%;height:100%}
 .gt-t{display:flex;flex-direction:column;min-width:0}.gt-t b{font:700 15px/1.2 var(--display);direction:ltr;text-align:right}.gt-t span{font-size:11.5px;color:var(--muted)}
 .dcard .di.g{background:none;padding:0}.dcard .di.g svg{width:100%;height:100%;border-radius:12px}
-.car-dots .car-dot{flex:none!important;width:8px!important;min-width:0!important;height:8px!important;min-height:0!important;padding:0!important}.car-dots .car-dot.on{width:22px!important}
-
-.car-dots{gap:2px}.car-dots .car-dot{width:24px!important;height:24px!important;background:none!important;display:grid;place-items:center}.car-dots .car-dot::before{content:"";width:8px;height:8px;border-radius:99px;background:rgba(255,255,255,.22);transition:width .25s var(--ease),background .25s}.car-dots .car-dot.on{width:30px!important}.car-dots .car-dot.on::before{width:22px;background:var(--primary)}.car-dots .car-dot::after{display:none}
+.car-dots{gap:0;margin-top:2px;max-width:100%;overflow-x:auto;scrollbar-width:none;justify-content:safe center}
+.car-dots::-webkit-scrollbar{display:none}
+.car-dots .car-dot{flex:none!important;width:44px!important;min-width:44px!important;height:44px!important;min-height:44px!important;padding:0!important;background:none!important;display:grid;place-items:center}
+.car-dots .car-dot::before{content:"";width:8px;height:8px;border-radius:99px;background:rgba(255,255,255,.28);transition:width .25s var(--ease),background .25s}
+.car-dots .car-dot.on{width:44px!important}
+.car-dots .car-dot.on::before{width:18px;background:var(--primary)}
+.car-dots .car-dot::after{display:none}
 
 /* ===================== install as an app ===================== */
 .inst-card{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:8px;border-radius:var(--rad-lg);background:linear-gradient(100deg,rgba(230,41,72,.16),rgba(141,101,246,.16)),var(--surface);border:1px solid rgba(230,41,72,.35)}
@@ -1128,9 +1132,18 @@ button:disabled .ic{width:15px;height:15px;vertical-align:-2px;margin-inline-end
   linear-gradient(155deg,#24101C 0%,#12162A 70%)}
 .boot-art img{width:100%;height:100%;display:block;object-fit:cover}
 .gtile .gc-icon{background:linear-gradient(145deg,#2A1124,#1A1840)}
-html.app-loading::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-index:80;background:linear-gradient(90deg,#E62948,#8D65F6,#E6B85C);background-size:200% 100%;animation:spiderLoad 1s linear infinite}
+html.app-loading::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z-index:91;background:linear-gradient(90deg,#E62948,#8D65F6,#E6B85C);background-size:200% 100%;animation:spiderLoad 1s linear infinite}
 @keyframes spiderLoad{to{background-position:-200% 0}}
-@media (prefers-reduced-motion:reduce){html.app-loading::before{animation:none}}
+.boot-load{display:none}
+html.app-loading .boot-load{display:flex;position:fixed;inset:0;z-index:90;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:22vh;background:rgba(9,11,18,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.boot-track{width:min(280px,72vw);height:8px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+.boot-track i{display:block;height:100%;width:42%;border-radius:inherit;background:linear-gradient(90deg,#E62948,#8D65F6,#E6B85C);animation:bootSlide 1.05s ease-in-out infinite}
+@keyframes bootSlide{0%{transform:translateX(-120%)}100%{transform:translateX(280%)}}
+html.app-loading .boot-load p{margin:16px 0 0;font-weight:700;font-size:16px;color:#fff}
+@media (prefers-reduced-motion:reduce){
+  html.app-loading::before{animation:none!important}
+  .boot-track i{width:100%;transform:none!important;animation:none!important}
+}
 @media (min-width:840px){
   .wrap{max-width:1040px;padding-inline:28px}
   .nav .in{max-width:640px}
@@ -1149,9 +1162,35 @@ html.app-loading::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z
   .items{grid-template-columns:repeat(4,minmax(0,1fr))}
   .glist{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+button.small,.tab,.chip,.item button,.filters .row button,.roomrow .small,.lo .acts button,.coinchip,button.link{min-height:44px}
+.chip.sm{min-height:28px}
+.gc-modes .chip,.cat-chips .chip{min-height:44px}
+.backbtn,.pf-set,.announce .icon{width:44px;height:44px;min-height:44px}
+.item .heart{width:44px;height:44px;min-height:44px}
+.switch{width:64px;min-height:44px;height:44px}
+.switch::after{top:4px;width:36px;height:36px;inset-inline-start:4px}
+.switch.on::after{inset-inline-start:24px}
+.inst-x{width:44px!important;height:44px!important}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--secondary-hi);outline-offset:2px}
+.result-kicker{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.02em;margin:0 auto 8px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--muted)}
+.result-kicker.is-win{color:#7EF0BD;border-color:rgba(61,220,151,.45);background:rgba(61,220,151,.12)}
+.result-kicker.is-loss{color:#FF8A9C;border-color:rgba(230,41,72,.5);background:rgba(230,41,72,.14)}
+.game-feat{margin:0 0 14px}
+.feat-tile{min-width:210px}
+body{overflow-x:clip}
+@media (max-width:420px){
+  #mg,#wl,#nst{margin-inline:-12px}
+  #mg .bar,#wl .bar,#nst .bar,#mg .status{padding-inline:12px}
+}
+@media (max-height:480px) and (orientation:landscape){
+  .hero-card .hc-art{max-height:120px}
+  .hero{padding-top:8px}
+  .nav{height:56px}
+}
 </style>
 </head>
 <body class="has-nav">
+<div class="boot-load" id="bootLoad"><div class="boot-track" aria-hidden="true"><i></i></div><p role="status">جاري فتح اللعبة…</p></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="spiderSym" viewBox="-22 -22 44 44">
     <g stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
@@ -1301,6 +1340,7 @@ html.app-loading::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z
   <div class="mg-board" id="mgBoard"></div>
   <div class="mg-win hidden" id="mgWin" role="dialog" aria-modal="true" aria-labelledby="mgWinText">
     <div class="card">
+      <div class="result-kicker" id="mgKicker">انتهت</div>
       <div class="win" id="mgWinText"></div>
       <p class="lead" id="mgWinSub"></p>
       <ul class="scores" id="mgScores"></ul>
@@ -1325,6 +1365,7 @@ html.app-loading::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z
   </div>
   <div class="mg-win hidden" id="wlWin" role="dialog" aria-modal="true" aria-labelledby="wlWinScore">
     <div class="card">
+      <div class="result-kicker" id="wlKicker">انتهت</div>
       <p class="lead" id="wlWinSub" style="margin:0"></p>
       <div class="win" id="wlWinScore"></div>
       <p class="hint" style="margin:0 0 8px">عدد الذباب اللي أكلته</p>
@@ -1339,8 +1380,13 @@ html.app-loading::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z
   <div class="bar"><button class="quit" id="nsQuit">طلوع</button><button class="hidden" id="nsUndo">تراجع</button><span class="wl-score" aria-live="polite"><span>النتيجة</span><b id="nsScore">٠</b></span><span class="mg-title">WEBNEST</span></div>
   <p class="hint center" id="nsHint" style="margin:6px 0">اسحب أو استخدم الأسهم. ادمج المراحل المتشابهة لين توصل لملكة العناكب.</p>
   <div class="ns-wrap" id="nsWrap"><div class="ns-grid" id="nsGrid" role="grid" aria-label="بيت العنكبوت"></div></div>
+  <div class="ns-pad" id="nsPad" role="group" aria-label="أزرار الاتجاه">
+    <span></span><button type="button" data-d="0" aria-label="فوق"><svg class="ic" aria-hidden="true"><use href="#i-up"/></svg></button><span></span>
+    <button type="button" data-d="3" aria-label="يسار" class="r270"><svg class="ic" aria-hidden="true"><use href="#i-up"/></svg></button><button type="button" data-d="2" aria-label="تحت" class="r180"><svg class="ic" aria-hidden="true"><use href="#i-up"/></svg></button><button type="button" data-d="1" aria-label="يمين" class="r90"><svg class="ic" aria-hidden="true"><use href="#i-up"/></svg></button>
+  </div>
   <div class="mg-win hidden" id="nsWin" role="dialog" aria-modal="true" aria-labelledby="nsWinScore">
     <div class="card">
+      <div class="result-kicker" id="nsKicker">انتهت</div>
       <p class="lead" id="nsWinSub" style="margin:0"></p>
       <div class="win" id="nsWinScore"></div>
       <p class="hint" id="nsWinMax" style="margin:0 0 8px"></p>
@@ -1385,6 +1431,7 @@ html.app-loading::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z
 <section id="games" class="page hidden">
   <header class="phead2"><h1>الألعاب</h1><p>كل ألعاب SPIDER في مكان واحد. اختر لعبة وطريقة اللعب.</p></header>
   <div class="chips-row" id="gameCats" role="tablist" aria-label="تصنيفات الألعاب"></div>
+  <div id="gameFeat"></div>
   <div class="glist" id="gameList"></div>
 </section>
 
@@ -1508,7 +1555,7 @@ html.app-loading::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z
   <div class="tabs" id="stTabs" role="tablist" aria-label="أقسام المتجر"></div>
   <div id="stFeatured"></div>
   <div class="items" id="stItems"></div>
-  <div class="empty hidden" id="stEmpty"><div class="empty-ic"><svg class="ic" aria-hidden="true"><use href="#i-web2"/></svg></div><p style="margin:0">ما فيه عناصر بهالتصفية.</p></div>
+  <div class="empty hidden" id="stEmpty"><div class="empty-ic"><svg class="ic" aria-hidden="true"><use href="#i-web2"/></svg></div><p style="margin:0">ما فيه عناصر بهالتصفية.</p><p class="hint">جرّب تصنيف ثاني، أو امسح البحث.</p></div>
 </section>
 
 <!-- PROFILE -->
@@ -1625,6 +1672,7 @@ html.app-loading::before{content:"";position:fixed;inset:0 0 auto 0;height:3px;z
 
 <div class="overlay hidden" id="winBox" role="dialog" aria-modal="true" aria-labelledby="winText">
   <div class="card">
+    <div class="result-kicker" id="winKicker">انتهت</div>
     <svg id="winSpider" viewBox="0 0 64 104" aria-hidden="true">
       <line x1="32" y1="0" x2="32" y2="62" stroke="currentColor" stroke-opacity=".6" stroke-width="1.2"/>
       <use href="#spiderSym" x="10" y="52" width="44" height="44"/>
