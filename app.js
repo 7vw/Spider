@@ -4383,8 +4383,11 @@ function giftSheet(gifts){
     for(const gf of gifts){if(gf.note)c.append(h("p",{class:"lead center"},"«"+gf.note+"»"));c.append(h("div",{class:"chips",style:"justify-content:center;margin:8px 0"},...gf.rewards.map(r=>h("span",{class:"pill"},rewardText(r)))))}
     c.append(h("button",{class:"primary wide",style:"margin-top:12px",onclick:()=>{close();refreshPage()}},"شكرًا!"));sfx("unlock")});
 }
+let cloudP=null;
 async function cloudStart(){
-  if(Platform.kind!=="web"||!Cloud.sb||Cloud.booting)return;
+  if(Platform.kind!=="web"||!Cloud.sb)return;
+  if(cloudP)return cloudP;
+  cloudP=(async()=>{
   Cloud.booting=true;Cloud.offline=false;
   try{
     const token=await sessionToken(true);
@@ -4402,6 +4405,8 @@ async function cloudStart(){
     Cloud.on=false;Cloud.offline=true;
     Cloud.err=e&&(e.status===429||/rate limit|too many/i.test(e.message||""))?"rate":"net";
   }finally{Cloud.booting=false;refreshPage()}
+  })();
+  try{return await cloudP}finally{cloudP=null}
 }
 function onAuthChange(){
   if(!Cloud.sb)return;
@@ -4834,8 +4839,11 @@ function renderWG(bd){
 }
 let wwLoading=false;
 function wwFetch(){
-  if(wwLoading||!G||G.game!=="wordweb")return;wwLoading=true;const mid=G.mid;
-  api("word_view",mode==="solo"?{solo:NG.solo&&NG.solo.id}:{code:NG.room&&NG.room.code}).then(r=>{if(r.ww&&G&&G.mid===mid){NG.ww=r.ww;NG.wwMid=mid;mgRender()}}).catch(()=>{}).finally(()=>{wwLoading=false});
+  if(wwLoading||!G||G.game!=="wordweb")return;
+  const body=mode==="solo"?{solo:NG.solo&&NG.solo.id}:{code:NG.room&&NG.room.code};
+  if(!(body.solo||body.code))return;
+  wwLoading=true;const mid=G.mid;
+  api("word_view",body).then(r=>{if(r.ww&&G&&G.mid===mid){NG.ww=r.ww;NG.wwMid=mid;mgRender()}}).catch(()=>{}).finally(()=>{wwLoading=false});
 }
 function spiderMeter(w,max,out){
   const y=14+Math.min(w,max)*13;
@@ -4863,8 +4871,11 @@ function xoStyleOf(seat){
 }
 let hvLoading=false;
 function hvFetch(){
-  if(hvLoading||!G||!isHidden(G))return;const key=G.mid+":"+(G.rnd||0);if(NG.hv&&NG.hvKey===key)return;hvLoading=true;
-  api("my_view",mode==="solo"?{solo:NG.solo&&NG.solo.id}:{code:NG.room&&NG.room.code}).then(r=>{if(r.view&&G&&G.mid+":"+(G.rnd||0)===key){NG.hv=r.view;NG.hvKey=key;mgRender()}}).catch(()=>{}).finally(()=>{hvLoading=false});
+  if(hvLoading||!G||!isHidden(G))return;const key=G.mid+":"+(G.rnd||0);if(NG.hv&&NG.hvKey===key)return;
+  const body=mode==="solo"?{solo:NG.solo&&NG.solo.id}:{code:NG.room&&NG.room.code};
+  if(!(body.solo||body.code))return;
+  hvLoading=true;
+  api("my_view",body).then(r=>{if(r.view&&G&&G.mid+":"+(G.rnd||0)===key){NG.hv=r.view;NG.hvKey=key;mgRender()}}).catch(()=>{}).finally(()=>{hvLoading=false});
 }
 const meSeat=()=>mode==="solo"?0:mode==="local"?(hasBots()?0:G.turn):mySeat();
 let bfQ=1,bfF=2,bfKey="";
