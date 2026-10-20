@@ -808,7 +808,7 @@ function ensureGamesCss(){
     let link=document.querySelector("link[data-games-css]");
     if(link&&link.rel==="stylesheet"){if(link.sheet){ok();return}link.addEventListener("load",()=>ok(),{once:true});link.addEventListener("error",()=>ok(),{once:true});return}
     link=document.createElement("link");
-    link.rel="stylesheet";link.href="games.css?v=5";link.setAttribute("data-games-css","");
+    link.rel="stylesheet";link.href="games.css?v=6";link.setAttribute("data-games-css","");
     link.onload=()=>ok();link.onerror=()=>ok();
     document.head.append(link);
   });
@@ -932,6 +932,7 @@ function loadProfile(){
 }
 let P=normalizeProfile(null);
 function saveProfile(){store.set(PROFILE_KEY,JSON.stringify(P))}
+function setCoins(n){n=Math.floor(Number(n));if(!Number.isFinite(n)||n<0)return;P.coins=n;saveProfile();const cc=$("homeCoins");if(cc){cc.textContent="";cc.removeAttribute("aria-label");cc.append(ic("coin","gold"),h("span",{class:"sr-only"},"رصيد العملات"),h("span",{},coinsText()))}}
 
 /* ================= progression ================= */
 const isOwned=(t,id)=>!!P.owned[t]&&P.owned[t].includes(id);
@@ -2646,13 +2647,13 @@ let bcLoading=null;
 function loadBC(){
   if(window.BCUI&&window.BC)return Promise.resolve();
   if(bcLoading)return bcLoading;
-  const add=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src+"?v=9";s.onload=ok;s.onerror=()=>no(new Error("ما قدرنا نحمّل ملفات اللعبة"));document.head.append(s)});
-  bcLoading=add("bc_core.js").then(()=>add("bc_kinds.js")).then(()=>add("bc_art.js")).then(()=>add("bc_ui.js")).catch(e=>{bcLoading=null;throw e});
+  const add=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src+"?v=10";s.onload=ok;s.onerror=()=>no(new Error("ما قدرنا نحمّل ملفات اللعبة"));document.head.append(s)});
+  bcLoading=add("bc_core.js").then(()=>add("bc_kinds.js")).then(()=>add("bc_new_data.js")).then(()=>add("bc_art.js")).then(()=>add("bc_shop_logic.js")).then(()=>add("bc_ui.js")).catch(e=>{bcLoading=null;throw e});
   return bcLoading;
 }
 async function bcOpen(mode){
-  const bs=["bcQuick","bcTeam","bcCustom","bcDraft","bcTour","bcColl","bcStats"].map(id=>$(id));bs.forEach(b=>b.disabled=true);
-  try{await loadBC();if(mode==="tour")window.BCUI.tour();else if(mode==="stats")window.BCUI.stats();else if(mode==="collection")window.BCUI.collection();else window.BCUI.open(mode)}catch(e){toast(e.message+". تأكد إن ملفات BALL CLASH الأربعة مرفوعة مع اللعبة.","bad")}
+  const bs=["bcQuick","bcTeam","bcCustom","bcDraft","bcTour","bcColl","bcShop","bcStats"].map(id=>$(id));bs.forEach(b=>b.disabled=true);
+  try{await loadBC();if(mode==="tour")window.BCUI.tour();else if(mode==="stats")window.BCUI.stats();else if(mode==="collection")window.BCUI.collection();else if(mode==="shop")window.BCUI.openShop();else window.BCUI.open(mode)}catch(e){toast(e.message+". تأكد إن ملفات لعبة صراع الكور مرفوعة مع اللعبة.","bad")}
   finally{bs.forEach(b=>b.disabled=false)}
 }
 $("bcQuick").addEventListener("click",()=>bcOpen("quick"));
@@ -2662,6 +2663,7 @@ $("bcCustom").addEventListener("click",()=>bcOpen("custom"));
 $("bcDraft").addEventListener("click",()=>bcOpen("draft"));
 $("bcTour").addEventListener("click",()=>bcOpen("tour"));
 $("bcColl").addEventListener("click",()=>bcOpen("collection"));
+$("bcShop").addEventListener("click",()=>bcOpen("shop"));
 $("bcStats").addEventListener("click",()=>bcOpen("stats"));
 function bcCoverSvg(){const k="bc"+(++artSeq);
   const ball=(x,y,r,c,ring)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="${ring}" stroke-width="4"/><circle cx="${x-r*.35}" cy="${y-r*.35}" r="${r*.3}" fill="#fff" opacity=".45"/>`;
@@ -4990,8 +4992,8 @@ function renderBCR(bd){
   const mineLocked=G.pick==="secret"&&me>=0&&G.locked[me],myTurn=G.pick==="draft"&&G.turn===me;
   if(me<0||mineLocked||(G.pick==="draft"&&!myTurn)){bd.append(h("p",{class:"hint center"},mineLocked?"تشكيلتك مقفولة. ننتظر الباقين…":me<0?"تتفرّج":"ننتظر دور "+G.players[G.turn].nick+"…"));return}
   const taken=new Set(G.pick==="draft"?G.picks.flat():[]),grid=h("div",{class:"bc-rgrid"});
-  BC.PICK.forEach(kid=>{const K=BC.KINDS[kid],on=bcSel.includes(kid),dis=taken.has(kid);
-    grid.append(h("button",{class:"bc-rk"+(on?" on":"")+(dis?" dis":""),disabled:dis,"aria-label":K.ar,onclick:()=>{if(G.pick==="draft"){mgPlay({t:"draft",k:kid});return}
+  BC.PICK.forEach(kid=>{const K=BC.KINDS[kid],on=bcSel.includes(kid),shopLocked=window.BCUI.canBall&&!window.BCUI.canBall(kid),dis=taken.has(kid)||shopLocked;
+    grid.append(h("button",{class:"bc-rk"+(on?" on":"")+(dis?" dis":""),disabled:taken.has(kid),"aria-label":K.ar,onclick:()=>{if(shopLocked){toast("هذي الكورة من المتجر","bad");return}if(G.pick==="draft"){mgPlay({t:"draft",k:kid});return}
       if(bcSel.length>=G.size)bcSel.pop();bcSel.push(kid);sfx("move");mgRender()}},window.BCUI.previewCanvas(kid,40),h("span",{},K.ar)))});
   if(G.pick==="secret")bd.append(h("button",{class:"primary wide",style:"margin:8px 0",disabled:bcSel.length!==G.size,onclick:()=>mgPlay({t:"pick",balls:bcSel.slice()})},bcSel.length===G.size?"قفّل التشكيلة":"اختر "+fmt(G.size-bcSel.length)+" كمان"));
   bd.append(grid);
@@ -5365,7 +5367,7 @@ $("nsWrap").addEventListener("touchstart",e=>{const t=e.touches[0];nsTouch=[t.cl
 $("nsWrap").addEventListener("touchend",e=>{if(!nsTouch)return;const t=e.changedTouches[0],dx=t.clientX-nsTouch[0],dy=t.clientY-nsTouch[1];nsTouch=null;if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;nsMove(Math.abs(dx)>Math.abs(dy)?(dx>0?1:3):(dy>0?2:0))},{passive:true});
 
 /* ---- helpers shared with games that live in their own files (BALL CLASH) ---- */
-window.SP={h,ic,htmlEl,fmt,show,toast,sfx,buzz,openSheet,openGame,api,applyProfile,coinEl,online:()=>Platform.kind==="web"&&!!Cloud.on,reduced:()=>matchMedia("(prefers-reduced-motion: reduce)").matches,get P(){return P},get screen(){return screen}};
+window.SP={h,ic,htmlEl,fmt,show,toast,sfx,buzz,openSheet,openGame,api,applyProfile,setCoins,coinEl,online:()=>Platform.kind==="web"&&!!Cloud.on,reduced:()=>matchMedia("(prefers-reduced-motion: reduce)").matches,get P(){return P},get screen(){return screen}};
 window.__spiderReady=true;
 document.documentElement.classList.remove("app-loading");
 document.documentElement.removeAttribute("aria-busy");

@@ -1,0 +1,101 @@
+{
+  "method": "pw=hpf scale, probe then full field seeds 7/11/42, target 0.47-0.53",
+  "balls": [
+    {
+      "id": "sling",
+      "scale": 1.086,
+      "field": 0.5,
+      "peer": "boomerang",
+      "peerRate": 0.667,
+      "ms": 7102
+    },
+    {
+      "id": "spark",
+      "scale": 0.629,
+      "field": 0.5,
+      "peer": "lightning",
+      "peerRate": 0.667,
+      "ms": 3671
+    },
+    {
+      "id": "cog",
+      "scale": 2.132,
+      "field": 0.503,
+      "peer": "sawblade",
+      "peerRate": 0,
+      "ms": 8607
+    },
+    {
+      "id": "glaive",
+      "scale": 1.364,
+      "field": 0.492,
+      "peer": "spear",
+      "peerRate": 0,
+      "ms": 6854
+    },
+    {
+      "id": "blizzard",
+      "scale": 0.863,
+      "field": 0.494,
+      "peer": "ice",
+      "peerRate": 0.333,
+      "ms": 4756
+    },
+    {
+      "id": "basilisk",
+      "scale": 2.521,
+      "field": 0.5,
+      "peer": "snake",
+      "peerRate": 0.333,
+      "ms": 8939
+    },
+    {
+      "id": "trident",
+      "scale": 0.919,
+      "field": 0.506,
+      "peer": "spear",
+      "peerRate": 0.333,
+      "ms": 7341
+    },
+    {
+      "id": "comet",
+      "scale": 0.885,
+      "field": 0.511,
+      "peer": "rocket",
+      "peerRate": 0.333,
+      "ms": 4974
+    },
+    {
+      "id": "arcblade",
+      "scale": 2.277,
+      "field": 0.494,
+      "peer": "laser",
+      "peerRate": 0.333,
+      "ms": 7378
+    },
+    {
+      "id": "meteor",
+      "scale": 1.631,
+      "field": 0.508,
+      "peer": "celestial",
+      "peerRate": 0.5,
+      "ms": 6929
+    },
+    {
+      "id": "eclipse",
+      "scale": 2.043,
+      "field": 0.494,
+      "peer": "ghost",
+      "peerRate": 0,
+      "ms": 8644
+    },
+    {
+      "id": "starlance",
+      "scale": 1.375,
+      "field": 0.5,
+      "peer": "spear",
+      "peerRate": 1,
+      "ms": 6781
+    }
+  ]
+}

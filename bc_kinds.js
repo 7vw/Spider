@@ -148,9 +148,9 @@ var RAR_OF={
   reaper:"legendary",celestial:"legendary",void:"legendary",omega:"legendary",hydra:"legendary",stormking:"legendary",bloodmoon:"legendary",prism:"legendary",nebula:"legendary",infinity:"legendary"
 };
 for(var rid in RAR_OF)if(BC.KINDS[rid])BC.KINDS[rid].rar=RAR_OF[rid];
-/* Cosmetic looks. Ids are new and local (bc_look). They do not enter spider_profile or the server catalog. */
+/* Cosmetic looks. Ids stay out of spider_profile. The Ball Clash store sells them; classic play does not require one. */
 BC.LOOKS={};BC.LOOK_ORDER=[];
-function lookDef(o){o.how="free";o.cosmetic=true;BC.LOOKS[o.id]=o;BC.LOOK_ORDER.push(o.id)}
+function lookDef(o){o.how="bc";o.cosmetic=true;BC.LOOKS[o.id]=o;BC.LOOK_ORDER.push(o.id)}
 lookDef({id:"sw_royal",ball:"sword",set:"royal",ar:"سيف ملكي",en:"Royal Edge",rar:"legendary",color:"#F7D46B",color2:"#7A4A0E",shell:"crown",face:"brave",sig:"crown",trail:"gold",desc:"حافة ذهبية وتاج صغير. الشكل بس، والسيف يبقى بنفس القوة."});
 lookDef({id:"hm_royal",ball:"hammer",set:"royal",ar:"مطرقة البلاط",en:"Court Hammer",rar:"legendary",color:"#E6B85C",color2:"#6B4A2B",shell:"crown",face:"brave",sig:"crown",trail:"gold",desc:"رأس ذهبي للمطرقة. ما يزيد الدفع ولا الضرر."});
 lookDef({id:"sh_royal",ball:"shield",set:"royal",ar:"درع التاج",en:"Crown Shield",rar:"epic",color:"#F2E2A8",color2:"#4A6FB0",shell:"mirror",face:"visor",sig:"crown",trail:"gold",desc:"درع بلون البلاط. الامتصاص نفسه."});
