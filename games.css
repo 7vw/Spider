@@ -127,8 +127,9 @@
 /* ===================== BALL CLASH ===================== */
 .bc-modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0}
 .bc-mode{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:16px;min-height:90px;border-radius:var(--rad-lg);text-align:start;background:linear-gradient(135deg,rgba(230,41,72,.22),rgba(141,101,246,.18)),var(--surface);border:1px solid rgba(230,41,72,.4)}
-.bc-mode b{font:700 17px/1.1 var(--display);direction:ltr}.bc-mode span{font-size:12.5px;color:var(--muted)}
-.bc-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px}.bc-title{margin-inline-start:auto;text-align:end}.bc-title b{display:block;font:700 18px/1 var(--display);direction:ltr}.bc-title span{font-size:12px;color:var(--muted)}
+.bc-mode b{font:700 16px/1.2 var(--display)}.bc-mode span{font-size:12.5px;color:var(--muted)}
+.bc-title .bc-en,.bc-mode .bc-en{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;line-height:1.2;color:var(--faint);direction:ltr;text-align:end}
+.bc-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px}.bc-title{margin-inline-start:auto;text-align:end;min-width:0}.bc-title b{display:block;font:700 18px/1.15 var(--display)}.bc-title span{font-size:12px;color:var(--muted)}.bc-title .bc-en{margin-top:2px}
 .bc-teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .bc-team{padding:10px;border-radius:var(--rad-lg);background:var(--surface);border:1.5px solid var(--line);cursor:pointer}
 .bc-team.on{border-color:var(--tc);box-shadow:0 0 0 1px var(--tc),0 10px 26px -16px var(--tc)}
@@ -227,6 +228,12 @@
 .bc-stage-top b{font-size:18px}
 .bc-stage-meta p{margin:6px 0 8px;color:var(--muted);font-size:13px;line-height:1.55}
 .bc-stage-meta .chips{margin-top:4px}
+.bc-stage-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:8px}
+.bc-stage-actions .lbl{margin:0;flex:1 0 100%}
+.bc-stage-actions .chips{flex:1 1 auto;min-width:0;margin:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.bc-stage-actions .chips::-webkit-scrollbar{display:none}
+.bc-stage-actions .chip{flex:none}
+.bc-stage-actions .bc-details{flex:none;white-space:nowrap}
 @media (max-width:520px){.bc-stage{grid-template-columns:1fr}.bc-stage-cv{min-height:0}}
 @media (min-width:1100px){.bc-shop{max-width:1100px;margin-inline:auto}.bc-shop .bc-stage{grid-template-columns:220px minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){.bc-fi{animation:none}}
@@ -237,7 +244,8 @@
 .bc-wallet{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(230,184,92,.12);border:1px solid rgba(230,184,92,.45);min-height:44px}
 .bc-price{display:inline-flex;align-items:center;font-weight:800;color:#FFE7A3}
 .bc-free{font-size:12px;font-weight:800;color:#A3A9BF}
-.bc-lock{font-size:12px;font-weight:700;color:#E6B85C}
+.bc-lock{display:inline-flex;align-items:center;justify-content:center;gap:4px;font-size:12px;font-weight:800;color:#E6B85C}
+.bc-lock .ic{width:14px;height:14px;flex:none}
 .bc-short,.bc-shortbtn{color:#FFB4C0}
 .bc-shop .bc-stage-meta .primary,.bc-shop .bc-stage-meta .small,.bc-card .primary,.bc-card .small{min-height:44px}
 .bc-shortbtn{white-space:normal;line-height:1.35;text-align:center}

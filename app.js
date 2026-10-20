@@ -808,7 +808,7 @@ function ensureGamesCss(){
     let link=document.querySelector("link[data-games-css]");
     if(link&&link.rel==="stylesheet"){if(link.sheet){ok();return}link.addEventListener("load",()=>ok(),{once:true});link.addEventListener("error",()=>ok(),{once:true});return}
     link=document.createElement("link");
-    link.rel="stylesheet";link.href="games.css?v=6";link.setAttribute("data-games-css","");
+    link.rel="stylesheet";link.href="games.css?v=7";link.setAttribute("data-games-css","");
     link.onload=()=>ok();link.onerror=()=>ok();
     document.head.append(link);
   });
@@ -2647,7 +2647,7 @@ let bcLoading=null;
 function loadBC(){
   if(window.BCUI&&window.BC)return Promise.resolve();
   if(bcLoading)return bcLoading;
-  const add=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src+"?v=10";s.onload=ok;s.onerror=()=>no(new Error("ما قدرنا نحمّل ملفات اللعبة"));document.head.append(s)});
+  const add=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src+"?v=11";s.onload=ok;s.onerror=()=>no(new Error("ما قدرنا نحمّل ملفات اللعبة"));document.head.append(s)});
   bcLoading=add("bc_core.js").then(()=>add("bc_kinds.js")).then(()=>add("bc_new_data.js")).then(()=>add("bc_art.js")).then(()=>add("bc_shop_logic.js")).then(()=>add("bc_ui.js")).catch(e=>{bcLoading=null;throw e});
   return bcLoading;
 }

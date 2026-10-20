@@ -170,7 +170,7 @@ function render(){
   ensurePick();
   var r=root();r.textContent="";
   var wallet=h("div",{class:"bc-wallet"},SP.coinEl(fmt(coins())));
-  r.append(h("div",{class:"bc-shop"},h("div",{class:"bc-bar"},h("button",{class:"quit",onclick:function(){if(UI.mountLive){var host=r.querySelector(".bc-stage-cv");if(host)host.textContent=""}SP.openGame("ballclash")}},"رجوع"),h("div",{class:"bc-title"},h("b",{},"STORE"),h("span",{},"متجر الكور")),wallet)));
+  r.append(h("div",{class:"bc-shop"},h("div",{class:"bc-bar"},h("button",{class:"quit",onclick:function(){if(UI.mountLive){var host=r.querySelector(".bc-stage-cv");if(host)host.textContent=""}SP.openGame("ballclash")}},"رجوع"),h("div",{class:"bc-title"},h("b",{},"المتجر"),h("span",{class:"bc-en"},"STORE"),h("span",{},"كور ومظاهر وساحات")),wallet)));
   var box=r.querySelector(".bc-shop");
   var tabs=h("div",{class:"chips bc-tabs",role:"tablist"});
   [["balls","الكور"],["looks","المظاهر"],["arenas","الساحات"]].forEach(function(t){tabs.append(h("button",{class:"chip"+(S.tab===t[0]?" on":""),role:"tab","aria-selected":S.tab===t[0]?"true":"false",onclick:function(){S.tab=t[0];S.filt=t[0]==="balls"?"sale":"all";render()}},t[1]))});
@@ -205,6 +205,10 @@ function render(){
   });
   box.append(grid);
 }
-function open(){S.tab="balls";S.filt="sale";S.kind="ball";S.id="comet";SP.show("bc");render();pull()}
+function open(focus){
+  if(focus&&focus.kind&&focus.id){S.tab=focus.kind==="look"?"looks":focus.kind==="arena"?"arenas":"balls";S.filt="all";S.kind=focus.kind;S.id=focus.id}
+  else{S.tab="balls";S.filt="sale";S.kind="ball";S.id="comet"}
+  SP.show("bc");render();pull();
+}
 window.BCSHOP={open:open};
 })();
