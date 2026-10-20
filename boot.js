@@ -14,7 +14,7 @@
     if(started)return;
     started=true;
     var s=document.createElement("script");
-    s.src="app.js?v=4";
+    s.src="app.js?v=5";
     document.body.appendChild(s);
   }
   document.addEventListener("pointerdown",function(e){

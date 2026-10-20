@@ -2331,7 +2331,7 @@ function renderHome(){
     GAMES.forEach((g,k)=>{
       if(k===0&&keep){
         const art=keep.querySelector(".hc-art");
-        if(art&&!art.querySelector("svg"))art.innerHTML=coverSvg(g.id);
+        if(art){art.classList.remove("boot-art");if(!art.querySelector("svg"))art.innerHTML=coverSvg(g.id)}
         const play=keep.querySelector("[data-act=play]");
         const help=keep.querySelector("[data-act=help]");
         if(play)play.onclick=()=>openGame(g.id);
