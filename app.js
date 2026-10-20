@@ -808,7 +808,7 @@ function ensureGamesCss(){
     let link=document.querySelector("link[data-games-css]");
     if(link&&link.rel==="stylesheet"){if(link.sheet){ok();return}link.addEventListener("load",()=>ok(),{once:true});link.addEventListener("error",()=>ok(),{once:true});return}
     link=document.createElement("link");
-    link.rel="stylesheet";link.href="games.css?v=7";link.setAttribute("data-games-css","");
+    link.rel="stylesheet";link.href="games.css?v=8";link.setAttribute("data-games-css","");
     link.onload=()=>ok();link.onerror=()=>ok();
     document.head.append(link);
   });
@@ -1935,7 +1935,12 @@ function fxMiniSvg(kind,id,size){
 
 /* ================= toasts & sheets ================= */
 function toast(msg,kind){
-  const t=h("div",{class:"toast"+(kind?" "+kind:""),role:"status"},msg);$("toasts").append(t);
+  const host=$("toasts");if(!host)return;
+  const inMatch=document.body.classList.contains("in-match");
+  [...host.children].forEach(t=>{if(t.dataset.msg===msg)t.remove()});
+  if(inMatch)while(host.firstChild)host.firstChild.remove();
+  const t=h("div",{class:"toast"+(kind?" "+kind:""),role:"status"},msg);
+  t.dataset.msg=msg;host.append(t);
   setTimeout(()=>{t.classList.add("out");setTimeout(()=>t.remove(),260)},2600);
 }
 let sheetOnClose=null;
@@ -1978,6 +1983,7 @@ let lastScreen="home";
 function show(id){if(typeof screen!=="undefined"&&screen&&screen!==id&&screen!=="about")lastScreen=screen;
   if(id==="owner"&&!Owner.verified)id="profile";
   screen=id;
+  document.body.classList.toggle("in-match",["game","mg","wl","nst","bc","lobby"].includes(id));
   for(const s of SCREENS)$(s).classList.toggle("hidden",s!==id);
   const navOn=PAGES.includes(id);
   $("nav").classList.toggle("hidden",!navOn);document.body.classList.toggle("has-nav",navOn);
@@ -2005,6 +2011,7 @@ function bgClass(el,bg){
 const ownerTag=()=>h("span",{class:"ownertag",title:"صاحب اللعبة، متحقق منه"},ic("crown"),"OWNER");
 function playerStrip(el){
   el.textContent="";const li=levelInfo(P.xp);bgClass(el,eff("bg"));
+  el.setAttribute("aria-label","تقدّمك: "+displayName()+"، المستوى "+fmt(li.L)+" ، افتح حسابي");
   el.append(myAvatar(56),
     h("div",{class:"who"},
       h("div",{class:"pname"},nameEl(displayName(),eff("theme")),badgeEl(eff("badge")),Owner.verified?ownerTag():null),
@@ -2039,7 +2046,7 @@ const FAQ=[
   ["وش يصير لو تراجعت ضد الكمبيوتر؟","المباراة تصير تدريب وما تعطي مكافآت."],
   ["وش العناصر السرية؟","عناصر نادرة ما ينكشف شكلها ولا طريقة فتحها، تلقاها من أكواد أو فعاليات خاصة."],
   ["أقدر أستخدم الكود السري أكثر من مرة؟","لا، كل كود مرة وحدة لكل حساب."],
-  ["كيف ألعب مع صاحبي أون لاين؟","سوّ غرفة من الرئيسية وأرسل لصاحبك رابط اللعبة وكود الغرفة. في نسخة Claude تدعوه من زر المشاركة ولازم يكون عنده حساب Claude، وفي نسخة الموقع يدخل بدون حساب."]
+  ["كيف ألعب مع صاحبي أونلاين؟","سوّ غرفة من الرئيسية وأرسل لصاحبك رابط اللعبة وكود الغرفة. في نسخة Claude تدعوه من زر المشاركة ولازم يكون عنده حساب Claude، وفي نسخة الموقع يدخل بدون حساب."]
 ];
 function renderFaq(){const f=$("faq");f.textContent="";for(const [q,a] of FAQ)f.append(h("details",{},h("summary",{},q),h("p",{},a)))}
 /* ================= daily login ================= */
@@ -2070,7 +2077,7 @@ function renderLeaders(){
   const rows=lbSorted();
   if(!rows.length){
     body.append(h("div",{class:"card empty"},h("div",{class:"empty-ic"},ic("web2")),h("p",{style:"margin:0 0 4px;font-weight:700;color:var(--ink)"},"ما فيه نتائج هالأسبوع للحين"),
-      h("p",{class:"hint",style:"margin:0 0 14px"},"العب أون لاين مع أصحابك، وكل فوز يرفعك في الترتيب."),h("button",{class:"primary",onclick:()=>show("home")},"العب الحين")));
+      h("p",{class:"hint",style:"margin:0 0 14px"},"العب أونلاين مع أصحابك، وكل فوز يرفعك في الترتيب."),h("button",{class:"primary",onclick:()=>show("home")},"العب الحين")));
   }else{
     const rowName=r=>h("div",{class:"pname",style:"font-size:15px;justify-content:inherit"},nameEl(r.n||"لاعب",r.t),badgeEl(r.b));
     const pod=h("div",{class:"podium"});
@@ -2093,7 +2100,7 @@ function renderLeaders(){
     h("p",{style:"margin:0 0 8px;color:var(--ink);font-weight:700"},"انتصاراتك الأونلاين هالأسبوع: "+fmt(P.weeklyWins)+(mine?"، ومركزك "+fmt(mine.rank):"")),
     P.championWeeks.length?h("p",{style:"margin:0 0 8px",class:"ic-line"},ic("crown"),"صرت بطل الأسبوع "+plural(P.championWeeks.length,"مرة وحدة","مرتين","مرات","مرة")+"."):null,
     h("p",{style:"margin:0 0 8px"},"لما يتجدد الأسبوع، صاحب أكثر انتصارات (٣ على الأقل) ياخذ شارة ولقب «بطل الأسبوع». باقي تقدمك ما يتصفّر."),
-    h("p",{style:"margin:0"},"الترتيب هنا من المباريات الأونلاين اللي لعبتها، ومحفوظ على جهازك. الترتيب العالمي لكل اللاعبين يحتاج سيرفر، واللعبة جاهزة تنربط فيه."));
+    h("p",{style:"margin:0"},"الترتيب هنا من المباريات الأونلاين اللي لعبتها على هذا الجهاز. لما يرجع الاتصال، يطلع الترتيب العالمي لكل اللاعبين."));
 }
 
 
@@ -2102,14 +2109,14 @@ function rankMedal(n,size){
   return svgNode(`<svg viewBox="0 0 40 40" width="${size||34}" height="${size||34}" aria-hidden="true"><defs><linearGradient id="${k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${col[0]}"/><stop offset="1" stop-color="${col[1]}"/></linearGradient></defs><path d="M20 2 35.6 11v18L20 38 4.4 29V11Z" fill="url(#${k})" stroke="rgba(0,0,0,.35)"/><text x="20" y="26.5" text-anchor="middle" font-family="Readex Pro,system-ui" font-weight="700" font-size="17" fill="#1A1206">${n}</text></svg>`);
 }
 function renderNetLeaders(){
-  const cd=$("lbCountdown");cd.textContent="";cd.append(h("span",{class:"chip on sm"},"WEBBOUND"),h("span",{class:"lb-cd"},ic("clock"),"ينتهي الأسبوع بعد "+leftText(weekEndsAt()-clock.now())));
+  const cd=$("lbCountdown");cd.textContent="";cd.append(h("span",{class:"chip on sm"},"كل الألعاب"),h("span",{class:"lb-cd"},ic("clock"),"ينتهي الأسبوع بعد "+leftText(weekEndsAt()-clock.now())));
   const body=$("lbBody");body.textContent="";
   if(!lbCache||Date.now()-(lbCache.at||0)>20000)loadNetLeaders();
   if(!lbCache){body.append(h("div",{class:"card empty"},"يحمّل الترتيب…"));return}
-  if(lbCache.error){body.append(h("div",{class:"card empty"},h("p",{},lbCache.error),h("button",{onclick:()=>{lbCache=null;loadNetLeaders()}},"حاول مرة ثانية")));return}
+  if(lbCache.error){body.append(h("div",{class:"card empty"},h("p",{},softenErr(lbCache.error)),h("button",{onclick:()=>{lbCache=null;loadNetLeaders()}},"حاول مرة ثانية")));return}
   const rows=lbCache.rows.map((x,i)=>{const c=x.card||{},pub=c.pub||{};return {id:x.id,w:x.w,g:x.g,n:c.nickname||"لاعب",s:Number.isInteger(pub.sk)?pub.sk:0,f:pub.fr,b:pub.bd,t:pub.th,d:pub.dc,l:c.level||1,owner:!!c.is_owner,me:x.id===cid}});
   rows.forEach(r=>r.rank=1+rows.filter(x=>x.w>r.w).length);
-  if(!rows.length){body.append(h("div",{class:"card empty"},h("div",{class:"empty-ic"},ic("web2")),h("p",{style:"margin:0 0 4px;font-weight:700;color:var(--ink)"},"ما فيه نتائج هالأسبوع للحين"),h("p",{class:"hint",style:"margin:0 0 14px"},"العب أون لاين، وكل فوز يرفعك في الترتيب."),h("button",{class:"primary",onclick:()=>show("home")},"العب الحين")))}
+  if(!rows.length){body.append(h("div",{class:"card empty"},h("div",{class:"empty-ic"},ic("web2")),h("p",{style:"margin:0 0 4px;font-weight:700;color:var(--ink)"},"ما فيه نتائج هالأسبوع للحين"),h("p",{class:"hint",style:"margin:0 0 14px"},"العب أونلاين، وكل فوز يرفعك في الترتيب."),h("button",{class:"primary",onclick:()=>show("home")},"العب الحين")))}
   else{
     const pod=h("div",{class:"podium"});
     rows.slice(0,3).forEach((r,i)=>pod.append(h("div",{class:"pod p"+(i+1)+(r.me?" me":"")},h("div",{class:"medal"},rankMedal(i+1,i===0?40:34)),avatar((SKINS[r.s]||SKINS[0]).id,r.f,i===0?58:48,r.d),
@@ -2295,7 +2302,17 @@ function wbIconSvg(){
 }
 
 /* ---------- navigation helpers ---------- */
-let wbMode="online",gameCat="all";
+let wbMode="online",gameCat="all",modeChosen=false;
+const OFFLINE_MSG="ما فيه اتصال، تقدر تلعب ضد الكمبيوتر";
+function offlineNow(){return !navigator.onLine||Cloud.offline||(Platform.kind==="web"&&!Cloud.on&&!Cloud.booting)}
+function softenErr(msg){if(msg&&/انتهت الجلسة/.test(String(msg))&&offlineNow())return OFFLINE_MSG;return msg||""}
+function preferOfflineMode(g){
+  if(modeChosen||!offlineNow())return;
+  const prefer=g.modes.includes("bot")?"bot":g.modes.includes("local")?"local":g.modes.includes("free")?"free":g.modes[0];
+  if(prefer&&g.modes.includes(prefer)&&wbMode==="online")wbMode=prefer;
+}
+const HERO_IDS=["webbound","ballclash","dama","wordweb","webline"];
+function heroGames(){return HERO_IDS.map(id=>GAMES.find(g=>g.id===id)).filter(Boolean)}
 async function openGame(id,mode){
   const need=id!=="webbound"&&!(globalThis.SPIDER_GAMES&&globalThis.SPIDER_GAMES.games);
   if(need){document.documentElement.classList.add("app-loading");document.documentElement.setAttribute("aria-busy","true")}
@@ -2303,7 +2320,7 @@ async function openGame(id,mode){
     if(id!=="webbound"){try{await ensureGames()}catch(e){toast("تعذّر تحميل اللعبة، تحقق من الاتصال وحاول مرة ثانية","bad");return}}
     if(gameById(id).id!==curGame){curGame=gameById(id).id;roomsCache=null;roomsAt=0}
     try{localStorage.setItem("spider_last",gameById(id).id)}catch(e){}
-    if(mode&&MODES[mode])wbMode=mode;
+    if(mode&&MODES[mode]){wbMode=mode;modeChosen=true}
     show("webbound");
     if(mode==="help"){const hb=curGame==="webbound"?$("helpBox"):$("gmRules");if(hb.tagName==="DETAILS")hb.open=true;setTimeout(()=>hb.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}),50)}
   }finally{if(need){document.documentElement.classList.remove("app-loading");document.documentElement.removeAttribute("aria-busy")}}
@@ -2323,13 +2340,13 @@ function renderHome(){
   const an=Cloud.announce;let annSeen="";try{annSeen=localStorage.getItem("spider_ann")||""}catch(e){}
   if(an&&an.text&&String(an.id)!==annSeen)b.append(h("div",{class:"announce",role:"status"},ic("bolt"),h("span",{class:"grow"},an.text),h("button",{class:"icon","aria-label":"إخفاء الإعلان",onclick:()=>{try{localStorage.setItem("spider_ann",String(an.id))}catch(e){}renderHome()}},"×")));
   if(Platform.kind==="web"&&Cloud.offline&&!Cloud.booting)b.append(h("button",{class:"banner warn",onclick:()=>cloudStart()},ic("bolt"),h("span",{class:"grow"},Cloud.err==="rate"?"الخادم مزحوم بتسجيلات جديدة من شبكتك. اضغط للمحاولة مرة ثانية":"ما فيه اتصال بالخادم. اضغط للمحاولة مرة ثانية"),ic("chev")));
-  /* featured games: one slide per game, swipe or wait */
-  const tr=$("homeCarTrack"),dots=$("homeCarDots");
-  if(tr.dataset.n!==String(GAMES.length)){tr.dataset.n=String(GAMES.length);
+  /* a short curated row, not one slide per game */
+  const heroes=heroGames(),tr=$("homeCarTrack"),dots=$("homeCarDots");
+  if(tr.dataset.n!==String(heroes.length)){tr.dataset.n=String(heroes.length);
     const keep=tr.querySelector("[data-static]");
     [...tr.children].forEach(el=>{if(el!==keep)el.remove()});
     dots.textContent="";
-    GAMES.forEach((g,k)=>{
+    heroes.forEach((g,k)=>{
       if(k===0&&keep){
         const art=keep.querySelector(".hc-art");
         if(art){art.classList.remove("boot-art");if(!art.querySelector("svg"))art.innerHTML=coverSvg(g.id)}
@@ -2450,13 +2467,15 @@ function renderWebbound(){
   if(isBC){$("wlPanel").classList.add("hidden");$("wbModes").classList.add("hidden");document.querySelectorAll("#webbound .wbp").forEach(p=>p.classList.add("hidden"));$("pubSec").classList.add("hidden");return}
   const isLine=g.id==="webline"||g.id==="webnest";$("wlPanel").classList.toggle("hidden",!isLine);$("wbModes").classList.toggle("hidden",isLine);
   if(isLine){document.querySelectorAll("#webbound .wbp").forEach(p=>p.classList.add("hidden"));$("pubSec").classList.add("hidden");renderWlPanel();return}
+  preferOfflineMode(g);
   if(!g.modes.includes(wbMode))wbMode=g.modes[0];
   $("wbModes").querySelectorAll("button").forEach(b=>b.classList.toggle("hidden",!g.modes.includes(b.dataset.mode)));
   let cp=$("wwCatPick");if(!cp){cp=h("div",{id:"wwCatPick"});$("btnBots").before(cp)}
   cp.textContent="";cp.classList.toggle("hidden",g.id!=="wordweb");
   if(g.id==="wordweb"){cp.append(h("span",{class:"lbl"},"التصنيف"),h("div",{class:"chips cat-chips"},...Object.keys(WW_CATS).map(k=>h("button",{class:"chip"+(wwCat===k?" on":""),onclick:()=>{wwCat=k;try{localStorage.setItem("spider_wwcat",k)}catch(e){}sfx("move");renderWebbound()}},WW_CATS[k].name))))}
-  $("wbModes").querySelectorAll("button").forEach(b=>{const on=b.dataset.mode===wbMode;b.classList.toggle("on",on);b.setAttribute("aria-selected",String(on));b.tabIndex=on?0:-1;b.onclick=()=>{if(wbMode!==b.dataset.mode){wbMode=b.dataset.mode;sfx("move");renderWebbound()}}});
+  $("wbModes").querySelectorAll("button").forEach(b=>{const on=b.dataset.mode===wbMode;b.classList.toggle("on",on);b.setAttribute("aria-selected",String(on));b.tabIndex=on?0:-1;b.onclick=()=>{if(wbMode!==b.dataset.mode){wbMode=b.dataset.mode;modeChosen=true;sfx("move");renderWebbound()}}});
   document.querySelectorAll("#webbound .wbp").forEach(p=>p.classList.toggle("hidden",p.dataset.panel!==wbMode));
+  if(wbMode==="online"&&offlineNow()){const cur=$("onlineErr").textContent||"";if(!cur||/انتهت الجلسة/.test(cur))onlineErr(OFFLINE_MSG)}
   $("pubSec").classList.toggle("hidden",Platform.kind!=="web");
   if(Platform.kind==="web"&&wbMode==="online"&&Date.now()-roomsAt>15000)loadRooms();
   const mb=g.maxBots||3;if(P.settings.botCount>mb)P.settings.botCount=mb;
@@ -2474,7 +2493,7 @@ $("wbModes").addEventListener("keydown",e=>{
   e.preventDefault();
   let i=btns.findIndex(b=>b.dataset.mode===wbMode);if(i<0)i=0;
   const d=e.key==="ArrowLeft"?1:-1,n=btns[(i+d+btns.length)%btns.length];
-  wbMode=n.dataset.mode;renderWebbound();const f=$("wbModes").querySelector('[data-mode="'+wbMode+'"]');if(f)f.focus();
+  wbMode=n.dataset.mode;modeChosen=true;renderWebbound();const f=$("wbModes").querySelector('[data-mode="'+wbMode+'"]');if(f)f.focus();
 });
 $("homeAv").addEventListener("click",()=>show("profile"));
 $("homeCoins").addEventListener("click",()=>show("store"));
@@ -2542,7 +2561,7 @@ function wlIconSvg(){return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect w
 
 /* ---- home carousel helpers ---- */
 let carIdx=0,carHold=0;
-function carGo(k,user){const tr=$("homeCarTrack");if(!tr||!tr.children.length)return;carIdx=(k+GAMES.length)%GAMES.length;
+function carGo(k,user){const tr=$("homeCarTrack");const n=tr&&tr.children.length;if(!n)return;carIdx=(k+n)%n;
   const el=tr.children[carIdx];tr.scrollTo({left:el.offsetLeft-tr.offsetLeft-(tr.clientWidth-el.clientWidth)/2,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
   if(user)carHold=Date.now()+12000;carDots()}
 function carSync(){const tr=$("homeCarTrack");if(!tr||!tr.children.length)return;const mid=tr.getBoundingClientRect().left+tr.clientWidth/2;let best=0,bd=1e9;
@@ -2647,7 +2666,7 @@ let bcLoading=null;
 function loadBC(){
   if(window.BCUI&&window.BC)return Promise.resolve();
   if(bcLoading)return bcLoading;
-  const add=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src+"?v=11";s.onload=ok;s.onerror=()=>no(new Error("ما قدرنا نحمّل ملفات اللعبة"));document.head.append(s)});
+  const add=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src+"?v=12";s.onload=ok;s.onerror=()=>no(new Error("ما قدرنا نحمّل ملفات اللعبة"));document.head.append(s)});
   bcLoading=add("bc_core.js").then(()=>add("bc_kinds.js")).then(()=>add("bc_new_data.js")).then(()=>add("bc_art.js")).then(()=>add("bc_shop_logic.js")).then(()=>add("bc_ui.js")).catch(e=>{bcLoading=null;throw e});
   return bcLoading;
 }
@@ -3330,7 +3349,7 @@ function renderOwner(){
   if(!Owner.verified){b.append(h("div",{class:"card empty"},"هذي الصفحة لصاحب اللعبة بس."));return}
   const web=Platform.kind==="web";
   b.append(h("div",{class:"card ocard"},h("div",{class:"ostat"},ic("check","ok"),h("span",{},web?"الخادم متحقق إن حسابك مالك اللعبة":"Claude متحقق إنك صاحب هذي اللعبة")),
-    h("p",{class:"hint",style:"margin:6px 0 0"},web?"كل أداة هنا تنفذ على الخادم وتنحفظ في حسابك، وتطلع لك في أي جهاز تدخل منه. وكل عملية تنسجل في سجل الخادم.":"الأدوات هنا تحفظ على حسابك في هذا الجهاز. المزامنة بين الأجهزة تحتاج سيرفر.")));
+    h("p",{class:"hint",style:"margin:6px 0 0"},web?"كل أداة هنا تنفذ على الخادم وتنحفظ في حسابك، وتطلع لك في أي جهاز تدخل منه. وكل عملية تنسجل في سجل الخادم.":"الأدوات هنا تحفظ على حسابك في هذا الجهاز. المزامنة بين الأجهزة تحتاج الخادم.")));
   const OT=web?OW_TABS_WEB:OW_TABS;if(!OT.some(x=>x[0]===owTab))owTab=OT[0][0];
   const tb=h("div",{class:"tabs"});tabs(tb,OT,owTab,id=>{owTab=id;renderOwner()});b.append(tb);
   const card=h("div",{class:"card ocard"});b.append(card);
@@ -3368,9 +3387,9 @@ function renderOwner(){
   }else if(owTab==="codes"&&Platform.kind==="web"){renderNetOwnerCodes(card)
   }else if(owTab==="codes"){
     card.append(h("h3",{},"الأكواد السرية"));
-    if(!Platform.db){card.append(h("p",{class:"hint"},"إنشاء الأكواد يحتاج قاعدة بيانات Claude، وما هي متاحة في هذا العرض. خارج Claude تحتاج سيرفر."));}
+    if(!Platform.db){card.append(h("p",{class:"hint"},"إنشاء الأكواد يحتاج قاعدة بيانات Claude، وما هي متاحة في هذا العرض. خارج Claude تحتاج الخادم."));}
     else{
-      card.append(h("p",{class:"hint",style:"margin-top:0"},"الأكواد اللي تسويها هنا تنحفظ في قاعدة بيانات اللعبة، وكل لاعب يقدر يفعّلها مرة وحدة. حد الاستخدام العام وإحصائيات الاستخدام تحتاج سيرفر."));
+      card.append(h("p",{class:"hint",style:"margin-top:0"},"الأكواد اللي تسويها هنا تنحفظ في قاعدة بيانات اللعبة، وكل لاعب يقدر يفعّلها مرة وحدة. حد الاستخدام العام وإحصائيات الاستخدام تحتاج الخادم."));
       const form=h("div",{});codeForm(form);card.append(form);
       if(owCodes===null&&!owCodesErr){card.append(h("p",{class:"hint"},"يحمّل الأكواد…"));loadOwnerCodes().then(()=>{if(screen==="owner"&&owTab==="codes")renderOwner()})}
       if(owCodesErr)card.append(h("p",{class:"err"},owCodesErr));
@@ -3503,8 +3522,8 @@ function renderOwnerPerks(card,web){
     sw("seeHint","SEEHINT","تلميح أحسن حركة","زر «تلميح» في دورك: WEBBOUND، وWEBGRID، وXO∞، والضامة، وحرب الخيوط."),
     sw("seeSecrets","SEESECRETS","كشف الأسرار","تشوف نرد الكل في كذّاب، وذباب خصمك، وأدوار «مين العنكبوت؟»، وكلمة WORDWEB."),
     sw("slowLine","SLOWLINE","تبطيء WEBLINE","العنكبوت يمشي أبطأ في تحدي اليوم واللعب الحر."),
-    sw("nestUndo","NESTUNDO","تراجع في بيت العنكبوت","زر يرجّع آخر حركة، والسيرفر يقبل النتيجة عادي."),
-    sw("bcPower","BCPOWER","قوة المالك في BALL CLASH","فريقك ياخذ ٣٠٪ صحة وضرر زيادة، والسيرفر يحسبها في التحقق."),
+    sw("nestUndo","NESTUNDO","تراجع في بيت العنكبوت","زر يرجّع آخر حركة، والخادم يقبل النتيجة عادي."),
+    sw("bcPower","BCPOWER","قوة المالك في BALL CLASH","فريقك ياخذ ٣٠٪ صحة وضرر زيادة، والخادم يحسبها في التحقق."),
     sw("stealth","STEALTH","وضع التخفي","يخفي تاج OWNER والدخلة الملكية وأشكالك الخاصة عن اللاعبين."));
   if(!web)return;
   card.append(h("div",{class:"sec-h"},h("h3",{class:"ic-h"},ic("bolt"),"إعلان لكل اللاعبين")));
@@ -3611,7 +3630,7 @@ function seatIsOwner(i){
   return isOwnerId(p.id)&&roster().some(r=>r.id===p.id&&r.owner);
 }
 const skinOf=i=>{const k=G&&G.players[i]?G.players[i].skin:i;let sk=SKINS[(k>=0&&k<SKINS.length)?k:0];if(isOwnerItem(sk)&&!seatIsOwner(i))sk=SKINS[i%6];return sk};
-function onlineErr(msg){const e=$("onlineErr");e.textContent=msg||"";e.classList.toggle("hidden",!msg)}
+function onlineErr(msg){msg=softenErr(msg);const e=$("onlineErr");e.textContent=msg||"";e.classList.toggle("hidden",!msg)}
 function setBusy(b){$("btnCreate").disabled=b;$("btnJoin").disabled=b;$("btnCreate").textContent=b?"جاري الاتصال…":"سوّ غرفة جديدة"}
 
 /* ================= online room ================= */
@@ -3619,7 +3638,7 @@ async function enterRoom(code,creator){
   onlineErr("");setBusy(true);
   await Platform.ready;
   if(Platform.kind==="web"){setBusy(false);return netRoomEnter(creator,code)}
-  if(!Platform.room){setBusy(false);onlineErr(window.claude?"التحدي أون لاين يشتغل لما تفتح اللعبة من رابطها داخل Claude وأنت مسجّل دخول. تقدر تلعب ضد الكمبيوتر أو على نفس الجوال الحين.":"ما قدرت أتصل بخادم الأونلاين. تأكد من الإنترنت وجرّب مرة ثانية.");return}
+  if(!Platform.room){setBusy(false);onlineErr(window.claude?"التحدي أونلاين يشتغل لما تفتح اللعبة من رابطها داخل Claude وأنت مسجّل دخول. تقدر تلعب ضد الكمبيوتر أو على نفس الجوال الحين.":"ما قدرت أتصل بخادم الأونلاين. تأكد من الإنترنت وجرّب مرة ثانية.");return}
   let r;
   try{r=await Platform.room.join("spider-"+code.toLowerCase())}
   catch(e){setBusy(false);onlineErr("ما قدرت أدخل الغرفة. تأكد إن صاحب اللعبة دعاك لها، وجرّب مرة ثانية.");return}
@@ -4113,6 +4132,7 @@ function renderWin(){
   const seat=mySeatForResult(),counted=M&&M.mode!=="local"&&seat>=0;
   paintKicker($("winKicker"),counted&&i===seat,counted?seat:-1);
   $("winText").textContent=counted?(i===seat?"فزت!":"خسرت"):"فاز "+p.nick+"!";
+  paintWinTitle($("winText"),!counted||i===seat,counted?seat:-1);
   $("winSub").textContent=counted&&i!==seat?"فاز "+p.nick+". تجيها المرة الجاية.":"";
   const wpub=pubFor(p),who=$("winWho");who.textContent="";
   who.append(wpub?avatar(sk.id,wpub.fr,44,wpub.dc):ballSvg(sk,40),h("div",{class:"ww-t"},h("b",{},nameEl(p.nick,wpub&&wpub.th),wpub&&wpub.bd?badgeEl(wpub.bd,16):null),h("span",{},p.bot?"الكمبيوتر":(findItem("title",wpub&&wpub.ti)||{}).name||"")));
@@ -4163,6 +4183,11 @@ $("btnHint").addEventListener("click",()=>{
   else{hintCell=null;tool="wall";ghost=[a.w[0],a.w[1],a.w[2]];toast("التلميح: هذا أفضل مكان لخيط، اضغط «ثبّت الخيط»","good")}
   sfx("move");render();
 });
+function paintWinTitle(el,won,seat){
+  if(!el)return;
+  el.classList.remove("is-win","is-loss","is-draw");
+  el.classList.add(seat>=0&&!won?"is-loss":"is-win");
+}
 function paintKicker(el,won,seat){
   if(!el)return;
   el.classList.remove("is-win","is-loss");
@@ -4299,9 +4324,9 @@ $("btnQuit").onclick=()=>{
   const q=$("btnQuit");
   if(G&&G.winner==null&&Date.now()-quitArm>2500){
     quitArm=Date.now();q.textContent=wouldForfeit()?"متأكد؟ تنحسب خسارة":"متأكد؟";q.classList.add("arm");
-    setTimeout(()=>{q.textContent="طلوع";q.classList.remove("arm")},2500);return;
+    setTimeout(()=>{q.textContent="خروج";q.classList.remove("arm")},2500);return;
   }
-  quitArm=0;q.textContent="طلوع";q.classList.remove("arm");goHome();
+  quitArm=0;q.textContent="خروج";q.classList.remove("arm");goHome();
 };
 $("btnLeaveLobby").onclick=goHome;$("btnHome").onclick=goHome;
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&ghost&&$("sheet").classList.contains("hidden")){ghost=null;updateGhostUI()}});
@@ -4342,7 +4367,7 @@ async function api(action,payload){
   if(!Cloud.sb)throw Object.assign(new Error("ما فيه اتصال بالخادم"),{code:"offline"});
   const call=async()=>{
     const token=await sessionToken(false);
-    if(!token)throw Object.assign(new Error("انتهت الجلسة، اضغط للمحاولة مرة ثانية"),{code:"auth"});
+    if(!token)throw Object.assign(new Error(offlineNow()?"ما فيه اتصال، تقدر تلعب ضد الكمبيوتر":"انتهت الجلسة، اضغط للمحاولة مرة ثانية"),{code:offlineNow()?"offline":"auth"});
     return withTimeout(Cloud.sb.functions.invoke("spider",{body:{action,payload:payload||{}},headers:{Authorization:"Bearer "+token}}),15000);
   };
   let r;
@@ -4440,7 +4465,7 @@ async function cloudStart(){
   Cloud.booting=true;Cloud.offline=false;
   try{
     const token=await sessionToken(true);
-    if(!token||!Cloud.user)throw Object.assign(new Error("انتهت الجلسة"),{code:"auth"});
+    if(!token||!Cloud.user)throw Object.assign(new Error(!navigator.onLine?"ما فيه اتصال، تقدر تلعب ضد الكمبيوتر":"انتهت الجلسة"),{code:!navigator.onLine?"offline":"auth"});
     cid=Cloud.user.id;
     const legacy=P.__ver?null:{nickname:P.nickname,settings:P.settings};
     const r=await api("boot",{legacy});
@@ -4644,7 +4669,7 @@ function renderRoomList(){
   const box=$("roomList");if(!box)return;box.textContent="";
   if(roomsLoading&&!roomsCache){box.append(h("div",{class:"skel",style:"height:62px"}),h("div",{class:"skel",style:"height:62px;margin-top:8px"}));return}
   if(!roomsCache)return;
-  if(roomsCache.error){box.append(h("p",{class:"err",style:"margin:6px 0"},roomsCache.error));return}
+  if(roomsCache.error){box.append(h("p",{class:"err",style:"margin:6px 0"},softenErr(roomsCache.error)));return}
   if(!roomsCache.length){box.append(h("div",{class:"rooms-empty"},ic("users"),h("span",{},"ما فيه غرف عامة مفتوحة الحين. سوّ غرفتك العامة وخلّ اللاعبين يدخلون.")));return}
   for(const r of roomsCache){const host=r.host||{},pub=sanPub(host.pub,!!host.owner)||{};
     box.append(h("div",{class:"roomrow"},avatar((SKINS[host.skin]||SKINS[0]).id,pub.fr,40,pub.dc),
@@ -5093,6 +5118,7 @@ function renderMgWin(){
   const won=G.winners?G.winners.includes(seat):G.winner===seat;
   paintKicker($("mgKicker"),!!won,seat);
   $("mgWinText").textContent=seat>=0?(won?"فزت!":"خسرت"):G.team?(G.team==="flies"?"فاز الذباب!":"فازت العناكب!"):"فاز "+w.nick+"!";
+  paintWinTitle($("mgWinText"),seat<0||won,seat);
   $("mgWinSub").textContent=mgSub(seat);
   const ul=$("mgScores");ul.textContent="";G.players.forEach((q,k)=>{const n=G.score[q.id]||0;ul.append(h("li",{},ballSvg(skinOf(k),22),h("span",{},q.nick,q.bot?ic("cpu","pc-bot"):null),h("b",{class:"wins"},ic("trophy"),fmt(n))))});
   const rb=$("mgRewards"),lr=lastResult&&lastResult.mid===G.mid?lastResult:null,key=G.mid+"|"+(lr?(lr.out?"out":lr.skipped||""):"wait");
@@ -5230,8 +5256,8 @@ $("mgBoard").addEventListener("keydown",e=>{
   e.preventDefault();mgPlay({t:"l",o:ln.dataset.o,r:+ln.dataset.r,c:+ln.dataset.c});
 });
 $("mgQuit").addEventListener("click",()=>{
-  if(G&&G.winner==null&&wouldForfeit()&&Date.now()-mgQuitArm>2500){mgQuitArm=Date.now();$("mgQuit").textContent="متأكد؟ تنحسب خسارة";setTimeout(()=>{$("mgQuit").textContent="طلوع"},2500);return}
-  $("mgQuit").textContent="طلوع";goHome();
+  if(G&&G.winner==null&&wouldForfeit()&&Date.now()-mgQuitArm>2500){mgQuitArm=Date.now();$("mgQuit").textContent="متأكد؟ تنحسب خسارة";setTimeout(()=>{$("mgQuit").textContent="خروج"},2500);return}
+  $("mgQuit").textContent="خروج";goHome();
 });
 $("mgSound").addEventListener("click",()=>{Act.settings({mute:!P.settings.mute});$("mgSound").replaceChildren(ic(P.settings.mute?"mute":"sound"));if(!P.settings.mute)sfx("move")});
 $("mgAgain").addEventListener("click",()=>{if(G&&G.game&&mode==="local")return mgStartLocal(false,0,G);again()});
@@ -5245,10 +5271,10 @@ function renderWlPanel(){
   const mine=$("wlMine"),bd=$("wlBoard");mine.textContent="";bd.textContent="";
   if(Platform.kind!=="web"){mine.append(h("p",{class:"hint"},"الترتيب والمكافآت في نسخة الموقع. هنا تقدر تلعب وتتدرّب."));return}
   const gid=curGame==="webnest"?"webnest":"webline";
-  $("wlPanel").querySelector(".lead").textContent=gid==="webnest"?"نفس ترتيب البيض لكل اللاعبين اليوم، وأعلى نتيجة تتصدر. السيرفر يعيد حركاتك ويتأكد من نتيجتك.":"نفس الخريطة ونفس الذباب لكل اللاعبين اليوم، وأعلى نتيجة تتصدر. السيرفر يعيد تشغيل لعبتك ويتأكد من نتيجتك.";
+  $("wlPanel").querySelector(".lead").textContent=gid==="webnest"?"نفس ترتيب البيض لكل اللاعبين اليوم، وأعلى نتيجة تتصدر. الخادم يعيد حركاتك ويتأكد من نتيجتك.":"نفس الخريطة ونفس الذباب لكل اللاعبين اليوم، وأعلى نتيجة تتصدر. الخادم يعيد تشغيل لعبتك ويتأكد من نتيجتك.";
   if(!wlBoardCache||wlBoardCache.gid!==gid||Date.now()-wlBoardAt>20000){if(wlBoardCache&&wlBoardCache.gid!==gid)wlBoardCache=null;loadWlBoard()}
   const v=wlBoardCache;if(!v){bd.append(h("div",{class:"skel",style:"height:60px"}));return}
-  if(v.error){bd.append(h("p",{class:"err"},v.error));return}
+  if(v.error){bd.append(h("p",{class:"err"},softenErr(v.error)));return}
   $("wlDay").textContent=v.day||"";
   mine.append(h("div",{class:"wl-mine"},h("span",{},"أفضل نتيجة لك اليوم"),h("b",{},v.mine?fmt(v.mine.score):"—"),v.mine?h("span",{class:"tagc"},"#"+fmt(v.mine.rank)):h("span",{class:"faint"},"ما لعبت اليوم")));
   if(!v.rows.length){bd.append(h("p",{class:"hint"},"محد لعب تحدي اليوم للحين. كن الأول!"));return}
@@ -5311,7 +5337,7 @@ async function wlEnd(){
     if(r.out.capped)rb.append(h("p",{class:"hint center"},"خلصت مكافآت اليوم (٥ جولات)، والنتيجة انحسبت في الترتيب."));
     else rb.append(h("div",{class:"chips",style:"justify-content:center"},h("span",{class:"pill"},"+"+fmt(r.out.xp)+" XP"),h("span",{class:"pill coins"},coinEl("+"+fmt(r.out.coins)))));
     wlBoardCache=null}
-  catch(e){rb.textContent="";rb.append(h("p",{class:"err"},e.message))}
+  catch(e){rb.textContent="";rb.append(h("p",{class:"err"},softenErr(e.message)||e.message))}
 }
 function wlStop(){WLG.run=false;cancelAnimationFrame(WLG.raf)}
 $("wlDaily").addEventListener("click",()=>curGame==="webnest"?nsStart(true):wlStart(true));
@@ -5355,7 +5381,7 @@ async function nsEnd(){
     if(r.out.capped)rb.append(h("p",{class:"hint center"},"خلصت مكافآت اليوم (٥ جولات)، والنتيجة انحسبت في الترتيب."));
     else rb.append(h("div",{class:"chips",style:"justify-content:center"},h("span",{class:"pill"},"+"+fmt(r.out.xp)+" XP"),h("span",{class:"pill coins"},coinEl("+"+fmt(r.out.coins)))));
     wlBoardCache=null}
-  catch(e){rb.textContent="";rb.append(h("p",{class:"err"},e.message))}
+  catch(e){rb.textContent="";rb.append(h("p",{class:"err"},softenErr(e.message)||e.message))}
 }
 $("nsAgain").addEventListener("click",()=>nsStart(NSG.mode==="daily"));
 $("nsHome").addEventListener("click",()=>{NSG.run=false;openGame("webnest")});
