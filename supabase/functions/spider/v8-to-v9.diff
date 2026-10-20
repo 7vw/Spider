@@ -1,5 +1,5 @@
 --- supabase/functions/spider/v8.index.ts	2026-10-20 14:55:43.094451164 +0000
-+++ supabase/functions/spider/index.ts	2026-10-20 14:58:05.692091725 +0000
++++ supabase/functions/spider/index.ts	2026-10-20 15:08:38.588020060 +0000
 @@ -1,6 +1,10 @@
 -// SPIDER — Supabase Edge Function "spider" (accounts, rooms, 12 games, store, codes, friends, owner tools)
 -// Paste this whole file into: Supabase Dashboard → Edge Functions → spider → Code → Deploy
@@ -13,7 +13,7 @@
  // @ts-nocheck
  /* BALL CLASH — battle engine v2. Shared by the browser and the server.
     Deterministic: fixed 60 Hz steps, one seeded random stream, trig built from + − × ÷ only.
-@@ -386,6 +390,269 @@
+@@ -386,6 +390,270 @@
  BC.PICK=BC.ORDER.filter(function(id){return !BC.KINDS[id].hidden});
  })(BC);
  
@@ -193,8 +193,9 @@
 +})(typeof globalThis!=="undefined"?globalThis:this);
 +/* Ball Clash shop actions for the spider edge function.
 +   Live handle() is handle(action, p, user, db) and errors throw fail().
-+   There is no admin, json(), or payload inside handle. db.rpc calls
-+   private.bc_shop_* through the service-role client (see supaDB).
++   There is no admin, json(), or payload inside handle. db.rpc calls the
++   public wrappers (bc_shop_buy / bc_shop_sync), which only service_role may
++   execute. Schema private stays off the API.
 +
 +   In the action switch:
 +     case "bc_buy":
@@ -283,7 +284,7 @@
  
  /* ================= basics ================= */
  const clock={now:()=>Date.now()};
-@@ -1571,7 +1838,7 @@
+@@ -1571,7 +1839,7 @@
    new(players,o){const g=gmBase("ballclash",players.slice(0,4),o);g.timer=0;g.size=Math.min(5,Math.max(1,(o.bcSize|0)||2));g.pick=o.bcPick==="draft"?"draft":"secret";
      g.phase="pick";g.locked=g.players.map(()=>false);g.picks=g.players.map(()=>[]);g.turn=0;g.deadline=clock.now()+(g.pick==="draft"?25000:75000);return g},
    deal(g){return g.players.map(()=>({picks:[]}))},
@@ -292,7 +293,7 @@
    legal(g,s,a,pv){
      if(g.winner!=null||g.phase!=="pick")return "انتهى الاختيار";if(!a)return "حركة غير صحيحة";
      if(a.t==="timeout")return clock.now()>=g.deadline?null:"باقي وقت";
-@@ -1585,7 +1852,7 @@
+@@ -1585,7 +1853,7 @@
      if(BCR.ready(g))BCR.begin(g,pv);return {g,privs:pv}},
    nextTurn(g){for(let k=1;k<=g.n;k++){const t=(g.turn+k)%g.n;if(g.picks[t].length<g.size){g.turn=t;g.deadline=clock.now()+25000;return}}},
    ready(g){return g.pick==="secret"?g.locked.every(Boolean):g.picks.every(p=>p.length>=g.size)},
@@ -301,7 +302,7 @@
      if(g.pick==="secret"){for(let i=0;i<g.n;i++)if(!g.locked[i]){pv[i].picks=Array.from({length:g.size},rnd);g.locked[i]=true}}
      else{const used=new Set(g.picks.flat()),free=pool.filter(k=>!used.has(k));g.picks[g.turn].push(free[Math.floor(Math.random()*free.length)]||pool[0]);BCR.nextTurn(g)}},
    begin(g,pv){g.lineups=g.pick==="secret"?pv.map(x=>x.picks.slice()):g.picks.map(p=>p.slice());g.seed=(Math.floor(Math.random()*2147483646)+1)>>>0;g.phase="battle";
-@@ -2363,11 +2630,27 @@
+@@ -2363,11 +2631,27 @@
    }
  
    /* ---- BALL CLASH: the server picks the seed, replays the battle itself, then rewards ---- */
@@ -329,15 +330,15 @@
      const o=p.opts||{},cfg={teams:clean,ff:!!o.ff,synergy:o.syn!==false,hpMul:[.5,1,1.5,2].includes(o.hpMul)?o.hpMul:1,size:[440,560,720].includes(o.size)?o.size:560};
      if(String(p.mode)!=="custom"&&await ownerOn(db,uid,"bcPower"))cfg.boost={team:0,f:1.3};
      const id=newId(),seed=(Math.floor(Math.random()*2147483646)+1)>>>0;
-@@ -2757,6 +3040,7 @@
+@@ -2757,6 +3041,7 @@
    const chk=r=>{if(r.error)throw r.error;return r.data};
    const iso=ms=>new Date(ms).toISOString();
    return {
-+    async rpc(fn,args){return a.schema("private").rpc(fn,args)},
++    async rpc(fn,args){return a.rpc(fn,args)},
      async getProfile(id){return chk(await a.from("profiles").select("id,role,data,version").eq("id",id).maybeSingle())},
      async insertProfile(id,data,nickname){const r=await a.from("profiles").insert({id,data,nickname:nickname||"",version:1});if(r.error&&r.error.code!=="23505")throw r.error},
      async updateProfile(id,version,data,nickname){const r=chk(await a.from("profiles").update({data,nickname:nickname||"",version:version+1,updated_at:iso(Date.now())}).eq("id",id).eq("version",version).select("version"));return Array.isArray(r)&&r.length===1},
-@@ -2820,7 +3104,7 @@
+@@ -2820,7 +3105,7 @@
      async authLinkToken(email){const r=await a.auth.admin.generateLink({type:"magiclink",email});if(r.error)throw r.error;return r.data.properties.hashed_token}
    };
  }
@@ -346,7 +347,7 @@
    const {createClient}=await import("npm:@supabase/supabase-js@2");
    const admin=createClient(Deno.env.get("SUPABASE_URL"),Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),{auth:{persistSession:false,autoRefreshToken:false}});
    const db=supaDB(admin);
-@@ -2846,4 +3130,15 @@
+@@ -2846,4 +3131,15 @@
        console.error(e);return send({error:"server",message:"صار خطأ في الخادم"},500);
      }
    });

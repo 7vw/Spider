@@ -79,7 +79,7 @@ src = src.replace(startOld, startNew);
 
 src = src.replace(
   `return {\n    async getProfile(id)`,
-  `return {\n    async rpc(fn,args){return a.schema("private").rpc(fn,args)},\n    async getProfile(id)`
+  `return {\n    async rpc(fn,args){return a.rpc(fn,args)},\n    async getProfile(id)`
 );
 
 src = src.replace(

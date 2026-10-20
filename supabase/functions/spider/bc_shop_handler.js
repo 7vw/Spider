@@ -1,7 +1,8 @@
 /* Ball Clash shop actions for the spider edge function.
    Live handle() is handle(action, p, user, db) and errors throw fail().
-   There is no admin, json(), or payload inside handle. db.rpc calls
-   private.bc_shop_* through the service-role client (see supaDB).
+   There is no admin, json(), or payload inside handle. db.rpc calls the
+   public wrappers (bc_shop_buy / bc_shop_sync), which only service_role may
+   execute. Schema private stays off the API.
 
    In the action switch:
      case "bc_buy":

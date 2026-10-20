@@ -10,19 +10,23 @@
 -- Do not apply it to production (xaqcqeenythjxadyflmr) until Mohammed approves.
 -- Applying it does not sell anything: spider v9 is what calls these functions.
 --
--- The functions live in schema private so PostgREST does not serve them from
--- public. Before deploying v9, add `private` to the project's exposed schemas
--- so the service-role client can call .schema('private').rpc(...).
--- anon and authenticated have no USAGE on private and no EXECUTE on these
--- functions, so exposing the schema does not let the browser call them.
+-- Tables and the buy/sync bodies live in schema private, which is not added
+-- to the API exposed schemas. PostgREST only sees two thin public wrappers,
+-- public.bc_shop_buy and public.bc_shop_sync. Those are SECURITY DEFINER,
+-- so the service role needs no privileges on private. EXECUTE on the wrappers
+-- is revoked from public, anon and authenticated and granted only to
+-- service_role. v9 calls them with db.rpc, the same way v8 calls use_code.
+-- Do not add schema private to the exposed schemas.
+-- Local check on Postgres 17.11 (database spider_bc, not production):
+-- applied three times, including once after the hardening migration.
+-- A copy that raised an error before commit left the catalog unchanged.
 
 begin;
 
 create schema if not exists private;
 
 revoke all on schema private from public;
-revoke all on schema private from anon, authenticated;
-grant usage on schema private to service_role;
+revoke all on schema private from anon, authenticated, service_role;
 
 create table if not exists private.bc_catalog (
   kind text not null check (kind in ('ball','look','arena')),
@@ -54,12 +58,9 @@ alter table private.bc_catalog enable row level security;
 alter table private.bc_owned enable row level security;
 alter table private.bc_receipt enable row level security;
 
-revoke all on table private.bc_catalog from public, anon, authenticated;
-revoke all on table private.bc_owned from public, anon, authenticated;
-revoke all on table private.bc_receipt from public, anon, authenticated;
-grant select, insert, update, delete on table private.bc_catalog to service_role;
-grant select, insert, update, delete on table private.bc_owned to service_role;
-grant select, insert, update, delete on table private.bc_receipt to service_role;
+revoke all on table private.bc_catalog from public, anon, authenticated, service_role;
+revoke all on table private.bc_owned from public, anon, authenticated, service_role;
+revoke all on table private.bc_receipt from public, anon, authenticated, service_role;
 
 -- Prices are defined here, not by the client. Re-applying sets these prices
 -- again and does not delete any other catalog row.
@@ -273,13 +274,36 @@ exception
 end;
 $$;
 
-revoke all on function private.bc_shop_owned_json(uuid) from public, anon, authenticated;
-revoke all on function private.bc_shop_sync(uuid) from public, anon, authenticated;
-revoke all on function private.bc_shop_buy(uuid, text, text, text) from public, anon, authenticated;
-grant execute on function private.bc_shop_buy(uuid, text, text, text) to service_role;
-grant execute on function private.bc_shop_sync(uuid) to service_role;
+revoke all on function private.bc_shop_owned_json(uuid) from public, anon, authenticated, service_role;
+revoke all on function private.bc_shop_sync(uuid) from public, anon, authenticated, service_role;
+revoke all on function private.bc_shop_buy(uuid, text, text, text) from public, anon, authenticated, service_role;
 
-alter default privileges in schema private revoke all on functions from public, anon, authenticated;
-alter default privileges in schema private revoke all on tables from public, anon, authenticated;
+-- The only API entry points. DEFINER runs as the migration owner, which can
+-- see schema private. service_role never receives a grant on that schema.
+create or replace function public.bc_shop_buy(p_user uuid, p_kind text, p_item text, p_request text)
+returns jsonb
+language sql
+security definer
+set search_path = ''
+as $$
+  select private.bc_shop_buy(p_user, p_kind, p_item, p_request);
+$$;
+
+create or replace function public.bc_shop_sync(p_user uuid)
+returns jsonb
+language sql
+security definer
+set search_path = ''
+as $$
+  select private.bc_shop_sync(p_user);
+$$;
+
+revoke all on function public.bc_shop_buy(uuid, text, text, text) from public, anon, authenticated;
+revoke all on function public.bc_shop_sync(uuid) from public, anon, authenticated;
+grant execute on function public.bc_shop_buy(uuid, text, text, text) to service_role;
+grant execute on function public.bc_shop_sync(uuid) to service_role;
+
+alter default privileges in schema private revoke all on functions from public, anon, authenticated, service_role;
+alter default privileges in schema private revoke all on tables from public, anon, authenticated, service_role;
 
 commit;

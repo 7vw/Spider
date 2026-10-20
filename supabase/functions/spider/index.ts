@@ -566,8 +566,9 @@ if(typeof module!=="undefined"&&module.exports)module.exports=api;
 })(typeof globalThis!=="undefined"?globalThis:this);
 /* Ball Clash shop actions for the spider edge function.
    Live handle() is handle(action, p, user, db) and errors throw fail().
-   There is no admin, json(), or payload inside handle. db.rpc calls
-   private.bc_shop_* through the service-role client (see supaDB).
+   There is no admin, json(), or payload inside handle. db.rpc calls the
+   public wrappers (bc_shop_buy / bc_shop_sync), which only service_role may
+   execute. Schema private stays off the API.
 
    In the action switch:
      case "bc_buy":
@@ -3040,7 +3041,7 @@ function supaDB(a){
   const chk=r=>{if(r.error)throw r.error;return r.data};
   const iso=ms=>new Date(ms).toISOString();
   return {
-    async rpc(fn,args){return a.schema("private").rpc(fn,args)},
+    async rpc(fn,args){return a.rpc(fn,args)},
     async getProfile(id){return chk(await a.from("profiles").select("id,role,data,version").eq("id",id).maybeSingle())},
     async insertProfile(id,data,nickname){const r=await a.from("profiles").insert({id,data,nickname:nickname||"",version:1});if(r.error&&r.error.code!=="23505")throw r.error},
     async updateProfile(id,version,data,nickname){const r=chk(await a.from("profiles").update({data,nickname:nickname||"",version:version+1,updated_at:iso(Date.now())}).eq("id",id).eq("version",version).select("version"));return Array.isArray(r)&&r.length===1},

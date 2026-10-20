@@ -1,5 +1,6 @@
 -- OPTIONAL. Do not apply with the shop migration, and do not apply to
--- production until Mohammed approves. This file was not run.
+-- production until Mohammed approves.
+-- Applied twice on the local Postgres 17.11 stand-in only.
 --
 -- Confirmed from the live spider v8 source: every table read and write,
 -- including public.accounts and public.game_secrets, goes through the
