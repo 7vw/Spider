@@ -1419,7 +1419,21 @@ body{overflow-x:clip}
 .bc-stage-meta p{margin:6px 0 8px;color:var(--muted);font-size:13px;line-height:1.55}
 .bc-stage-meta .chips{margin-top:4px}
 @media (max-width:520px){.bc-stage{grid-template-columns:1fr}.bc-stage-cv{min-height:0}}
+@media (min-width:1100px){.bc-shop{max-width:1100px;margin-inline:auto}.bc-shop .bc-stage{grid-template-columns:220px minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){.bc-fi{animation:none}}
+.bc-mode.bc-store{border-color:rgba(230,184,92,.55);background:linear-gradient(135deg,rgba(230,184,92,.22),rgba(141,101,246,.16)),var(--surface)}
+.bc-shop-note,.bc-shop-banner{margin:8px 0;padding:10px 12px;border-radius:12px;font-size:13px;line-height:1.55}
+.bc-shop-note{background:rgba(230,184,92,.08);border:1px solid rgba(230,184,92,.28);color:var(--muted)}
+.bc-shop-banner{background:rgba(230,41,72,.12);border:1px solid rgba(230,41,72,.45);color:#FFD0D8}
+.bc-wallet{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(230,184,92,.12);border:1px solid rgba(230,184,92,.45);min-height:44px}
+.bc-price{display:inline-flex;align-items:center;font-weight:800;color:#FFE7A3}
+.bc-free{font-size:12px;font-weight:800;color:#A3A9BF}
+.bc-lock{font-size:12px;font-weight:700;color:#E6B85C}
+.bc-short,.bc-shortbtn{color:#FFB4C0}
+.bc-shop .bc-stage-meta .primary,.bc-shop .bc-stage-meta .small,.bc-card .primary,.bc-card .small{min-height:44px}
+.bc-shortbtn{white-space:normal;line-height:1.35;text-align:center}
+.bc-card.locked{box-shadow:inset 0 0 0 1px rgba(230,184,92,.35)}
+.bc-shop .bc-card{width:100%}
 
 </style>
 </head>
@@ -1692,9 +1706,10 @@ body{overflow-x:clip}
       <button class="bc-mode" id="bcDraft"><b>TEAM DRAFT</b><span>اختيار بالتناوب ضد الكمبيوتر</span></button>
       <button class="bc-mode" id="bcTour"><b>TOURNAMENT</b><span>بطولات من ٤ لين ٣٢ مشارك</span></button>
       <button class="bc-mode" id="bcColl"><b>COLLECTION</b><span>الكور، المظاهر، والساحات</span></button>
+      <button class="bc-mode bc-store" id="bcShop"><b>STORE</b><span>كور ومظاهر وساحات بعملات اللعبة</span></button>
       <button class="bc-mode" id="bcStats"><b>STATISTICS</b><span>إحصائياتك وإعدادات الرسومات</span></button>
     </div>
-    <p class="hint" id="bcNote">٦٠ كورة في ٦ مجموعات، كلها متاحة من البداية. المظاهر والساحات شكلية ومجانية، وما تغيّر قوة الكورة.</p>
+    <p class="hint" id="bcNote">الستون الأصلية متاحة من البداية. المتجر يبيع كورًا إضافية ومظاهر وساحات بعملات اللعبة فقط، والقوة تبقى في نفس المستوى.</p>
   </div>
   <div class="card hidden" id="wlPanel">
     <h2>تحدي اليوم</h2>
@@ -3127,7 +3142,7 @@ const BCR={hidden:true,simultaneous:true,
   new(players,o){const g=gmBase("ballclash",players.slice(0,4),o);g.timer=0;g.size=Math.min(5,Math.max(1,(o.bcSize|0)||2));g.pick=o.bcPick==="draft"?"draft":"secret";
     g.phase="pick";g.locked=g.players.map(()=>false);g.picks=g.players.map(()=>[]);g.turn=0;g.deadline=clock.now()+(g.pick==="draft"?25000:75000);return g},
   deal(g){return g.players.map(()=>({picks:[]}))},
-  okKind(k){return typeof BC!=="undefined"&&!!BC.KINDS[k]&&!BC.KINDS[k].hidden},
+  okKind(k){return typeof BC!=="undefined"&&!!BC.KINDS[k]&&!BC.KINDS[k].hidden&&!BC.KINDS[k].shop},
   legal(g,s,a,pv){
     if(g.winner!=null||g.phase!=="pick")return "انتهى الاختيار";if(!a)return "حركة غير صحيحة";
     if(a.t==="timeout")return clock.now()>=g.deadline?null:"باقي وقت";
@@ -3141,7 +3156,7 @@ const BCR={hidden:true,simultaneous:true,
     if(BCR.ready(g))BCR.begin(g,pv);return {g,privs:pv}},
   nextTurn(g){for(let k=1;k<=g.n;k++){const t=(g.turn+k)%g.n;if(g.picks[t].length<g.size){g.turn=t;g.deadline=clock.now()+25000;return}}},
   ready(g){return g.pick==="secret"?g.locked.every(Boolean):g.picks.every(p=>p.length>=g.size)},
-  autoFill(g,pv){const pool=BC.PICK.slice(),rnd=()=>pool[Math.floor(Math.random()*pool.length)];
+  autoFill(g,pv){const pool=BC.PICK.filter(k=>BC.KINDS[k]&&!BC.KINDS[k].shop),rnd=()=>pool[Math.floor(Math.random()*pool.length)];
     if(g.pick==="secret"){for(let i=0;i<g.n;i++)if(!g.locked[i]){pv[i].picks=Array.from({length:g.size},rnd);g.locked[i]=true}}
     else{const used=new Set(g.picks.flat()),free=pool.filter(k=>!used.has(k));g.picks[g.turn].push(free[Math.floor(Math.random()*free.length)]||pool[0]);BCR.nextTurn(g)}},
   begin(g,pv){g.lineups=g.pick==="secret"?pv.map(x=>x.picks.slice()):g.picks.map(p=>p.slice());g.seed=(Math.floor(Math.random()*2147483646)+1)>>>0;g.phase="battle";
@@ -3262,6 +3277,7 @@ function loadProfile(){
 }
 let P=normalizeProfile(null);
 function saveProfile(){store.set(PROFILE_KEY,JSON.stringify(P))}
+function setCoins(n){n=Math.floor(Number(n));if(!Number.isFinite(n)||n<0)return;P.coins=n;saveProfile();const cc=$("homeCoins");if(cc){cc.textContent="";cc.removeAttribute("aria-label");cc.append(ic("coin","gold"),h("span",{class:"sr-only"},"رصيد العملات"),h("span",{},coinsText()))}}
 
 /* ================= progression ================= */
 const isOwned=(t,id)=>!!P.owned[t]&&P.owned[t].includes(id);
@@ -4976,13 +4992,13 @@ let bcLoading=null;
 function loadBC(){
   if(window.BCUI&&window.BC)return Promise.resolve();
   if(bcLoading)return bcLoading;
-  const add=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src+"?v=9";s.onload=ok;s.onerror=()=>no(new Error("ما قدرنا نحمّل ملفات اللعبة"));document.head.append(s)});
-  bcLoading=add("bc_core.js").then(()=>add("bc_kinds.js")).then(()=>add("bc_art.js")).then(()=>add("bc_ui.js")).catch(e=>{bcLoading=null;throw e});
+  const add=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src+"?v=10";s.onload=ok;s.onerror=()=>no(new Error("ما قدرنا نحمّل ملفات اللعبة"));document.head.append(s)});
+  bcLoading=add("bc_core.js").then(()=>add("bc_kinds.js")).then(()=>add("bc_new_data.js")).then(()=>add("bc_art.js")).then(()=>add("bc_shop_logic.js")).then(()=>add("bc_ui.js")).catch(e=>{bcLoading=null;throw e});
   return bcLoading;
 }
 async function bcOpen(mode){
-  const bs=["bcQuick","bcTeam","bcCustom","bcDraft","bcTour","bcColl","bcStats"].map(id=>$(id));bs.forEach(b=>b.disabled=true);
-  try{await loadBC();if(mode==="tour")window.BCUI.tour();else if(mode==="stats")window.BCUI.stats();else if(mode==="collection")window.BCUI.collection();else window.BCUI.open(mode)}catch(e){toast(e.message+". تأكد إن ملفات BALL CLASH الأربعة مرفوعة مع اللعبة.","bad")}
+  const bs=["bcQuick","bcTeam","bcCustom","bcDraft","bcTour","bcColl","bcShop","bcStats"].map(id=>$(id));bs.forEach(b=>b.disabled=true);
+  try{await loadBC();if(mode==="tour")window.BCUI.tour();else if(mode==="stats")window.BCUI.stats();else if(mode==="collection")window.BCUI.collection();else if(mode==="shop")window.BCUI.openShop();else window.BCUI.open(mode)}catch(e){toast(e.message+". تأكد إن ملفات لعبة صراع الكور مرفوعة مع اللعبة.","bad")}
   finally{bs.forEach(b=>b.disabled=false)}
 }
 $("bcQuick").addEventListener("click",()=>bcOpen("quick"));
@@ -4992,6 +5008,7 @@ $("bcCustom").addEventListener("click",()=>bcOpen("custom"));
 $("bcDraft").addEventListener("click",()=>bcOpen("draft"));
 $("bcTour").addEventListener("click",()=>bcOpen("tour"));
 $("bcColl").addEventListener("click",()=>bcOpen("collection"));
+$("bcShop").addEventListener("click",()=>bcOpen("shop"));
 $("bcStats").addEventListener("click",()=>bcOpen("stats"));
 function bcCoverSvg(){const k="bc"+(++artSeq);
   const ball=(x,y,r,c,ring)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="${ring}" stroke-width="4"/><circle cx="${x-r*.35}" cy="${y-r*.35}" r="${r*.3}" fill="#fff" opacity=".45"/>`;
@@ -7320,8 +7337,8 @@ function renderBCR(bd){
   const mineLocked=G.pick==="secret"&&me>=0&&G.locked[me],myTurn=G.pick==="draft"&&G.turn===me;
   if(me<0||mineLocked||(G.pick==="draft"&&!myTurn)){bd.append(h("p",{class:"hint center"},mineLocked?"تشكيلتك مقفولة. ننتظر الباقين…":me<0?"تتفرّج":"ننتظر دور "+G.players[G.turn].nick+"…"));return}
   const taken=new Set(G.pick==="draft"?G.picks.flat():[]),grid=h("div",{class:"bc-rgrid"});
-  BC.PICK.forEach(kid=>{const K=BC.KINDS[kid],on=bcSel.includes(kid),dis=taken.has(kid);
-    grid.append(h("button",{class:"bc-rk"+(on?" on":"")+(dis?" dis":""),disabled:dis,"aria-label":K.ar,onclick:()=>{if(G.pick==="draft"){mgPlay({t:"draft",k:kid});return}
+  BC.PICK.forEach(kid=>{const K=BC.KINDS[kid],on=bcSel.includes(kid),shopLocked=!!K.shop,dis=taken.has(kid)||shopLocked;
+    grid.append(h("button",{class:"bc-rk"+(on?" on":"")+(dis?" dis":""),disabled:taken.has(kid)||shopLocked,"aria-label":K.ar,onclick:()=>{if(shopLocked){toast("الغرف الأونلاين تلعب بالكور الأصلية","bad");return}if(G.pick==="draft"){mgPlay({t:"draft",k:kid});return}
       if(bcSel.length>=G.size)bcSel.pop();bcSel.push(kid);sfx("move");mgRender()}},window.BCUI.previewCanvas(kid,40),h("span",{},K.ar)))});
   if(G.pick==="secret")bd.append(h("button",{class:"primary wide",style:"margin:8px 0",disabled:bcSel.length!==G.size,onclick:()=>mgPlay({t:"pick",balls:bcSel.slice()})},bcSel.length===G.size?"قفّل التشكيلة":"اختر "+fmt(G.size-bcSel.length)+" كمان"));
   bd.append(grid);
@@ -7695,7 +7712,7 @@ $("nsWrap").addEventListener("touchstart",e=>{const t=e.touches[0];nsTouch=[t.cl
 $("nsWrap").addEventListener("touchend",e=>{if(!nsTouch)return;const t=e.changedTouches[0],dx=t.clientX-nsTouch[0],dy=t.clientY-nsTouch[1];nsTouch=null;if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;nsMove(Math.abs(dx)>Math.abs(dy)?(dx>0?1:3):(dy>0?2:0))},{passive:true});
 
 /* ---- helpers shared with games that live in their own files (BALL CLASH) ---- */
-window.SP={h,ic,htmlEl,fmt,show,toast,sfx,buzz,openSheet,openGame,api,applyProfile,coinEl,online:()=>Platform.kind==="web"&&!!Cloud.on,reduced:()=>matchMedia("(prefers-reduced-motion: reduce)").matches,get P(){return P},get screen(){return screen}};
+window.SP={h,ic,htmlEl,fmt,show,toast,sfx,buzz,openSheet,openGame,api,applyProfile,setCoins,coinEl,online:()=>Platform.kind==="web"&&!!Cloud.on,reduced:()=>matchMedia("(prefers-reduced-motion: reduce)").matches,get P(){return P},get screen(){return screen}};
 window.__spiderReady=true;
 document.documentElement.classList.remove("app-loading");
 document.documentElement.removeAttribute("aria-busy");

@@ -1,5 +1,5 @@
 /* SPIDER — app shell. Network first, so a new version is always picked up; the cache is only a fallback when offline. */
-const V="spider-v6";
+const V="spider-v8";
 const SHELL=["./","./index.html","./boot.js","./app.js","./games.css","./js/minigames.js","./manifest.webmanifest","./icon-192.png","./icon-512.png","./apple-touch-icon.png","./favicon-32.png"];
 self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(V).then(c=>c.addAll(SHELL)).catch(()=>{}))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});

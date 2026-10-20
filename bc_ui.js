@@ -10,11 +10,20 @@ function root(){return S.rootEl||$("bcRoot")}
 function rnd(a){return a[Math.floor(Math.random()*a.length)]}
 function shade(hex){var n=parseInt(hex.slice(1),16),r=(n>>16)*.45|0,g=((n>>8)&255)*.45|0,b=(n&255)*.45|0;return "rgb("+r+","+g+","+b+")"}
 var RAR_L=BC.RAR_NAME||{common:"عادي",rare:"نادر",epic:"ملحمي",legendary:"أسطوري"};
-function looksGet(){var o;try{o=JSON.parse(localStorage.getItem("bc_look")||"{}")}catch(e){o={}}if(!o||typeof o!=="object")return {};var out={};
-  for(var k in o){var L=BC.LOOKS&&BC.LOOKS[o[k]];if(L&&L.ball===k)out[k]=o[k]}return out}
-function looksSet(kind,id){var o=looksGet();if(!id)delete o[kind];else if(BC.LOOKS[id]&&BC.LOOKS[id].ball===kind)o[kind]=id;try{localStorage.setItem("bc_look",JSON.stringify(o))}catch(e){}}
-function arenaGet(){var id="classic";try{id=localStorage.getItem("bc_arena")||"classic"}catch(e){}return BC.ARENAS&&BC.ARENAS[id]?id:"classic"}
-function arenaSet(id){if(!BC.ARENAS||!BC.ARENAS[id])return;try{localStorage.setItem("bc_arena",id)}catch(e){}}
+function shopLogic(){return typeof BC_SHOP_LOGIC!=="undefined"?BC_SHOP_LOGIC:null}
+function ownedNow(){var L=shopLogic();return L?L.loadCache().owned:[]}
+function canBall(id){var L=shopLogic(),K=BC.KINDS[id];if(!L)return !!(K&&!K.shop);return L.canUseBall(id,ownedNow())}
+function canLook(id){if(!id)return true;var L=shopLogic();if(!L)return false;return L.canUseLook(id,ownedNow())}
+function canArena(id){if(!id||id==="classic")return true;var L=shopLogic();if(!L)return false;return L.canUseArena(id,ownedNow())}
+function usablePool(extra){return BC.PICK.filter(function(k){return canBall(k)&&(extra?extra(k):true)})}
+function rawLooks(){var o;try{o=JSON.parse(localStorage.getItem("bc_look")||"{}")}catch(e){o={}}return o&&typeof o==="object"?o:{}}
+function looksGet(){var o=rawLooks(),out={};
+  for(var k in o){var L=BC.LOOKS&&BC.LOOKS[o[k]];if(L&&L.ball===k&&canLook(o[k]))out[k]=o[k]}return out}
+function looksSet(kind,id){var o=looksGet();if(!id)delete o[kind];else{if(!canLook(id))return;if(!(BC.LOOKS[id]&&BC.LOOKS[id].ball===kind))return;o[kind]=id}try{localStorage.setItem("bc_look",JSON.stringify(o))}catch(e){}}
+function arenaGet(){var id="classic";try{id=localStorage.getItem("bc_arena")||"classic"}catch(e){}if(!(BC.ARENAS&&BC.ARENAS[id]))return "classic";return canArena(id)?id:"classic"}
+function arenaSet(id){if(!BC.ARENAS||!BC.ARENAS[id]||!canArena(id))return;try{localStorage.setItem("bc_arena",id)}catch(e){}}
+function enforceEquip(){var L=shopLogic();if(!L)return;var clean=L.sanitizeEquip(rawLooks(),(function(){try{return localStorage.getItem("bc_arena")||"classic"}catch(e){return "classic"}})(),ownedNow());
+  try{localStorage.setItem("bc_look",JSON.stringify(clean.looks));localStorage.setItem("bc_arena",clean.arena)}catch(e){}}
 function reduced(){return !!(SP.reduced&&SP.reduced())}
 function drawOpt(n){n=n||2;return {q:Q,reduce:reduced(),n:n,flat:Q==="low"||n>8}}
 function rarBadge(rar){return h("span",{class:"bc-rar "+(rar||"common")},RAR_L[rar]||rar)}
@@ -60,9 +69,9 @@ function savePresets(a){try{localStorage.setItem("bc_presets",JSON.stringify(a.s
 function mkTeams(sizes,custom){return sizes.map(function(n,ti){var mine=!custom&&ti===0;
   return {name:custom?("الفريق "+PAL[ti%8][1]):mine?"فريقك":(sizes.length>2?"الكمبيوتر "+fmt(ti):"الكمبيوتر"),color:PAL[ti%8][0],size:n,slots:[],ai:!mine}})}
 function used(kid){return S.teams.some(function(t){return t.slots.indexOf(kid)>=0})}
-function fillRandom(t){var pool=BC.PICK.filter(function(k){return S.opts.dup||!used(k)});while(t.slots.length<t.size&&pool.length){var k=pool.splice(Math.floor(Math.random()*pool.length),1)[0];t.slots.push(k)}}
+function fillRandom(t){var pool=usablePool(function(k){return S.opts.dup||!used(k)});while(t.slots.length<t.size&&pool.length){var k=pool.splice(Math.floor(Math.random()*pool.length),1)[0];t.slots.push(k)}}
 function open(mode){
-  stop();S.rootEl=null;S.mode=mode;S.side=0;S.ended=false;S.q="";S.grp="all";
+  stop();enforceEquip();S.rootEl=null;S.mode=mode;S.side=0;S.ended=false;S.q="";S.grp="all";
   S.opts={ff:false,syn:true,dup:mode!=="draft",hpMul:1,size:560};
   S.fmt=mode==="quick"?{id:"1v1",sizes:[1,1]}:mode==="custom"?{id:"custom",sizes:[3,3]}:mode==="draft"?{id:"3v3",sizes:[3,3]}:FORMATS[0];
   S.teams=mkTeams(S.fmt.sizes,mode==="custom");
@@ -74,12 +83,13 @@ function setFormat(f){S.fmt=f;S.side=0;S.teams=mkTeams(f.sizes,S.mode==="custom"
 function allFull(){return S.teams.every(function(t){return t.slots.length===t.size})}
 function draftTurnTeam(){var tot=S.teams.reduce(function(a,t){return a+t.slots.length},0);return tot%2}
 function aiDraftPick(){
-  if(!S.draft||allFull())return;var t=S.teams[1],mine=t.slots,pool=BC.PICK.filter(function(k){return S.opts.dup||!used(k)});if(!pool.length)return;
+  if(!S.draft||allFull())return;var t=S.teams[1],mine=t.slots,pool=usablePool(function(k){return S.opts.dup||!used(k)});if(!pool.length)return;
   var partner=null;BC.SYN.forEach(function(s){if(partner)return;if(mine.indexOf(s.a)>=0&&pool.indexOf(s.b)>=0)partner=s.b;else if(mine.indexOf(s.b)>=0&&pool.indexOf(s.a)>=0)partner=s.a});
   var choice=partner||pool.slice().sort(function(a,b){return (BC.KINDS[b].pw*BC.KINDS[b].hpf)-(BC.KINDS[a].pw*BC.KINDS[a].hpf)}).slice(0,12)[Math.floor(Math.random()*12)]||pool[0];
   t.slots.push(choice);SP.sfx("move");renderPicker();
 }
 function pick(kid){
+  if(!canBall(kid)){SP.toast("هذي الكورة من المتجر","bad");if(window.BCUI&&BCUI.openShop)BCUI.openShop();return}
   if(S.mode==="draft"){if(draftTurnTeam()!==0)return;var me=S.teams[0];if(me.slots.length>=me.size)return;if(!S.opts.dup&&used(kid)){SP.toast("هذي الكورة مختارة","bad");return}
     me.slots.push(kid);SP.sfx("move");renderPicker();if(!allFull())setTimeout(aiDraftPick,650);return}
   var t=S.teams[S.side];if(!S.opts.dup&&used(kid)&&t.slots.indexOf(kid)<0){SP.toast("تكرار الكور مقفل في الإعدادات","bad");return}
@@ -96,8 +106,8 @@ function details(kid){var K=BC.KINDS[kid],partners=BC.SYN.filter(function(s){ret
     c.append(h("div",{class:"bc-dhead"},live,h("div",{},h("h3",{style:"margin:0"},K.ar),rarBadge(K.rar),h("span",{class:"hint"},K.en+" · "+BC.GROUPS[K.group]))),
     h("p",{class:"lead"},K.desc),h("p",{class:"bc-grow"},ic("up"),"التطور: "+(K.growTxt||"—")),
     partners.length?h("div",{class:"bc-syn"},ic("spark"),h("span",{},partners.map(function(s){return s.ar}).join("، "))):null,
-    looks.length?h("div",{class:"bc-looks"},h("span",{class:"lbl"},"مظهر شكلي"),h("div",{class:"chips"},h("button",{class:"chip"+(!equipped?" on":""),onclick:function(){looksSet(kid,null);close();details(kid)}},"الأساس"+(equipped?"":" · مستخدم")),...looks.map(function(id){var L=BC.LOOKS[id];return h("button",{class:"chip"+(equipped===id?" on":""),onclick:function(){looksSet(kid,id);SP.sfx("unlock");close();details(kid)}},L.ar+(equipped===id?" · مستخدم":""))}))):null,
-    h("p",{class:"hint"},"المظاهر شكلية فقط، وما تغيّر الضرر أو الصحة."),
+    looks.length?h("div",{class:"bc-looks"},h("span",{class:"lbl"},"مظهر شكلي"),h("div",{class:"chips"},h("button",{class:"chip"+(!equipped?" on":""),onclick:function(){looksSet(kid,null);close();details(kid)}},"الأساس"+(equipped?"":" · مستخدم")),...looks.map(function(id){var L=BC.LOOKS[id],own=canLook(id);return h("button",{class:"chip"+(equipped===id?" on":""),onclick:function(){if(!own){close();if(window.BCUI)BCUI.openShop();return}looksSet(kid,id);SP.sfx("unlock");close();details(kid)}},L.ar+(equipped===id?" · مستخدم":own?"":" · في المتجر"))}))):null,
+    h("p",{class:"hint"},"المظاهر شكلية فقط، وما تغيّر الضرر أو الصحة. المظاهر المدفوعة تتجهز بعد الشراء من المتجر."),
     h("div",{class:"row",style:"margin-top:12px"},S.mode==="browse"||S.mode==="tour"?null:h("button",{class:"primary",onclick:function(){close();pick(kid)}},"اختر"),h("button",{onclick:close},"إغلاق")))})}
 function presetSheet(){
   var t=S.teams[S.side];
@@ -145,7 +155,7 @@ function renderPicker(){
   if(!custom||true)tools0.append(h("button",{onclick:presetSheet},ic("spark"),"تشكيلاتي"));
   r.append(tools0);
   if(draft){var dt=draftTurnTeam(),full=allFull();r.append(h("div",{class:"bc-turn"+(dt===0&&!full?" me":"")},full?"اكتملت التشكيلات! ابدأ المعركة.":dt===0?"دورك تختار كورة لفريقك":"الكمبيوتر يختار…"),
-    h("div",{class:"row",style:"margin-bottom:8px"},h("button",{class:"small",disabled:dt!==0||full,onclick:function(){var pool=BC.PICK.filter(function(k){return S.opts.dup||!used(k)});pick(pool[Math.floor(Math.random()*pool.length)])}},"اختيار عشوائي"),
+    h("div",{class:"row",style:"margin-bottom:8px"},h("button",{class:"small",disabled:dt!==0||full,onclick:function(){var pool=usablePool(function(k){return S.opts.dup||!used(k)});if(pool.length)pick(pool[Math.floor(Math.random()*pool.length)])}},"اختيار عشوائي"),
       h("button",{class:"small",onclick:function(){S.opts.dup=!S.opts.dup;renderPicker()}},S.opts.dup?"التكرار مسموح":"التكرار ممنوع")))}
   var teams=h("div",{class:"bc-teams"+(S.teams.length>2?" many":"")});
   S.teams.forEach(function(t,ti){
@@ -165,11 +175,11 @@ function renderPicker(){
   tools.append(q,chips);r.append(tools);
   var grid=h("div",{class:"bc-grid",id:"bcGrid"});r.append(grid);
   function drawGrid(){grid.textContent="";var qq=S.q.trim().toLowerCase(),lock=draft&&(draftTurnTeam()!==0||allFull());
-    BC.PICK.filter(function(kid){var K=BC.KINDS[kid];return (S.grp==="all"||K.group===S.grp)&&(!qq||K.ar.indexOf(S.q.trim())>=0||K.en.toLowerCase().indexOf(qq)>=0)}).forEach(function(kid){var K=BC.KINDS[kid],taken=!S.opts.dup&&used(kid);
+    BC.PICK.filter(function(kid){var K=BC.KINDS[kid];return (S.grp==="all"||K.group===S.grp)&&(!qq||K.ar.indexOf(S.q.trim())>=0||K.en.toLowerCase().indexOf(qq)>=0)}).forEach(function(kid){var K=BC.KINDS[kid],taken=!S.opts.dup&&used(kid),locked=!canBall(kid);
       var bars=h("div",{class:"bc-bars"});[["dmg","الضرر"],["reach","المدى"],["speed","السرعة"],["kb","الدفع"]].forEach(function(q2){bars.append(h("div",{class:"bc-bar-r"},h("span",{},q2[1]),h("i",{},h("b",{style:"width:"+Math.round(stat(K,q2[0])*100)+"%"}))))});
       var skin=looksGet()[kid];
-      grid.append(h("div",{class:"bc-card g-"+K.group+" rar-"+(K.rar||"common")+(taken?" taken":""),style:"--gc:"+GC[K.group]},h("span",{class:"bc-role"},ROLE[K.role]||"قريب"),rarBadge(K.rar),h("button",{class:"bc-cv","aria-label":"تفاصيل "+K.ar,onclick:function(){details(kid)}},previewCanvas(kid,108,null,{skin:skin||null})),h("div",{class:"bc-cn"},h("b",{},K.ar),h("span",{},K.en+(skin?" · "+BC.LOOKS[skin].ar:""))),
-        h("p",{class:"bc-desc"},K.desc),bars,h("button",{class:"primary small",disabled:lock||taken,onclick:function(){pick(kid)}},taken?"مختارة":"اختر")))});
+      grid.append(h("div",{class:"bc-card g-"+K.group+" rar-"+(K.rar||"common")+(taken?" taken":"")+(locked?" locked":""),style:"--gc:"+GC[K.group]},h("span",{class:"bc-role"},ROLE[K.role]||"قريب"),rarBadge(K.rar),h("button",{class:"bc-cv","aria-label":"تفاصيل "+K.ar,onclick:function(){details(kid)}},previewCanvas(kid,108,null,{skin:skin||null})),h("div",{class:"bc-cn"},h("b",{},K.ar),h("span",{},K.en+(skin?" · "+BC.LOOKS[skin].ar:""))),
+        h("p",{class:"bc-desc"},K.desc),bars,h("button",{class:(locked?"small":"primary small"),disabled:lock||taken,onclick:function(){pick(kid)}},taken?"مختارة":locked?"من المتجر":"اختر")))});
     if(!grid.children.length)grid.append(h("p",{class:"hint"},"ما لقينا كورة بهالاسم."))}
   drawGrid();
   r.append(h("button",{class:"primary wide bc-start",disabled:!allFull(),onclick:function(){startBattle(true)}},allFull()?"ابدأ المعركة":"كمّل اختيار الكور"));
@@ -177,6 +187,7 @@ function renderPicker(){
 /* ---------- battle ---------- */
 function rewardable(){return SP.online()&&(S.mode==="quick"||S.mode==="team"||S.mode==="draft"||S.mode==="tour-watch")}
 async function startBattle(newSeed){
+  if(S.mode!=="online-watch"){var blocked=null;S.teams.forEach(function(t){t.slots.forEach(function(id){if(!canBall(id))blocked=id})});if(blocked){SP.toast("«"+(BC.KINDS[blocked]?BC.KINDS[blocked].ar:blocked)+"» من المتجر. اشترها قبل ما تدخلها معركة فيها مكافأة.","bad");return}}
   if(S.mode!=="custom"&&S.mode!=="online-watch"){var tot=S.teams.reduce(function(a,t){return a+t.slots.length},0);S.opts.size=tot<=4?440:560}
   if(newSeed||!S.seed)S.seed=Math.floor(Math.random()*2147483647)+1;
   S.srv=null;S.boost=null;
@@ -255,7 +266,7 @@ function draw(){
   st.zones.forEach(function(z){BCART.zone(x,z,T)});
   var opt=drawOpt(st.balls.length),TT=opt.reduce?0:T;
   st.balls.forEach(function(b){if(!b.alive&&(st.t-b.koT>1.2||b.summon))return;if(b._hurt>0)b._hurt-=1/60;BCART.weapon(x,b,b.K,TT,opt);BCART.body(x,b,b.K,st.teams[b.team].color,st,TT,opt)});
-  st.proj.forEach(function(p){var ow=st.balls[p.owner],po={q:Q,reduce:opt.reduce,n:st.balls.length,rar:ow&&ow.K?ow.K.rar:"common"};if(ow&&ow._skin&&BC.LOOKS[ow._skin])po.trail=BC.LOOKS[ow._skin].trail;BCART.proj(x,p,TT,po)});
+  st.proj.forEach(function(p){var ow=st.balls[p.owner],po={q:Q,reduce:opt.reduce,n:st.balls.length,rar:ow&&ow.K?ow.K.rar:"common"};if(ow&&ow._skin&&BC.LOOKS[ow._skin])po.trail=BC.LOOKS[ow._skin].trail;else if(ow&&ow.K&&ow.K.art&&ow.K.art.trail)po.trail=ow.K.art.trail;BCART.proj(x,p,TT,po)});
   st.balls.forEach(function(b){if(!b.alive||b.summon)return;var w=b.r*2.1,y0=b.y-b.r-15,f=Math.max(0,b.hp/b.maxHp);
     x.fillStyle="rgba(5,6,12,.75)";x.beginPath();if(x.roundRect)x.roundRect(b.x-w/2-1,y0-1,w+2,7,3.5);else x.rect(b.x-w/2-1,y0-1,w+2,7);x.fill();
     var hg=x.createLinearGradient(b.x-w/2,0,b.x+w/2,0);hg.addColorStop(0,BCART.light(st.teams[b.team].color,.25));hg.addColorStop(1,st.teams[b.team].color);x.fillStyle=f<.3?"#FF4F4F":hg;
@@ -318,12 +329,12 @@ function tourSetup(){
   var me=S.teams[0];
   r.append(h("div",{class:"bc-teams"},h("div",{class:"bc-team on",style:"--tc:#E62948"},h("div",{class:"bc-th"},h("i",{}),h("b",{},"مشاركك")),
     h("div",{class:"bc-slots"},...Array.from({length:me.size},function(_,k){var kid=me.slots[k];return h("button",{class:"bc-slot"+(kid?" full":""),onclick:function(){if(kid){me.slots.splice(k,1);tourSetup()}}},kid?previewCanvas(kid,46):h("span",{class:"bc-plus"},"+"),h("span",{},kid?BC.KINDS[kid].ar:"اختر"))})))));
-  var grid=h("div",{class:"bc-grid"});BC.PICK.forEach(function(kid){var K=BC.KINDS[kid];grid.append(h("div",{class:"bc-card"},h("button",{class:"bc-cv",onclick:function(){details(kid)}},previewCanvas(kid,80)),h("div",{class:"bc-cn"},h("b",{},K.ar),h("span",{},K.en)),
-    h("button",{class:"primary small",onclick:function(){if(me.slots.length>=me.size)me.slots.pop();me.slots.push(kid);SP.sfx("move");tourSetup()}},"اختر")))});
+  var grid=h("div",{class:"bc-grid"});BC.PICK.forEach(function(kid){var K=BC.KINDS[kid],locked=!canBall(kid);grid.append(h("div",{class:"bc-card"+(locked?" locked":"")},h("button",{class:"bc-cv",onclick:function(){details(kid)}},previewCanvas(kid,80)),h("div",{class:"bc-cn"},h("b",{},K.ar),h("span",{},K.en)),
+    h("button",{class:locked?"small":"primary small",onclick:function(){if(locked){SP.toast("هذي الكورة من المتجر","bad");if(window.BCUI)BCUI.openShop();return}if(me.slots.length>=me.size)me.slots.pop();me.slots.push(kid);SP.sfx("move");tourSetup()}},locked?"من المتجر":"اختر")))});
   r.append(grid,h("button",{class:"primary wide bc-start",disabled:me.slots.length<me.size,onclick:tourBegin},"ابدأ البطولة"));
 }
 function tourBegin(){
-  var T=S.tour,pool=BC.PICK.filter(function(k){return S.teams[0].slots.indexOf(k)<0}),ent=[{name:"مشاركك",balls:S.teams[0].slots.slice(),me:true}];
+  var T=S.tour,pool=usablePool(function(k){return S.teams[0].slots.indexOf(k)<0}),ent=[{name:"مشاركك",balls:S.teams[0].slots.slice(),me:true}];
   for(var i=1;i<T.size;i++){var balls=[];for(var k=0;k<(T.pair?2:1);k++)balls.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);ent.push({name:balls.map(function(b){return BC.KINDS[b].ar}).join(" و"),balls:balls})}
   for(var j=ent.length-1;j>0;j--){var q=Math.floor(Math.random()*(j+1));var tmp=ent[j];ent[j]=ent[q];ent[q]=tmp}
   T.seed=Math.floor(Math.random()*2147483647)+1;T.rounds=[ent.map(function(e,ix){return ix})];T.ent=ent;T.res=[];T.stage="bracket";T.r=0;tourBracket();
@@ -377,17 +388,18 @@ function paintArena(ctx,px,t,theme){
   var st={balls:balls};balls.forEach(function(b){BCART.weapon(ctx,b,b.K,tt,opt);BCART.body(ctx,b,b.K,b.team?"#8D65F6":"#E62948",st,tt,opt)});
 }
 function arenaThumb(theme,size){var cv=document.createElement("canvas"),dpr=Math.min(2,window.devicePixelRatio||1),hgt=Math.round(size*.62);cv.width=Math.round(size*dpr);cv.height=Math.round(hgt*dpr);cv.style.width=size+"px";cv.style.height=hgt+"px";BCART.arena(cv.getContext("2d"),cv.width,cv.height,0,[{color:"#E62948"},{color:"#8D65F6"}],theme);return cv}
-function collectionOpen(){S.mode="browse";stop();S.rootEl=null;SP.show("bc");if(!S.ward)S.ward={tab:"balls",grp:"all",rar:"all",set:"all",q:"",pick:"sword"};renderWard()}
+function collectionOpen(){S.mode="browse";stop();enforceEquip();S.rootEl=null;SP.show("bc");if(!S.ward)S.ward={tab:"balls",grp:"all",rar:"all",set:"all",q:"",pick:"sword"};renderWard()}
 function renderWard(){
   var r=root(),W=S.ward;r.textContent="";
   r.append(h("div",{class:"bc-bar"},h("button",{class:"quit",onclick:function(){stop();SP.openGame("ballclash")}},"رجوع"),h("div",{class:"bc-title"},h("b",{},"COLLECTION"),h("span",{},"كور، مظاهر، ساحات"))));
   var tabs=h("div",{class:"chips bc-tabs",role:"tablist"});
   [["balls","الكور"],["looks","المظاهر"],["arenas","الساحات"]].forEach(function(t){tabs.append(h("button",{class:"chip"+(W.tab===t[0]?" on":""),role:"tab","aria-selected":W.tab===t[0]?"true":"false",onclick:function(){W.tab=t[0];W.q="";if(t[0]==="balls"&&!BC.KINDS[W.pick])W.pick="sword";if(t[0]==="looks"&&!BC.LOOKS[W.pick])W.pick=BC.LOOK_ORDER[0];if(t[0]==="arenas"&&!BC.ARENAS[W.pick])W.pick=arenaGet();renderWard()}},t[1]))});
-  r.append(tabs,h("p",{class:"hint"},"المظاهر والساحات شكلية ومجانية. ما تغيّر قوة الكورة."));
+  r.append(tabs,h("p",{class:"hint"},"الكور الستين الأصلية متاحة. الكور والمظاهر والساحات الإضافية تُشترى بعملات اللعبة من المتجر، والشكل ما يغيّر القوة. "),h("button",{class:"link",onclick:function(){if(window.BCUI)BCUI.openShop()}},"افتح المتجر"));
   var stage=h("div",{class:"bc-stage"}),host=h("div",{class:"bc-stage-cv"}),meta=h("div",{class:"bc-stage-meta"});stage.append(host,meta);r.append(stage);
   if(W.tab==="arenas"){var A=BC.ARENAS[W.pick]||BC.ARENAS.classic,onA=arenaGet()===A.id;
     if(reduced())host.append(arenaThumb(A.id,220));else mountLive(host,220,function(ctx,px,t){paintArena(ctx,px,t,A.id)});
-    meta.append(h("div",{class:"bc-stage-top"},h("b",{},A.ar),rarBadge(A.rar),onA?h("span",{class:"bc-eq"},"مستخدم"):null),h("span",{class:"hint"},A.en),h("p",{},A.desc),h("button",{class:"primary small",disabled:onA,onclick:function(){arenaSet(A.id);S.arCv=null;SP.sfx("unlock");renderWard()}},onA?"مستخدمة في المعركة":"استخدم الساحة"));
+    var ownA=canArena(A.id);
+    meta.append(h("div",{class:"bc-stage-top"},h("b",{},A.ar),rarBadge(A.rar),onA?h("span",{class:"bc-eq"},"مستخدم"):null),h("span",{class:"hint"},A.en),h("p",{},A.desc),h("button",{class:ownA?"primary small":"small",disabled:onA&&ownA,onclick:function(){if(!ownA){if(window.BCUI)BCUI.openShop();return}arenaSet(A.id);S.arCv=null;SP.sfx("unlock");renderWard()}},onA?"مستخدمة في المعركة":ownA?"استخدم الساحة":"في المتجر"));
   }else{var skin=null,kid;
     if(W.tab==="looks"){var L=BC.LOOKS[W.pick];kid=L.ball;skin=L.id}else{kid=BC.KINDS[W.pick]?W.pick:"sword";skin=looksGet()[kid]||null}
     var K=BC.KINDS[kid],eq=looksGet()[kid]||"";
@@ -396,10 +408,10 @@ function renderWard(){
     if(W.tab==="looks"&&eq===L.id)top.append(h("span",{class:"bc-eq"},"مستخدم"));
     else if(W.tab==="balls"&&!eq)top.append(h("span",{class:"bc-eq"},"الأساس"));
     meta.append(top,h("span",{class:"hint"},W.tab==="looks"?L.en+" · "+K.ar:K.en+" · "+BC.GROUPS[K.group]),h("p",{},W.tab==="looks"?L.desc:K.desc));
-    if(W.tab==="looks")meta.append(h("button",{class:"primary small",disabled:eq===L.id,onclick:function(){looksSet(kid,L.id);SP.sfx("unlock");renderWard()}},eq===L.id?"مستخدم على "+K.ar:"جهّز المظهر"));
+    if(W.tab==="looks"){var ownL=canLook(L.id);meta.append(h("button",{class:ownL?"primary small":"small",disabled:eq===L.id,onclick:function(){if(!ownL){if(window.BCUI)BCUI.openShop();return}looksSet(kid,L.id);SP.sfx("unlock");renderWard()}},eq===L.id?"مستخدم على "+K.ar:ownL?"جهّز المظهر":"في المتجر"))}
     else{var looks=(BC.LOOK_ORDER||[]).filter(function(id){return BC.LOOKS[id].ball===kid});
       var chips=h("div",{class:"chips"},h("button",{class:"chip"+(!eq?" on":""),onclick:function(){looksSet(kid,null);renderWard()}},"الأساس"));
-      looks.forEach(function(id){chips.append(h("button",{class:"chip"+(eq===id?" on":""),onclick:function(){looksSet(kid,id);SP.sfx("unlock");renderWard()}},BC.LOOKS[id].ar))});
+      looks.forEach(function(id){var ownC=canLook(id);chips.append(h("button",{class:"chip"+(eq===id?" on":""),onclick:function(){if(!ownC){if(window.BCUI)BCUI.openShop();return}looksSet(kid,id);SP.sfx("unlock");renderWard()}},BC.LOOKS[id].ar+(ownC?"":" · متجر")))});
       if(looks.length)meta.append(h("span",{class:"lbl"},"مظهر الكورة"),chips);
       meta.append(h("button",{class:"small",onclick:function(){details(kid)}},"التفاصيل"));
     }
@@ -413,13 +425,13 @@ function renderWard(){
   tools.append(chips2);r.append(tools);
   var grid=h("div",{class:"bc-grid",id:"bcGrid"});r.append(grid);
   function drawGrid(){grid.textContent="";var qq=(W.q||"").trim().toLowerCase();
-    if(W.tab==="arenas"){BC.ARENA_ORDER.forEach(function(id){var A=BC.ARENAS[id];if(W.rar!=="all"&&A.rar!==W.rar)return;var on=arenaGet()===id;
-      grid.append(h("button",{class:"bc-card rar-"+(A.rar||"common")+(W.pick===id?" sel":""),onclick:function(){W.pick=id;renderWard()}},arenaThumb(id,140),h("div",{class:"bc-cn"},h("b",{},A.ar),h("span",{},A.en)),rarBadge(A.rar),on?h("span",{class:"bc-eq"},"مستخدم"):h("span",{class:"hint"},"اضغط للمعاينة")))});return}
-    if(W.tab==="looks"){BC.LOOK_ORDER.forEach(function(id){var L=BC.LOOKS[id],K=BC.KINDS[L.ball];if(W.set!=="all"&&L.set!==W.set)return;if(W.rar!=="all"&&L.rar!==W.rar)return;if(qq&&L.ar.indexOf(W.q.trim())<0&&L.en.toLowerCase().indexOf(qq)<0&&K.ar.indexOf(W.q.trim())<0)return;var on=looksGet()[L.ball]===id;
-      grid.append(h("button",{class:"bc-card g-"+K.group+" rar-"+(L.rar||"common")+(W.pick===id?" sel":""),style:"--gc:"+GC[K.group],onclick:function(){W.pick=id;renderWard()}},previewCanvas(L.ball,96,null,{skin:id}),h("div",{class:"bc-cn"},h("b",{},L.ar),h("span",{},L.en)),rarBadge(L.rar),h("p",{class:"bc-desc"},BC.SETS[L.set]+" · "+K.ar),on?h("span",{class:"bc-eq"},"مستخدم"):h("span",{class:"hint"},"معاينة قبل التجهيز")))});
+    if(W.tab==="arenas"){BC.ARENA_ORDER.forEach(function(id){var A=BC.ARENAS[id];if(W.rar!=="all"&&A.rar!==W.rar)return;var on=arenaGet()===id,own=canArena(id);
+      grid.append(h("button",{class:"bc-card rar-"+(A.rar||"common")+(W.pick===id?" sel":""),onclick:function(){W.pick=id;renderWard()}},arenaThumb(id,140),h("div",{class:"bc-cn"},h("b",{},A.ar),h("span",{},A.en)),rarBadge(A.rar),on?h("span",{class:"bc-eq"},"مستخدم"):h("span",{class:"hint"},own?"اضغط للمعاينة":"في المتجر")))});return}
+    if(W.tab==="looks"){BC.LOOK_ORDER.forEach(function(id){var L=BC.LOOKS[id],K=BC.KINDS[L.ball];if(W.set!=="all"&&L.set!==W.set)return;if(W.rar!=="all"&&L.rar!==W.rar)return;if(qq&&L.ar.indexOf(W.q.trim())<0&&L.en.toLowerCase().indexOf(qq)<0&&K.ar.indexOf(W.q.trim())<0)return;var on=looksGet()[L.ball]===id,own=canLook(id);
+      grid.append(h("button",{class:"bc-card g-"+K.group+" rar-"+(L.rar||"common")+(W.pick===id?" sel":""),style:"--gc:"+GC[K.group],onclick:function(){W.pick=id;renderWard()}},previewCanvas(L.ball,96,null,{skin:id}),h("div",{class:"bc-cn"},h("b",{},L.ar),h("span",{},L.en)),rarBadge(L.rar),h("p",{class:"bc-desc"},BC.SETS[L.set]+" · "+K.ar),on?h("span",{class:"bc-eq"},"مستخدم"):h("span",{class:"hint"},own?"معاينة قبل التجهيز":"في المتجر")))});
       if(!grid.children.length)grid.append(h("p",{class:"hint"},"ما فيه مظهر بهالفلتر."));return}
-    BC.PICK.filter(function(kid){var K=BC.KINDS[kid];return (W.grp==="all"||K.group===W.grp)&&(W.rar==="all"||K.rar===W.rar)&&(!qq||K.ar.indexOf(W.q.trim())>=0||K.en.toLowerCase().indexOf(qq)>=0)}).forEach(function(kid){var K=BC.KINDS[kid],skin=looksGet()[kid];
-      grid.append(h("button",{class:"bc-card g-"+K.group+" rar-"+(K.rar||"common")+(W.pick===kid?" sel":""),style:"--gc:"+GC[K.group],onclick:function(){W.pick=kid;renderWard()}},h("span",{class:"bc-role"},ROLE[K.role]||"قريب"),previewCanvas(kid,96,null,{skin:skin||null}),h("div",{class:"bc-cn"},h("b",{},K.ar),h("span",{},K.en+(skin?" · "+BC.LOOKS[skin].ar:""))),rarBadge(K.rar),h("p",{class:"bc-desc"},K.desc)))});
+    BC.PICK.filter(function(kid){var K=BC.KINDS[kid];return (W.grp==="all"||K.group===W.grp)&&(W.rar==="all"||K.rar===W.rar)&&(!qq||K.ar.indexOf(W.q.trim())>=0||K.en.toLowerCase().indexOf(qq)>=0)}).forEach(function(kid){var K=BC.KINDS[kid],skin=looksGet()[kid],locked=!canBall(kid);
+      grid.append(h("button",{class:"bc-card g-"+K.group+" rar-"+(K.rar||"common")+(W.pick===kid?" sel":"")+(locked?" locked":""),style:"--gc:"+GC[K.group],onclick:function(){W.pick=kid;renderWard()}},h("span",{class:"bc-role"},ROLE[K.role]||"قريب"),previewCanvas(kid,96,null,{skin:skin||null}),h("div",{class:"bc-cn"},h("b",{},K.ar),h("span",{},K.en+(skin?" · "+BC.LOOKS[skin].ar:""))),rarBadge(K.rar),locked?h("span",{class:"bc-lock"},"في المتجر"):null,h("p",{class:"bc-desc"},K.desc)))});
     if(!grid.children.length)grid.append(h("p",{class:"hint"},"ما لقينا كورة بهالفلتر."))}
   drawGrid();
 }
@@ -429,5 +441,8 @@ function watch(el,cfg,onEnd){stop();S.rootEl=el;S.mode="online-watch";S.onEnd=on
   S.teams=cfg.teams.map(function(t){return {name:t.name,color:t.color,size:t.balls.length,slots:t.balls.slice()}});S.seed=cfg.seed;S.opts.size=cfg.size||560;startBattle(false);
   var q=el.querySelector(".bc-bar");if(q)q.remove();}
 function stopWatch(){if(S.mode==="online-watch"){stop();S.onEnd=null}}
-window.BCUI={watch:watch,stopWatch:stopWatch,open:open,previewCanvas:previewCanvas,tour:tourOpen,stats:statsOpen,collection:collectionOpen};
+var shopLoading=null;
+function scriptV(name){var s=document.querySelector('script[src*="bc_ui.js"]'),v="10";if(s){var m=(s.getAttribute("src")||"").match(/[?&]v=([^&]+)/);if(m)v=m[1]}return name+"?v="+v}
+function openShop(){enforceEquip();function go(){if(window.BCSHOP)window.BCSHOP.open()}if(window.BCSHOP){go();return}if(shopLoading){shopLoading.then(go);return}shopLoading=new Promise(function(ok,no){var s=document.createElement("script");s.src=scriptV("bc_shop.js");s.onload=function(){ok()};s.onerror=function(){shopLoading=null;no(new Error("ما قدرنا نحمّل المتجر"))};document.head.append(s)}).then(go).catch(function(e){SP.toast(e.message,"bad")})}
+window.BCUI={watch:watch,stopWatch:stopWatch,open:open,previewCanvas:previewCanvas,tour:tourOpen,stats:statsOpen,collection:collectionOpen,openShop:openShop,mountLive:mountLive,paintPreview:paintPreview,paintArena:paintArena,arenaThumb:arenaThumb,canBall:canBall};
 })();

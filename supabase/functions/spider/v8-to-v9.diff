@@ -1,0 +1,367 @@
+--- supabase/functions/spider/v8.index.ts	2026-10-20 14:55:43.094451164 +0000
++++ supabase/functions/spider/index.ts	2026-10-20 15:08:38.588020060 +0000
+@@ -1,6 +1,10 @@
+-// SPIDER — Supabase Edge Function "spider" (accounts, rooms, 12 games, store, codes, friends, owner tools)
+-// Paste this whole file into: Supabase Dashboard → Edge Functions → spider → Code → Deploy
++// SPIDER — Supabase Edge Function "spider" v9
++// Live v8 plus the Ball Clash coin shop. Paste this whole file into
++// Supabase Dashboard → Edge Functions → spider → Code → Deploy.
++// Rollback is the saved v8 file (v8.index.ts). Do not deploy until Mohammed approves.
+ // It needs no secrets from you: Supabase provides SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to every function.
++// Shop balls are added by BC_NEW_DATA.apply inside the pasted scripts below.
++// Do not also call merge(): apply already defined those ids, and merge throws.
+ // @ts-nocheck
+ /* BALL CLASH — battle engine v2. Shared by the browser and the server.
+    Deterministic: fixed 60 Hz steps, one seeded random stream, trig built from + − × ÷ only.
+@@ -386,6 +390,270 @@
+ BC.PICK=BC.ORDER.filter(function(id){return !BC.KINDS[id].hidden});
+ })(BC);
+ 
++/* ===== Ball Clash shop scripts (inlined; apply runs once, merge is not called) ===== */
++/* BALL CLASH — shop balls. Loaded after bc_kinds.js.
++   Gameplay uses the same step() as the original 60. pw/hpf are the only
++   balance knobs, tuned so each new ball wins about half its duels against
++   that roster (sidegrade, not a straight upgrade). The sim never reads rar,
++   shop, or art. */
++(function(root){
++"use strict";
++var BALLS=[
++  {id:"sling",en:"Sling",ar:"المقلاع",group:"weapon",color:"#E4C99A",w:"none",role:"ranged",range:200,shop:true,rar:"common",pw:1.086,hpf:1.086,
++    art:{shell:"rock",face:"brave"},
++    ab:{t:"shoot",cd:1.2,p:{dmg:5,v:340,r:6,type:"rock"}},grow:{pmul:.035},cap:{pmul:1.45},growOnProj:true,
++    desc:"يرمي حصى ثقيلة بدون ارتداد. أبطأ من البومرنج، وما يقطع أكثر من هدف.",growTxt:"حصى أقوى"},
++  {id:"spark",en:"Spark",ar:"الشرارة",group:"nature",color:"#FFE56A",w:"none",role:"ranged",range:210,shop:true,rar:"common",pw:0.629,hpf:0.629,
++    art:{shell:"bolt",face:"glow",sig:"neon",trail:"neon"},
++    ab:{t:"chain",cd:1.7,dmg:6,n:1},grow:{chainUp:.12},cap:{chainUp:2},growOnAb:true,
++    desc:"صاعقة قصيرة تقفز لهدف واحد. أضيق من البرق الكامل.",growTxt:"تقفز أبعد شوي"},
++  {id:"cog",en:"Cog",ar:"الترس",group:"tech",color:"#D5DDEA",w:"discs",count:1,len:28,head:9,dmg:4.2,spin:3.4,cd:.32,kb:80,hp:96,shop:true,rar:"common",pw:2.132,hpf:2.132,
++    art:{shell:"hex",face:"visor"},
++    grow:{spin:.12,dmg:.2},cap:{spin:6,dmg:8},
++    desc:"ترس واحد يدور بثبات. أبطأ من الشفرات المزدوجة، وضربته أوضح.",growTxt:"دوران أسرع"},
++  {id:"glaive",en:"Glaive",ar:"الحربة",group:"weapon",color:"#F3E6C4",w:"pole",len:60,tip:.32,dmg:8.5,spin:2.5,cd:.42,kb:150,hp:94,role:"reach",shop:true,rar:"rare",pw:1.364,hpf:1.364,
++    art:{shell:"metal",face:"brave",trail:"gold"},
++    grow:{len:3,dmg:.45},cap:{len:110,dmg:15},
++    desc:"نصل مقوّس على عصا. أقصر من الرمح، وأسرع في اللفة.",growTxt:"نصل أطول"},
++  {id:"blizzard",en:"Blizzard",ar:"الزمهرير",group:"nature",color:"#D5F4FF",w:"none",role:"ranged",range:220,shop:true,rar:"rare",pw:0.863,hpf:0.863,
++    art:{shell:"ice",face:"slit",sig:"moon",trail:"ice"},
++    ab:{t:"shoot",cd:1.25,n:2,spread:.22,p:{dmg:3,v:400,r:6,type:"ice",fx:{slow:[.72,1.15]}}},grow:{pmul:.035},cap:{pmul:1.5},growOnProj:true,
++    desc:"شظايا ثلج تبطّئ، بدون تجميد. أوسع من طلقة الثلج الواحدة وأضعف في الضربة.",growTxt:"شظايا أقوى"},
++  {id:"basilisk",en:"Basilisk",ar:"البازيليسق",group:"creature",color:"#8CFF6A",w:"orbit",count:1,orbit:16,len:18,dmg:3.4,spin:4.4,cd:.3,hp:94,shop:true,rar:"rare",pw:2.521,hpf:2.521,
++    art:{shell:"scale",face:"snake"},
++    on:{slow:[.7,1.1],poison:[.45,2]},grow:{spin:.2,dmg:.12},cap:{spin:8,dmg:6.5},
++    desc:"ناب يدور ويبطّئ مع سم خفيف. أبطأ من الثعبان، وسمه أخف.",growTxt:"ناب أسرع"},
++  {id:"trident",en:"Trident",ar:"الرمح الثلاثي",group:"weapon",color:"#8FD8FF",w:"poles",count:3,len:48,tip:.34,dmg:3.6,spin:2.15,cd:.4,kb:110,hp:98,role:"reach",shop:true,rar:"epic",pw:0.919,hpf:0.919,
++    art:{shell:"water",face:"brave",sig:"neon",trail:"ice"},
++    grow:{len:2,dmg:.22},cap:{len:78,dmg:7},
++    desc:"ثلاثة رؤوس تغطي جوانب أكثر من الرمح الواحد، وكل رأس أضعف.",growTxt:"رؤوس أطول"},
++  {id:"comet",en:"Comet",ar:"المذنّب",group:"power",color:"#FFB03A",w:"none",role:"ranged",range:200,shop:true,rar:"epic",pw:0.885,hpf:0.885,
++    art:{shell:"comet",face:"glow",sig:"flame",trail:"fire"},
++    ab:{t:"shoot",cd:1.7,p:{dmg:7,v:300,r:8,home:2.2,ttl:2.6,type:"rocket",splash:42}},grow:{pmul:.035},cap:{pmul:1.45},growOnProj:true,
++    desc:"كرة نار تلاحق الهدف وتنفجر أضيق من الصاروخ.",growTxt:"انفجار أوضح"},
++  {id:"arcblade",en:"Arcblade",ar:"النصل الضوئي",group:"tech",color:"#FF4FD8",w:"beam",len:100,thick:4,dmg:1.7,cd:.15,kb:8,spin:1.55,hp:90,shop:true,rar:"epic",pw:2.277,hpf:2.277,
++    art:{shell:"neon",face:"visor",sig:"neon",trail:"neon"},
++    grow:{len:2,dmg:.025},cap:{len:150,dmg:2.3},
++    desc:"شعاع أقصر من الليزر وأسمك. يلف أسرع شوي، وما يوصل لنفس المدى.",growTxt:"شعاع أطول"},
++  {id:"meteor",en:"Meteor",ar:"النيزك",group:"nature",color:"#FF5A1F",w:"none",role:"ranged",range:230,hp:100,shop:true,rar:"legendary",pw:1.631,hpf:1.631,
++    art:{shell:"lava",face:"divine",sig:"flame",trail:"fire"},
++    ab:{t:"strike",cd:2.35,n:1,z:{type:"star",r:48,delay:.75,boom:22,ttl:1}},grow:{extraN:.06},cap:{extraN:1},growOnAb:true,
++    desc:"نيزك واحد ينزل على خصم. أبطأ من وابل النجوم، وضربته واحدة واضحة.",growTxt:"نيزك إضافي متأخر"},
++  {id:"umbra",en:"Umbra",ar:"الظلّ",group:"power",color:"#2A2158",w:"blade",len:32,dmg:5.2,spin:3.3,cd:.34,kb:120,hp:96,dodge:.12,shop:true,rar:"legendary",pw:2.043,hpf:2.043,
++    art:{shell:"smoke",face:"void",sig:"moon",trail:"void",color2:"#E6B85C"},
++    ab:{t:"cycle",cd:3,list:[{t:"invis",dur:1},{t:"pull",r:120,f:190,dur:.9}]},grow:{dmg:.28},cap:{dmg:9},
++    desc:"يتناوب بين اختفاء قصير وسحب خفيف. تفاديه أقل من الشبح، وسحبه أضعف من الجاذبية.",growTxt:"نصل أقوى"},
++  {id:"starlance",en:"Starlance",ar:"رمح النجوم",group:"legend",color:"#FFF1C4",w:"pole",len:52,tip:.3,dmg:6.5,spin:2.2,cd:.44,kb:140,hp:96,role:"reach",shop:true,rar:"legendary",pw:1.375,hpf:1.375,
++    art:{shell:"rays",face:"divine",sig:"crown",trail:"gold"},
++    ab:{t:"strike",cd:3.4,n:1,z:{type:"star",r:36,delay:.7,boom:9,ttl:1}},grow:{len:2,dmg:.3},cap:{len:90,dmg:12},
++    desc:"رمح متوسط مع نجمة بطيئة. ما يجمع مدى الرمح الكامل مع وابل السماوي.",growTxt:"رمح أطول"}
++];
++var LEGACY=["sword","spear","dagger","hammer","axe","katana","chainsaw","flail","scythe","boomerang","fire","ice","lightning","poison","water","wind","earth","lava","shadow","light","gravity","blackhole","time","teleport","clone","ghost","vampire","mirror","magnet","chaos","spider","snake","scorpion","dragon","bee","octopus","wolf","phoenix","kraken","chameleon","laser","rocket","drone","plasma","tesla","turret","mine","shield","sawblade","railgun","reaper","celestial","void","omega","hydra","stormking","bloodmoon","prism","nebula","infinity"];
++function apply(BC){
++  if(!BC||!BC.def)return;
++  BALLS.forEach(function(b){if(!BC.KINDS[b.id])BC.def(b)});
++  BC.PICK=BC.ORDER.filter(function(id){return !BC.KINDS[id].hidden});
++  BC.LEGACY=LEGACY.slice();
++}
++function merge(BC){
++  if(!BC||!BC.def)throw new Error("bc_core missing");
++  BALLS.forEach(function(b){if(BC.KINDS[b.id])throw new Error("refusing to replace "+b.id);BC.def(b)});
++  BC.PICK=BC.ORDER.filter(function(id){return !BC.KINDS[id].hidden});
++  BC.LEGACY=LEGACY.slice();
++}
++root.BC_NEW_DATA={balls:BALLS,legacy:LEGACY,apply:apply,merge:merge};
++if(typeof BC!=="undefined")apply(BC);
++if(typeof module!=="undefined"&&module.exports)module.exports=root.BC_NEW_DATA;
++})(typeof globalThis!=="undefined"?globalThis:this);
++/* BALL CLASH shop rules. The browser and the edge function both load this file.
++   purchase() is the tested spec: the SQL function bc_shop_buy must follow it.
++   A client price is ignored. Receipts are written only after a successful charge,
++   so a failed try can be repeated, and a successful try cannot be charged twice. */
++(function(root){
++"use strict";
++var RID=/^[A-Za-z0-9_-]{8,64}$/;
++var BALL_PRICE={common:200,rare:420,epic:780,legendary:1500};
++var BALLS=[
++  ["sling","common"],["spark","common"],["cog","common"],
++  ["glaive","rare"],["blizzard","rare"],["basilisk","rare"],
++  ["trident","epic"],["comet","epic"],["arcblade","epic"],
++  ["meteor","legendary"],["umbra","legendary"],["starlance","legendary"]
++];
++var LOOKS=[
++  ["sh_royal","epic",450],["ls_neon","epic",450],["ts_neon","epic",450],["pl_neon","epic",450],["gh_abyss","epic",450],["lv_ember","epic",450],
++  ["sw_royal","legendary",800],["hm_royal","legendary",800],["vd_abyss","legendary",800],["bh_abyss","legendary",800],["dr_ember","legendary",800],["ph_solar","legendary",800]
++];
++var ARENAS=[["ember","rare",350],["frost","rare",350],["abyss","epic",600]];
++var CATALOG=[];
++BALLS.forEach(function(b){CATALOG.push({kind:"ball",id:b[0],rar:b[1],price:BALL_PRICE[b[1]]})});
++LOOKS.forEach(function(b){CATALOG.push({kind:"look",id:b[0],rar:b[1],price:b[2]})});
++ARENAS.forEach(function(b){CATALOG.push({kind:"arena",id:b[0],rar:b[1],price:b[2]})});
++var BY={};
++CATALOG.forEach(function(it){BY[it.kind+":"+it.id]=it});
++function findOffer(kind,id){return BY[kind+":"+id]||null}
++function has(owned,kind,id){return (owned||[]).some(function(o){return o&&o.kind===kind&&o.id===id})}
++function copyOwned(owned){return (owned||[]).filter(function(o){return o&&(o.kind==="ball"||o.kind==="look"||o.kind==="arena")&&typeof o.id==="string"}).map(function(o){return {kind:o.kind,id:o.id}})}
++function copyReceipts(rec){var out={};if(!rec)return out;Object.keys(rec).forEach(function(k){var r=rec[k];if(r)out[k]={kind:r.kind,id:r.id,price:r.price,coinsAfter:r.coinsAfter,code:r.code}});return out}
++function cloneState(state){
++  state=state||{};
++  var coins=Math.floor(Number(state.coins));
++  if(!isFinite(coins)||coins<0)coins=0;
++  return {coins:coins,owned:copyOwned(state.owned),receipts:copyReceipts(state.receipts)};
++}
++function result(code,state,extra){
++  var o={code:code,charged:0,coins:state.coins,kind:extra.kind||null,id:extra.id||null,price:extra.price||0,state:state};
++  if(extra.need)o.need=extra.need;
++  if(extra.idempotent)o.idempotent=true;
++  if(extra.charged)o.charged=extra.charged;
++  return o;
++}
++/* Returns a new state. Does not mutate the state argument or any profile object. */
++function purchase(state,req){
++  var base=cloneState(state);
++  req=req||{};
++  var kind=req.kind,id=req.id,rid=req.requestId;
++  if(kind!=="ball"&&kind!=="look"&&kind!=="arena")return result("bad_request",base,{kind:kind,id:id});
++  if(typeof id!=="string"||!id||typeof rid!=="string"||!RID.test(rid))return result("bad_request",base,{kind:kind,id:id});
++  var prev=base.receipts[rid];
++  if(prev){
++    if(prev.kind===kind&&prev.id===id&&prev.code==="ok")return result("ok",base,{kind:kind,id:id,price:prev.price,idempotent:true});
++    return result("bad_request",base,{kind:kind,id:id});
++  }
++  var offer=findOffer(kind,id);
++  if(!offer)return result("unknown",base,{kind:kind,id:id});
++  if(has(base.owned,kind,id))return result("owned",base,{kind:kind,id:id,price:offer.price});
++  if(base.coins<offer.price)return result("insufficient",base,{kind:kind,id:id,price:offer.price,need:offer.price-base.coins});
++  var next=cloneState(base);
++  next.coins-=offer.price;
++  next.owned.push({kind:kind,id:id});
++  next.receipts[rid]={kind:kind,id:id,price:offer.price,coinsAfter:next.coins,code:"ok"};
++  return result("ok",next,{kind:kind,id:id,price:offer.price,charged:offer.price});
++}
++function canUseBall(id,owned){if(findOffer("ball",id))return has(owned,"ball",id);return true}
++function canUseLook(id,owned){if(!id)return true;var offer=findOffer("look",id);if(!offer)return false;return has(owned,"look",id)}
++function canUseArena(id,owned){if(!id||id==="classic")return true;var offer=findOffer("arena",id);if(!offer)return false;return has(owned,"arena",id)}
++function lineupError(balls,owned){
++  if(!Array.isArray(balls))return {code:"bad_lineup"};
++  for(var i=0;i<balls.length;i++){var id=balls[i];if(findOffer("ball",id)&&!has(owned,"ball",id))return {code:"unowned",id:id}}
++  return null;
++}
++function sanitizeEquip(looks,arena,owned){
++  var next={};looks=looks&&typeof looks==="object"?looks:{};
++  Object.keys(looks).forEach(function(ball){if(canUseLook(looks[ball],owned))next[ball]=looks[ball]});
++  return {looks:next,arena:canUseArena(arena,owned)?(arena||"classic"):"classic"};
++}
++var CACHE_KEY="bc_inv_v1";
++function emptyInv(){return {v:1,owned:[]}}
++function loadCache(){
++  try{
++    if(typeof localStorage==="undefined")return emptyInv();
++    var o=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");
++    if(!o||!Array.isArray(o.owned))return emptyInv();
++    return {v:1,owned:copyOwned(o.owned)};
++  }catch(e){return emptyInv()}
++}
++function saveCache(inv){
++  try{if(typeof localStorage==="undefined")return;localStorage.setItem(CACHE_KEY,JSON.stringify({v:1,owned:copyOwned(inv&&inv.owned)}))}catch(e){}
++}
++function applyServer(res){
++  var inv={v:1,owned:copyOwned(res&&res.owned)};
++  saveCache(inv);
++  return inv;
++}
++var api={CATALOG:CATALOG,BALL_PRICE:BALL_PRICE,findOffer:findOffer,purchase:purchase,canUseBall:canUseBall,canUseLook:canUseLook,canUseArena:canUseArena,lineupError:lineupError,sanitizeEquip:sanitizeEquip,loadCache:loadCache,saveCache:saveCache,applyServer:applyServer,has:has,CACHE_KEY:CACHE_KEY};
++root.BC_SHOP_LOGIC=api;
++if(typeof module!=="undefined"&&module.exports)module.exports=api;
++})(typeof globalThis!=="undefined"?globalThis:this);
++/* Ball Clash shop actions for the spider edge function.
++   Live handle() is handle(action, p, user, db) and errors throw fail().
++   There is no admin, json(), or payload inside handle. db.rpc calls the
++   public wrappers (bc_shop_buy / bc_shop_sync), which only service_role may
++   execute. Schema private stays off the API.
++
++   In the action switch:
++     case "bc_buy":
++     case "bc_sync": {
++       limit(uid, "bcshop", 20, 60000);
++       const out = await BC_SHOP_HANDLER.dispatch(db, uid, action, p);
++       if (action === "bc_buy" && out && out.code === "ok" && !out.idempotent) {
++         try {
++           const settled = await withProfile(db, uid, () => {
++             const reward = newOut();
++             checkAchievements(reward);
++             return reward;
++           });
++           out.coins = settled.profile.coins;
++           out.profile = settled.profile;
++           out.out = settled.res;
++         } catch (e) {}
++       }
++       return out;
++     }
++   Inside bc_start, after clean, only when a shop ball is present:
++     const owned = await BC_SHOP_HANDLER.ownedIds(db, uid);
++     for (const t of clean) {
++       const e = BC_SHOP_HANDLER.lineupGuard(t.balls, owned);
++       if (e) fail(e.code || "unowned", "هذي الكورة من المتجر");
++     }
++   The paste-ready file is index.ts. It inlines these scripts and lets
++   BC_NEW_DATA.apply run once. Do not also call merge(): the ids already
++   exist, and merge throws, which would crash the function at boot.
++   Do not deploy until Mohammed approves. */
++(function(root){
++"use strict";
++function logic(){return root.BC_SHOP_LOGIC}
++var MSG={
++  ok:"تم الشراء.",
++  insufficient:"رصيدك ما يكفي.",
++  owned:"هذي عندك من قبل.",
++  unknown:"هذا العنصر مو في المتجر.",
++  bad_request:"الطلب ما اكتمل. حاول مرة ثانية.",
++  profile_table_missing:"متجر الكور ينتظر تحديث الخادم. ما انخصم شي.",
++  profile_missing:"ما لقينا حسابك على الخادم. ما انخصم شي."
++};
++function message(code){return MSG[code]||MSG.bad_request}
++function buyArgs(userId,payload){
++  payload=payload||{};
++  return {p_user:userId,p_kind:payload.kind,p_item:payload.id,p_request:payload.requestId};
++}
++function lineupGuard(balls,owned){
++  var L=logic();
++  if(!L)return {code:"bad_lineup"};
++  return L.lineupError(balls,owned);
++}
++async function ownedIds(admin,userId){
++  var sync=await admin.rpc("bc_shop_sync",{p_user:userId});
++  if(!sync||sync.error)return null;
++  var s=sync.data||{};
++  if(s.code&&s.code!=="ok")return null;
++  return Array.isArray(s.owned)?s.owned:[];
++}
++async function dispatch(admin,userId,action,payload){
++  var L=logic();
++  if(!L)return {code:"bad_request",charged:0,message:message("bad_request")};
++  if(action==="bc_sync"){
++    var sync=await admin.rpc("bc_shop_sync",{p_user:userId});
++    if(sync&&sync.error)return {code:"bad_request",charged:0,message:message("bad_request")};
++    var s=sync&&sync.data||{};
++    if(s.code&&s.code!=="ok")return {code:s.code,charged:0,coins:null,message:message(s.code)};
++    return {code:"ok",owned:s.owned||[],coins:typeof s.coins==="number"?s.coins:null,message:""};
++  }
++  if(action!=="bc_buy")return {code:"bad_request",charged:0,message:message("bad_request")};
++  var offer=L.findOffer(payload&&payload.kind,payload&&payload.id);
++  if(!offer)return {code:"unknown",charged:0,message:message("unknown")};
++  var args=buyArgs(userId,payload);
++  var bought=await admin.rpc("bc_shop_buy",args);
++  if(bought&&bought.error)return {code:"bad_request",charged:0,message:message("bad_request")};
++  var d=bought&&bought.data||{};
++  d.message=message(d.code);
++  return d;
++}
++var api={dispatch:dispatch,buyArgs:buyArgs,lineupGuard:lineupGuard,ownedIds:ownedIds,message:message,MSG:MSG};
++root.BC_SHOP_HANDLER=api;
++if(typeof module!=="undefined"&&module.exports)module.exports=api;
++})(typeof globalThis!=="undefined"?globalThis:this);
++globalThis.BC = BC;
++
+ 
+ /* ================= basics ================= */
+ const clock={now:()=>Date.now()};
+@@ -1571,7 +1839,7 @@
+   new(players,o){const g=gmBase("ballclash",players.slice(0,4),o);g.timer=0;g.size=Math.min(5,Math.max(1,(o.bcSize|0)||2));g.pick=o.bcPick==="draft"?"draft":"secret";
+     g.phase="pick";g.locked=g.players.map(()=>false);g.picks=g.players.map(()=>[]);g.turn=0;g.deadline=clock.now()+(g.pick==="draft"?25000:75000);return g},
+   deal(g){return g.players.map(()=>({picks:[]}))},
+-  okKind(k){return typeof BC!=="undefined"&&!!BC.KINDS[k]&&!BC.KINDS[k].hidden},
++  okKind(k){return typeof BC!=="undefined"&&!!BC.KINDS[k]&&!BC.KINDS[k].hidden&&!BC.KINDS[k].shop},
+   legal(g,s,a,pv){
+     if(g.winner!=null||g.phase!=="pick")return "انتهى الاختيار";if(!a)return "حركة غير صحيحة";
+     if(a.t==="timeout")return clock.now()>=g.deadline?null:"باقي وقت";
+@@ -1585,7 +1853,7 @@
+     if(BCR.ready(g))BCR.begin(g,pv);return {g,privs:pv}},
+   nextTurn(g){for(let k=1;k<=g.n;k++){const t=(g.turn+k)%g.n;if(g.picks[t].length<g.size){g.turn=t;g.deadline=clock.now()+25000;return}}},
+   ready(g){return g.pick==="secret"?g.locked.every(Boolean):g.picks.every(p=>p.length>=g.size)},
+-  autoFill(g,pv){const pool=BC.PICK.slice(),rnd=()=>pool[Math.floor(Math.random()*pool.length)];
++  autoFill(g,pv){const pool=BC.PICK.filter(k=>BC.KINDS[k]&&!BC.KINDS[k].shop),rnd=()=>pool[Math.floor(Math.random()*pool.length)];
+     if(g.pick==="secret"){for(let i=0;i<g.n;i++)if(!g.locked[i]){pv[i].picks=Array.from({length:g.size},rnd);g.locked[i]=true}}
+     else{const used=new Set(g.picks.flat()),free=pool.filter(k=>!used.has(k));g.picks[g.turn].push(free[Math.floor(Math.random()*free.length)]||pool[0]);BCR.nextTurn(g)}},
+   begin(g,pv){g.lineups=g.pick==="secret"?pv.map(x=>x.picks.slice()):g.picks.map(p=>p.slice());g.seed=(Math.floor(Math.random()*2147483646)+1)>>>0;g.phase="battle";
+@@ -2363,11 +2631,27 @@
+   }
+ 
+   /* ---- BALL CLASH: the server picks the seed, replays the battle itself, then rewards ---- */
++  case "bc_buy":
++  case "bc_sync":{
++    limit(uid,"bcshop",20,60000);
++    const out=await BC_SHOP_HANDLER.dispatch(db,uid,action,p);
++    if(action==="bc_buy"&&out&&out.code==="ok"&&!out.idempotent){
++      try{
++        const settled=await withProfile(db,uid,()=>{const reward=newOut();checkAchievements(reward);return reward});
++        out.coins=settled.profile.coins;out.profile=settled.profile;out.out=settled.res;
++      }catch(e){}
++    }
++    return out;
++  }
+   case "bc_start":{
+     limit(uid,"bc",30,60000);
+     if(typeof BC==="undefined")fail("bad","اللعبة مو جاهزة في السيرفر");
+     const teams=Array.isArray(p.teams)?p.teams:null;if(!teams||teams.length<2||teams.length>8)fail("bad","الفرق غير صحيحة");
+     const clean=teams.map(t=>{const b=Array.isArray(t.balls)?t.balls.slice(0,8):[];if(!b.length||b.some(k=>!BC.KINDS[k]||BC.KINDS[k].hidden))fail("bad","كورة غير معروفة");return {balls:b}});
++    if(clean.some(t=>t.balls.some(k=>BC.KINDS[k]&&BC.KINDS[k].shop))){
++      const owned=await BC_SHOP_HANDLER.ownedIds(db,uid);
++      for(const t of clean){const e=BC_SHOP_HANDLER.lineupGuard(t.balls,owned);if(e)fail(e.code||"unowned","هذي الكورة من المتجر")}
++    }
+     const o=p.opts||{},cfg={teams:clean,ff:!!o.ff,synergy:o.syn!==false,hpMul:[.5,1,1.5,2].includes(o.hpMul)?o.hpMul:1,size:[440,560,720].includes(o.size)?o.size:560};
+     if(String(p.mode)!=="custom"&&await ownerOn(db,uid,"bcPower"))cfg.boost={team:0,f:1.3};
+     const id=newId(),seed=(Math.floor(Math.random()*2147483646)+1)>>>0;
+@@ -2757,6 +3041,7 @@
+   const chk=r=>{if(r.error)throw r.error;return r.data};
+   const iso=ms=>new Date(ms).toISOString();
+   return {
++    async rpc(fn,args){return a.rpc(fn,args)},
+     async getProfile(id){return chk(await a.from("profiles").select("id,role,data,version").eq("id",id).maybeSingle())},
+     async insertProfile(id,data,nickname){const r=await a.from("profiles").insert({id,data,nickname:nickname||"",version:1});if(r.error&&r.error.code!=="23505")throw r.error},
+     async updateProfile(id,version,data,nickname){const r=chk(await a.from("profiles").update({data,nickname:nickname||"",version:version+1,updated_at:iso(Date.now())}).eq("id",id).eq("version",version).select("version"));return Array.isArray(r)&&r.length===1},
+@@ -2820,7 +3105,7 @@
+     async authLinkToken(email){const r=await a.auth.admin.generateLink({type:"magiclink",email});if(r.error)throw r.error;return r.data.properties.hashed_token}
+   };
+ }
+-if(typeof Deno!=="undefined"&&Deno.serve){
++if(typeof Deno!=="undefined"&&Deno.serve&&!(Deno.env&&Deno.env.get("SPIDER_NO_SERVE"))){
+   const {createClient}=await import("npm:@supabase/supabase-js@2");
+   const admin=createClient(Deno.env.get("SUPABASE_URL"),Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),{auth:{persistSession:false,autoRefreshToken:false}});
+   const db=supaDB(admin);
+@@ -2846,4 +3131,15 @@
+       console.error(e);return send({error:"server",message:"صار خطأ في الخادم"},500);
+     }
+   });
+-}
+\ No newline at end of file
++}
++if(typeof Deno==="undefined"||(Deno.env&&Deno.env.get("SPIDER_NO_SERVE"))){
++  const bootErr=[];
++  if(!BC.KINDS.umbra||BC.KINDS.umbra.shop!==true)bootErr.push("umbra");
++  if(BC.KINDS.sword.pw!==1.117||BC.KINDS.sword.hpf!==1.117)bootErr.push("sword");
++  if(BCR.okKind("umbra")||BCR.okKind("droneunit")||!BCR.okKind("sword"))bootErr.push("okKind");
++  const pv=[{picks:[]}];
++  BCR.autoFill({pick:"secret",n:1,size:4,locked:[false]},pv);
++  if(!pv[0].picks.length||pv[0].picks.some(k=>!BC.KINDS[k]||BC.KINDS[k].shop))bootErr.push("autoFill");
++  if(typeof handle!=="function"||!globalThis.BC_SHOP_HANDLER)bootErr.push("handle");
++  if(bootErr.length)throw new Error("spider v9 boot: "+bootErr.join(","));
++}
