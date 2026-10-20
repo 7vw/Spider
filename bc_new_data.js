@@ -46,7 +46,7 @@ var BALLS=[
     art:{shell:"lava",face:"divine",sig:"flame",trail:"fire"},
     ab:{t:"strike",cd:2.35,n:1,z:{type:"star",r:48,delay:.75,boom:22,ttl:1}},grow:{extraN:.06},cap:{extraN:1},growOnAb:true,
     desc:"نيزك واحد ينزل على خصم. أبطأ من وابل النجوم، وضربته واحدة واضحة.",growTxt:"نيزك إضافي متأخر"},
-  {id:"eclipse",en:"Eclipse",ar:"الكسوف",group:"power",color:"#2A2158",w:"blade",len:32,dmg:5.2,spin:3.3,cd:.34,kb:120,hp:96,dodge:.12,shop:true,rar:"legendary",pw:2.043,hpf:2.043,
+  {id:"umbra",en:"Umbra",ar:"الظلّ",group:"power",color:"#2A2158",w:"blade",len:32,dmg:5.2,spin:3.3,cd:.34,kb:120,hp:96,dodge:.12,shop:true,rar:"legendary",pw:2.043,hpf:2.043,
     art:{shell:"smoke",face:"void",sig:"moon",trail:"void",color2:"#E6B85C"},
     ab:{t:"cycle",cd:3,list:[{t:"invis",dur:1},{t:"pull",r:120,f:190,dur:.9}]},grow:{dmg:.28},cap:{dmg:9},
     desc:"يتناوب بين اختفاء قصير وسحب خفيف. تفاديه أقل من الشبح، وسحبه أضعف من الجاذبية.",growTxt:"نصل أقوى"},

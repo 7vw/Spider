@@ -1,20 +1,37 @@
 /* Ball Clash shop actions for the spider edge function.
-   The live function source is not in this repo. Wire this in without changing
-   existing actions. Do not deploy until Mohammed approves.
+   Live handle() is handle(action, p, user, db) and errors throw fail().
+   There is no admin, json(), or payload inside handle. db.rpc calls
+   private.bc_shop_* through the service-role client (see supaDB).
 
-   In the request switch, before the existing cases:
-     if (action === "bc_buy" || action === "bc_sync") {
-       return json(await BC_SHOP_HANDLER.dispatch(admin, user.id, action, payload || {}));
+   In the action switch:
+     case "bc_buy":
+     case "bc_sync": {
+       limit(uid, "bcshop", 20, 60000);
+       const out = await BC_SHOP_HANDLER.dispatch(db, uid, action, p);
+       if (action === "bc_buy" && out && out.code === "ok" && !out.idempotent) {
+         try {
+           const settled = await withProfile(db, uid, () => {
+             const reward = newOut();
+             checkAchievements(reward);
+             return reward;
+           });
+           out.coins = settled.profile.coins;
+           out.profile = settled.profile;
+           out.out = settled.res;
+         } catch (e) {}
+       }
+       return out;
      }
-   Inside bc_start, before the kind-id check, for every team ball list:
-     const owned = await BC_SHOP_HANDLER.ownedIds(admin, user.id);
-     const err = BC_SHOP_HANDLER.lineupGuard(balls, owned);
-     if (err) return json({ error: err.code || "unowned", id: err.id }, 400);
-   ownedIds returns null when the ownership read fails. The guard then
-   rejects every shop ball and still allows the original free balls.
-   Load bc_shop_logic.js and bc_new_data.js in the same deploy, and merge kinds
-   with BC_NEW_DATA.merge(BC) so an existing id is never replaced.
-   The handler does not send a price. bc_shop_buy reads bc_catalog. */
+   Inside bc_start, after clean, only when a shop ball is present:
+     const owned = await BC_SHOP_HANDLER.ownedIds(db, uid);
+     for (const t of clean) {
+       const e = BC_SHOP_HANDLER.lineupGuard(t.balls, owned);
+       if (e) fail(e.code || "unowned", "هذي الكورة من المتجر");
+     }
+   The paste-ready file is index.ts. It inlines these scripts and lets
+   BC_NEW_DATA.apply run once. Do not also call merge(): the ids already
+   exist, and merge throws, which would crash the function at boot.
+   Do not deploy until Mohammed approves. */
 (function(root){
 "use strict";
 function logic(){return root.BC_SHOP_LOGIC}

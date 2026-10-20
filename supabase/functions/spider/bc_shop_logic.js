@@ -10,7 +10,7 @@ var BALLS=[
   ["sling","common"],["spark","common"],["cog","common"],
   ["glaive","rare"],["blizzard","rare"],["basilisk","rare"],
   ["trident","epic"],["comet","epic"],["arcblade","epic"],
-  ["meteor","legendary"],["eclipse","legendary"],["starlance","legendary"]
+  ["meteor","legendary"],["umbra","legendary"],["starlance","legendary"]
 ];
 var LOOKS=[
   ["sh_royal","epic",450],["ls_neon","epic",450],["ts_neon","epic",450],["pl_neon","epic",450],["gh_abyss","epic",450],["lv_ember","epic",450],

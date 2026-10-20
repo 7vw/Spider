@@ -4992,8 +4992,8 @@ function renderBCR(bd){
   const mineLocked=G.pick==="secret"&&me>=0&&G.locked[me],myTurn=G.pick==="draft"&&G.turn===me;
   if(me<0||mineLocked||(G.pick==="draft"&&!myTurn)){bd.append(h("p",{class:"hint center"},mineLocked?"تشكيلتك مقفولة. ننتظر الباقين…":me<0?"تتفرّج":"ننتظر دور "+G.players[G.turn].nick+"…"));return}
   const taken=new Set(G.pick==="draft"?G.picks.flat():[]),grid=h("div",{class:"bc-rgrid"});
-  BC.PICK.forEach(kid=>{const K=BC.KINDS[kid],on=bcSel.includes(kid),shopLocked=window.BCUI.canBall&&!window.BCUI.canBall(kid),dis=taken.has(kid)||shopLocked;
-    grid.append(h("button",{class:"bc-rk"+(on?" on":"")+(dis?" dis":""),disabled:taken.has(kid),"aria-label":K.ar,onclick:()=>{if(shopLocked){toast("هذي الكورة من المتجر","bad");return}if(G.pick==="draft"){mgPlay({t:"draft",k:kid});return}
+  BC.PICK.forEach(kid=>{const K=BC.KINDS[kid],on=bcSel.includes(kid),shopLocked=!!K.shop,dis=taken.has(kid)||shopLocked;
+    grid.append(h("button",{class:"bc-rk"+(on?" on":"")+(dis?" dis":""),disabled:taken.has(kid)||shopLocked,"aria-label":K.ar,onclick:()=>{if(shopLocked){toast("الغرف الأونلاين تلعب بالكور الأصلية","bad");return}if(G.pick==="draft"){mgPlay({t:"draft",k:kid});return}
       if(bcSel.length>=G.size)bcSel.pop();bcSel.push(kid);sfx("move");mgRender()}},window.BCUI.previewCanvas(kid,40),h("span",{},K.ar)))});
   if(G.pick==="secret")bd.append(h("button",{class:"primary wide",style:"margin:8px 0",disabled:bcSel.length!==G.size,onclick:()=>mgPlay({t:"pick",balls:bcSel.slice()})},bcSel.length===G.size?"قفّل التشكيلة":"اختر "+fmt(G.size-bcSel.length)+" كمان"));
   bd.append(grid);

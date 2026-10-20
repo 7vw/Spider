@@ -24,7 +24,7 @@ ND.legacy.forEach(function(id){
 });
 
 const PROBE = ["sword","boomerang","fire","lightning","gravity","ghost","snake","dragon","laser","shield","celestial","void"];
-const PEER = {sling:"boomerang",spark:"lightning",cog:"sawblade",glaive:"spear",blizzard:"ice",basilisk:"snake",trident:"spear",comet:"rocket",arcblade:"laser",meteor:"celestial",eclipse:"ghost",starlance:"spear"};
+const PEER = {sling:"boomerang",spark:"lightning",cog:"sawblade",glaive:"spear",blizzard:"ice",basilisk:"snake",trident:"spear",comet:"rocket",arcblade:"laser",meteor:"celestial",umbra:"ghost",starlance:"spear"};
 const FIELD = ND.legacy.slice();
 const SEEDS = [7, 11, 42];
 
