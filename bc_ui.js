@@ -16,7 +16,7 @@ function looksSet(kind,id){var o=looksGet();if(!id)delete o[kind];else if(BC.LOO
 function arenaGet(){var id="classic";try{id=localStorage.getItem("bc_arena")||"classic"}catch(e){}return BC.ARENAS&&BC.ARENAS[id]?id:"classic"}
 function arenaSet(id){if(!BC.ARENAS||!BC.ARENAS[id])return;try{localStorage.setItem("bc_arena",id)}catch(e){}}
 function reduced(){return !!(SP.reduced&&SP.reduced())}
-function drawOpt(n){return {q:Q,reduce:reduced(),n:n||2}}
+function drawOpt(n){n=n||2;return {q:Q,reduce:reduced(),n:n,flat:Q==="low"||n>8}}
 function rarBadge(rar){return h("span",{class:"bc-rar "+(rar||"common")},RAR_L[rar]||rar)}
 function paintPreview(x,kid,px,t,opt){
   opt=opt||{};var dpr=Math.min(2,window.devicePixelRatio||1),K=BC.KINDS[kid];if(!K)return;
