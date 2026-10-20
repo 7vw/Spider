@@ -8235,7 +8235,7 @@ function renderMgWin(){
   $("mgWinText").textContent=seat>=0?(won?"فزت!":"خسرت"):G.team?(G.team==="flies"?"فاز الذباب!":"فازت العناكب!"):"فاز "+w.nick+"!";
   paintWinTitle($("mgWinText"),seat<0||won,seat);
   $("mgWinSub").textContent=mgSub(seat);
-  const ul=$("mgScores");ul.textContent="";G.players.forEach((q,k)=>{const n=G.score[q.id]||0;ul.append(h("li",{},ballSvg(skinOf(k),22),h("span",{},q.nick,q.bot?ic("cpu","pc-bot"):null),h("b",{class:"wins"},ic("trophy"),fmt(n))))});
+  const ul=$("mgScores");ul.textContent="";G.players.forEach((q,k)=>{const n=G.game==="domino"?((G.pip&&G.pip.seats&&G.pip.seats[k])||0):(G.score[q.id]||0);ul.append(h("li",{},ballSvg(skinOf(k),22),h("span",{},q.nick,q.bot?ic("cpu","pc-bot"):null),h("b",{class:"wins"},G.game==="domino"?null:ic("trophy"),fmt(n))))});
   const rb=$("mgRewards"),lr=lastResult&&lastResult.mid===G.mid?lastResult:null,key=G.mid+"|"+(lr?(lr.out?"out":lr.skipped||""):"wait");
   if(rb.dataset.k!==key){rb.dataset.k=key;rb.textContent="";
     if(lr&&lr.out){winBuiltMid=null;buildRewards(rb,lr)}
