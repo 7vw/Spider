@@ -138,5 +138,39 @@ d({id:"turretunit",en:"Turret",ar:"برج",group:"tech",hidden:true,unit:true,co
 /* measured balance (damage multiplier, health multiplier) from bc_balance.js over thousands of duels */
 var BAL={"sword":[1.117,1.117],"spear":[1.193,1.193],"dagger":[1.197,1.197],"hammer":[1.15,1.15],"axe":[1.275,1.275],"katana":[1.606,1.606],"chainsaw":[2.029,2.029],"flail":[1.202,1.202],"scythe":[0.849,0.849],"boomerang":[0.739,0.739],"fire":[0.682,0.682],"ice":[0.72,0.72],"lightning":[0.555,0.555],"poison":[0.567,0.556],"water":[1.005,1.005],"wind":[1.11,1.11],"earth":[0.632,0.632],"lava":[0.664,0.664],"shadow":[0.819,0.819],"light":[0.501,0.501],"gravity":[1.205,1.205],"blackhole":[0.747,0.747],"time":[1.493,1.493],"teleport":[0.773,0.773],"clone":[1.268,1.268],"ghost":[1.328,1.328],"vampire":[1.362,1.362],"mirror":[1.399,1.399],"magnet":[1.56,1.56],"chaos":[0.968,0.968],"spider":[1.361,1.361],"snake":[2.095,2.061],"scorpion":[1.282,1.282],"dragon":[0.606,0.606],"bee":[0.436,0.45],"octopus":[0.95,0.95],"wolf":[1.035,1.035],"phoenix":[0.745,0.745],"kraken":[1.045,1.045],"chameleon":[1.655,1.655],"laser":[1.789,1.789],"rocket":[0.703,0.703],"drone":[0.923,0.923],"plasma":[0.818,0.818],"tesla":[1.347,1.347],"turret":[0.99,0.99],"mine":[0.561,0.561],"shield":[0.3,0.451],"sawblade":[1.116,1.116],"railgun":[0.643,0.643],"reaper":[0.722,0.722],"celestial":[2.187,2.159],"void":[1.292,1.292],"omega":[1.323,1.323],"hydra":[1.591,1.591],"stormking":[0.823,0.823],"bloodmoon":[0.861,0.861],"prism":[0.504,0.504],"nebula":[0.765,0.765],"infinity":[0.762,0.762]};
 for(var id in BAL)if(BC.KINDS[id]){BC.KINDS[id].pw=BAL[id][0];BC.KINDS[id].hpf=BAL[id][1]}
+/* Visual rarity only. The step loop never reads rar, so duels stay on the measured BAL multipliers. */
+var RAR_OF={
+  sword:"common",spear:"common",dagger:"common",hammer:"rare",axe:"rare",katana:"rare",chainsaw:"epic",flail:"rare",scythe:"epic",boomerang:"rare",
+  fire:"rare",ice:"rare",lightning:"epic",poison:"rare",water:"common",wind:"rare",earth:"common",lava:"epic",shadow:"epic",light:"rare",
+  gravity:"epic",blackhole:"legendary",time:"epic",teleport:"rare",clone:"epic",ghost:"epic",vampire:"epic",mirror:"rare",magnet:"rare",chaos:"legendary",
+  spider:"rare",snake:"common",scorpion:"rare",dragon:"legendary",bee:"common",octopus:"rare",wolf:"rare",phoenix:"legendary",kraken:"epic",chameleon:"rare",
+  laser:"epic",rocket:"rare",drone:"rare",plasma:"epic",tesla:"epic",turret:"common",mine:"common",shield:"rare",sawblade:"rare",railgun:"epic",
+  reaper:"legendary",celestial:"legendary",void:"legendary",omega:"legendary",hydra:"legendary",stormking:"legendary",bloodmoon:"legendary",prism:"legendary",nebula:"legendary",infinity:"legendary"
+};
+for(var rid in RAR_OF)if(BC.KINDS[rid])BC.KINDS[rid].rar=RAR_OF[rid];
+/* Cosmetic looks. Ids are new and local (bc_look). They do not enter spider_profile or the server catalog. */
+BC.LOOKS={};BC.LOOK_ORDER=[];
+function lookDef(o){o.how="free";o.cosmetic=true;BC.LOOKS[o.id]=o;BC.LOOK_ORDER.push(o.id)}
+lookDef({id:"sw_royal",ball:"sword",set:"royal",ar:"سيف ملكي",en:"Royal Edge",rar:"legendary",color:"#F7D46B",color2:"#7A4A0E",shell:"crown",face:"brave",sig:"crown",trail:"gold",desc:"حافة ذهبية وتاج صغير. الشكل بس، والسيف يبقى بنفس القوة."});
+lookDef({id:"hm_royal",ball:"hammer",set:"royal",ar:"مطرقة البلاط",en:"Court Hammer",rar:"legendary",color:"#E6B85C",color2:"#6B4A2B",shell:"crown",face:"brave",sig:"crown",trail:"gold",desc:"رأس ذهبي للمطرقة. ما يزيد الدفع ولا الضرر."});
+lookDef({id:"sh_royal",ball:"shield",set:"royal",ar:"درع التاج",en:"Crown Shield",rar:"epic",color:"#F2E2A8",color2:"#4A6FB0",shell:"mirror",face:"visor",sig:"crown",trail:"gold",desc:"درع بلون البلاط. الامتصاص نفسه."});
+lookDef({id:"ls_neon",ball:"laser",set:"neon",ar:"ليزر نيون",en:"Neon Beam",rar:"epic",color:"#FF2E9A",color2:"#7FE8FF",shell:"neon",face:"visor",sig:"neon",trail:"neon",desc:"شعاع بخطوط نيون. الطول والضرر ما يتغيرون."});
+lookDef({id:"ts_neon",ball:"tesla",set:"neon",ar:"ملف نيون",en:"Neon Coil",rar:"epic",color:"#7FE8FF",color2:"#3A6BFF",shell:"neon",face:"visor",sig:"neon",trail:"neon",desc:"ملف سماوي. مجال الصعق نفسه."});
+lookDef({id:"pl_neon",ball:"plasma",set:"neon",ar:"بلازما نيون",en:"Neon Plasma",rar:"epic",color:"#D56BFF",color2:"#7FE8FF",shell:"neon",face:"glow",sig:"neon",trail:"neon",desc:"كرة طاقة بحلقة نيون. الانفجار نفسه."});
+lookDef({id:"vd_abyss",ball:"void",set:"abyss",ar:"فراغ أعمق",en:"Deeper Void",rar:"legendary",color:"#12081C",color2:"#B65CFF",shell:"smoke",face:"void",sig:"void",trail:"void",desc:"دوامة أوضح حول الفراغ. البلع والعلاج نفسهم."});
+lookDef({id:"gh_abyss",ball:"ghost",set:"abyss",ar:"شبح الهاوية",en:"Abyss Ghost",rar:"epic",color:"#C9B6FF",color2:"#2A1050",shell:"smoke",face:"ghost",sig:"void",trail:"void",desc:"ضباب بنفسجي. نسبة التفادي نفسها."});
+lookDef({id:"bh_abyss",ball:"blackhole",set:"abyss",ar:"بئر الهاوية",en:"Abyss Well",rar:"legendary",color:"#0A0614",color2:"#8D65F6",shell:"smoke",face:"void",sig:"void",trail:"void",desc:"مركز أظلم وحلقات. سحب الثقب نفسه."});
+lookDef({id:"dr_ember",ball:"dragon",set:"ember",ar:"جمر التنين",en:"Ember Dragon",rar:"legendary",color:"#FF5A1F",color2:"#FFD23F",shell:"flame",face:"wolf",sig:"wings",trail:"fire",desc:"أجنحة وجمر. نفث النار بنفس الضرر."});
+lookDef({id:"ph_solar",ball:"phoenix",set:"ember",ar:"شمس العنقاء",en:"Solar Phoenix",rar:"legendary",color:"#FFD23F",color2:"#FF4D2E",shell:"sun",face:"divine",sig:"wings",trail:"fire",desc:"هالة شمس. الرجوع بعد السقوط بنفس النسبة."});
+lookDef({id:"lv_ember",ball:"lava",set:"ember",ar:"قلب الجمر",en:"Ember Heart",rar:"epic",color:"#FF4D2E",color2:"#FFE14D",shell:"lava",face:"glow",sig:"flame",trail:"fire",desc:"قلب متوهج. برك الحمم نفسها."});
+BC.SETS={royal:"الطقم الملكي",neon:"طقم النيون",abyss:"طقم الهاوية",ember:"طقم الجمر"};
+BC.ARENAS={
+  classic:{id:"classic",ar:"الكلاسيكية",en:"Classic",rar:"common",desc:"السداسيات الأصلية بإطار أحمر وبنفسجي."},
+  abyss:{id:"abyss",ar:"الهاوية",en:"Abyss",rar:"epic",desc:"أرضية بنفسجية عميقة وحلقات حول الوسط."},
+  ember:{id:"ember",ar:"الجمر",en:"Ember",rar:"rare",desc:"أرض دافئة وشقوق نار ثابتة."},
+  frost:{id:"frost",ar:"الصقيع",en:"Frost",rar:"rare",desc:"جليد باهت وإطار سماوي."}
+};
+BC.ARENA_ORDER=["classic","abyss","ember","frost"];
+BC.RAR_NAME={common:"عادي",rare:"نادر",epic:"ملحمي",legendary:"أسطوري"};
 BC.PICK=BC.ORDER.filter(function(id){return !BC.KINDS[id].hidden});
 })(typeof BC!=="undefined"?BC:require("./bc_core.js"));
