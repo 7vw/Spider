@@ -905,3 +905,13 @@ body.in-match .controls,body.in-match .ww-kb,body.in-match .wl-pad,body.in-match
 #stMore{margin:8px 0 4px}
 #btnBots{position:sticky;bottom:calc(var(--nav-h) + 10px);z-index:4}
 .bc-shop-card{display:flex;flex-direction:column;gap:8px;padding:16px}
+.chat-tray{display:flex;gap:8px;overflow-x:auto;padding:4px 0 2px;scrollbar-width:none}
+.chat-tray button{flex:none;min-height:44px;min-width:44px;padding:0 14px;border-radius:999px;font-size:var(--fs-sm)}
+.chat-log{display:flex;flex-direction:column;gap:4px;margin-top:8px;min-height:0}
+.chat-log p{margin:0;font-size:var(--fs-sm);color:var(--ink)}
+.chat-line{min-height:0;font-size:var(--fs-sm);color:var(--gold-hi);padding:0 4px}
+.av-pick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.av-pick button{min-height:44px;min-width:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:var(--rad-md);font-size:var(--fs-xs)}
+.av-pick button.on{outline:2px solid var(--gold);color:var(--gold-hi)}
+.fcode{font-size:var(--fs-2xl);letter-spacing:.18em;font-weight:800;direction:ltr;text-align:center}
+@media (min-width:700px){.av-pick{grid-template-columns:repeat(6,minmax(0,1fr))}}
