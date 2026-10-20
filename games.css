@@ -259,6 +259,21 @@
 .dom-play.dead{opacity:.4}
 .dom-ends{display:flex;gap:8px;margin-top:8px}
 .dom-ends .dom-end,.dom-go{min-height:44px;min-width:44px}
+
+/* ===================== كلمة اليوم ===================== */
+#km:not(.hidden){display:flex;flex-direction:column;min-height:100dvh;gap:8px;padding:8px 10px 16px}
+.km-grid{display:grid;gap:6px;margin:8px auto}
+.km-row{display:grid;grid-template-columns:repeat(5,minmax(44px,58px));gap:6px;justify-content:center}
+.km-cell{min-width:44px;min-height:44px;display:grid;place-items:center;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:#141824;font:700 22px/1 "IBM Plex Sans Arabic",var(--body)}
+.km-cell.g,.km-key.g{background:#1F8A4C;border-color:#39FF88;color:#fff}
+.km-cell.y,.km-key.y{background:#8A6A22;border-color:#E6B85C;color:#fff}
+.km-cell.b,.km-key.b{background:#2A3142;border-color:#3A4256;color:#C5CAD6}
+.km-keys{display:grid;gap:6px;width:min(100%,420px);margin:8px auto 0}
+.km-krow{display:flex;gap:4px;justify-content:center}
+.km-key{flex:1 0 44px;min-width:44px;min-height:44px;padding:0 2px;border-radius:8px;font:700 16px/1 "IBM Plex Sans Arabic",var(--body)}
+.km-key.wide{flex:1.4 0 72px}
+#kmActions{justify-content:center;margin-top:8px}
+#kmActions button{min-height:44px}
 /* 44px dama squares on a 390px phone. Bleed the board out of the wrap padding, and keep a horizontal scroll if a square would still be smaller. */
 @media (max-width:420px){
   #mg .mg-board:has(.dm){overflow-x:auto;margin-inline:-16px;width:calc(100% + 32px);max-width:none}

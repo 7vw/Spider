@@ -456,6 +456,7 @@ body{overflow-x:clip}
     <button class="gtile" type="button" data-game="webgrid"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>WEBGRID</b><span>٢–٤ لاعبين</span></span></button>
     <button class="gtile" type="button" data-game="xo"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>XO∞</b><span>لاعبين</span></span></button>
     <button class="gtile" type="button" data-game="wordweb"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>WORDWEB</b><span>٢–٤ لاعبين</span></span></button>
+    <button class="gtile" type="button" data-game="kalima"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>KALIMA</b><span>كلمة اليوم</span></span></button>
     <button class="gtile" type="button" data-game="webline"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>WEBLINE</b><span>لاعب واحد</span></span></button>
     <button class="gtile" type="button" data-game="dama"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>DAMA</b><span>لاعبين</span></span></button>
     <button class="gtile" type="button" data-game="bluff"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>BLUFF</b><span>٢–٦ لاعبين</span></span></button>
@@ -513,6 +514,21 @@ body{overflow-x:clip}
 </section>
 
 <!-- WEBLINE -->
+<section id="km" class="hidden">
+  <div class="bar">
+    <button class="quit" id="kmQuit" type="button">خروج</button>
+    <span class="mg-title">KALIMA</span>
+  </div>
+  <p class="status" id="kmStatus" role="status"></p>
+  <div id="kmGrid" class="km-grid"></div>
+  <div id="kmKeys" class="km-keys"></div>
+  <div class="row" id="kmActions">
+    <button type="button" class="primary" id="kmDaily">كلمة اليوم</button>
+    <button type="button" id="kmPractice">تدريب</button>
+    <button type="button" class="hidden" id="kmShare">شارك</button>
+  </div>
+</section>
+
 <section id="wl" class="hidden">
   <div class="bar"><button class="quit" id="wlQuit">خروج</button><span class="wl-score" aria-live="polite"><span>النتيجة</span><b id="wlScore">٠</b></span><span class="mg-title">WEBLINE</span></div>
   <div class="wl-wrap" id="wlWrap"><canvas id="wlCanvas" role="img" aria-label="ساحة WEBLINE"></canvas><div class="wl-msg hidden" id="wlMsg"></div></div>
