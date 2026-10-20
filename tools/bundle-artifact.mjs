@@ -11,6 +11,7 @@ const css = fs.readFileSync(path.join(root, "games.css"), "utf8");
 const ui = fs.existsSync(path.join(root, "ui.css")) ? fs.readFileSync(path.join(root, "ui.css"), "utf8") : "";
 let app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 const mini = fs.readFileSync(path.join(root, "js", "minigames.js"), "utf8");
+const domino = fs.readFileSync(path.join(root, "js", "domino_engine.js"), "utf8");
 if (!mini.includes("SPIDER_GAMES") || /\beval\s*\(/.test(mini) || /new Function\s*\(/.test(mini)) throw new Error("minigames shape");
 
 const a = app.indexOf("/* @split-lazy-start */");
@@ -19,6 +20,7 @@ if (a < 0 || b < a) throw new Error("lazy markers missing");
 const inline = `let WG,XO,WW,WL,DM,BF,FH,WR,NST,NW,BCR;
 let GAME_RULES={},MIN_PLAYERS={webbound:2},MAX_PLAYERS={webbound:4},WW_CATS={};
 globalThis.SPIDER_GAMES={clock, newMid};
+${domino}
 ${mini}
 {const ex=globalThis.SPIDER_GAMES.games;
 WG=ex.WG;XO=ex.XO;WW=ex.WW;WL=ex.WL;DM=ex.DM;BF=ex.BF;FH=ex.FH;WR=ex.WR;NST=ex.NST;NW=ex.NW;BCR=ex.BCR;

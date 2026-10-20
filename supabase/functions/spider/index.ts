@@ -1,4 +1,4 @@
-// SPIDER — Supabase Edge Function "spider" v9 + social actions (v10 grows in later stacked commits)
+// SPIDER — Supabase Edge Function "spider" v9 + social + domino (the daily-word commit is v10)
 // Live v8 plus the Ball Clash coin shop. Paste this whole file into
 // Supabase Dashboard → Edge Functions → spider → Code → Deploy.
 // Rollback is the saved v8 file (v8.index.ts). Do not deploy until Mohammed approves.
@@ -1157,10 +1157,22 @@ const XMARKS=[
   {id:"royal",name:"ملكي",rar:"legendary",how:"store",price:1350,st:{x:["#E6B85C","#8D65F6"],o:["#FFE7A3","#8D65F6"],k:"round",g:1}},
   {id:"creator",name:"الخالق",rar:"owner",how:"owner",st:{x:["#FFE7A3","#8D65F6"],o:["#FFF1C4","#B9A2FF"],k:"double",g:1}}
 ];
-const CATS={skin:SKINS,frame:FRAMES,deco:DECOS,bg:BGS,badge:BADGES,theme:THEMES,title:TITLES,board:BOARDS,web:WEBS,move:MOVES,win:WINS,emote:EMOTES,lobby:LOBBIES,sound:SOUNDS,xmark:XMARKS};
-const CAT_NAME={skin:"سكنات",frame:"إطارات",deco:"زينة",bg:"خلفيات",badge:"شارات",theme:"ألوان الاسم",title:"ألقاب",board:"طاولات",web:"خيوط",move:"تأثيرات الحركة",win:"تأثيرات الفوز",emote:"تفاعلات",lobby:"غرف الانتظار",sound:"حزم الأصوات",xmark:"أشكال XO"};
-const CAT_ONE={skin:"سكن",xmark:"شكل XO",frame:"إطار",deco:"زينة",bg:"خلفية",badge:"شارة",theme:"لون اسم",title:"لقب",board:"طاولة",web:"خيط",move:"تأثير حركة",win:"تأثير فوز",emote:"تفاعل",lobby:"غرفة انتظار",sound:"حزمة أصوات"};
-const CAT_MINE={skin:"سكنك",frame:"إطارك",deco:"زينتك",bg:"خلفيتك",badge:"شارتك",theme:"لون اسمك",title:"لقبك",board:"طاولتك",web:"خيطك",move:"تأثير حركتك",win:"تأثير فوزك",emote:"تفاعلك",lobby:"غرفتك",sound:"أصواتك",xmark:"شكل XO حقك"};
+const DOMTILES=[
+  {id:"classic",name:"عاجي",rar:"common",how:"free",look:"classic"},
+  {id:"night",name:"ليل",rar:"common",how:"store",price:180,look:"night"},
+  {id:"jade",name:"يشم",rar:"rare",how:"store",price:320,look:"jade"},
+  {id:"blood",name:"عقيق",rar:"rare",how:"store",price:450,look:"blood"}
+];
+const DOMTABLES=[
+  {id:"wood",name:"خشب",rar:"common",how:"free",look:"wood"},
+  {id:"marble",name:"رخام",rar:"common",how:"store",price:160,look:"marble"},
+  {id:"felt",name:"جوخ",rar:"rare",how:"store",price:280,look:"felt"},
+  {id:"royal",name:"ملكي",rar:"rare",how:"store",price:420,look:"royal"}
+];
+const CATS={skin:SKINS,frame:FRAMES,deco:DECOS,bg:BGS,badge:BADGES,theme:THEMES,title:TITLES,board:BOARDS,web:WEBS,move:MOVES,win:WINS,emote:EMOTES,lobby:LOBBIES,sound:SOUNDS,xmark:XMARKS,domtile:DOMTILES,domtable:DOMTABLES};
+const CAT_NAME={skin:"سكنات",frame:"إطارات",deco:"زينة",bg:"خلفيات",badge:"شارات",theme:"ألوان الاسم",title:"ألقاب",board:"طاولات",web:"خيوط",move:"تأثيرات الحركة",win:"تأثيرات الفوز",emote:"تفاعلات",lobby:"غرف الانتظار",sound:"حزم الأصوات",xmark:"أشكال XO",domtile:"أحجار الدومينو",domtable:"طاولات الدومينو"};
+const CAT_ONE={skin:"سكن",xmark:"شكل XO",frame:"إطار",deco:"زينة",bg:"خلفية",badge:"شارة",theme:"لون اسم",title:"لقب",board:"طاولة",web:"خيط",move:"تأثير حركة",win:"تأثير فوز",emote:"تفاعل",lobby:"غرفة انتظار",sound:"حزمة أصوات",domtile:"حجر دومينو",domtable:"طاولة دومينو"};
+const CAT_MINE={skin:"سكنك",frame:"إطارك",deco:"زينتك",bg:"خلفيتك",badge:"شارتك",theme:"لون اسمك",title:"لقبك",board:"طاولتك",web:"خيطك",move:"تأثير حركتك",win:"تأثير فوزك",emote:"تفاعلك",lobby:"غرفتك",sound:"أصواتك",xmark:"شكل XO حقك",domtile:"حجارك",domtable:"طاولة الدومينو"};
 const EQUIP_TYPES=Object.keys(CATS).filter(t=>t!=="emote");
 const ITEM_INDEX={};
 for(const t in CATS){ITEM_INDEX[t]={};CATS[t].forEach((it,i)=>{it.type=t;ITEM_INDEX[t][it.id]=it;if(t==="skin")it.idx=i})}
@@ -1865,6 +1877,328 @@ const BCR={hidden:true,simultaneous:true,
   skip(g0,pv){return {g:g0,privs:pv}},bot(){return null}
 };
 GAME_RULES.ballclash=BCR;MAX_PLAYERS.ballclash=4;MIN_PLAYERS.ballclash=2;
+/* @domino-engine-start */
+/* Double-six dominoes. Classic script: sets globalThis.DOMINO.
+   Saudi café round ("أبو ستة"): two players draw, four play block in teams.
+   The chain has two ends. A double is crosswise and does not open a third arm.
+   One round is one match. Bots are deterministic from the seed and the move count. */
+(function (root) {
+"use strict";
+const TILES = [];
+for (let a = 0; a <= 6; a++) for (let b = a; b <= 6; b++) TILES.push([a, b]);
+
+function rngOf(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle(list, rnd) {
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    const t = list[i]; list[i] = list[j]; list[j] = t;
+  }
+  return list;
+}
+function pipSum(id) { const t = TILES[id]; return t[0] + t[1]; }
+function handPips(hand) { let s = 0; for (const id of hand) s += pipSum(id); return s; }
+function otherPip(id, pip) {
+  const t = TILES[id];
+  if (t[0] === t[1]) return t[0];
+  return t[0] === pip ? t[1] : t[0];
+}
+function endsFor(id, left, right) {
+  const t = TILES[id];
+  if (!t) return [];
+  const out = [];
+  if (t[0] === left || t[1] === left) out.push("L");
+  if (t[0] === right || t[1] === right) {
+    if (left !== right || !out.length) out.push("R");
+    else if (!out.includes("R")) out.push("R");
+  }
+  return out;
+}
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+function award(g) {
+  if (g.draw || g.winner == null) return;
+  const seats = g.n === 4 ? [g.winner % 2, (g.winner % 2) + 2] : [g.winner];
+  g.winners = seats;
+  for (const s of seats) {
+    const id = g.players[s].id;
+    g.score[id] = (g.score[id] || 0) + 1;
+  }
+}
+function finishOut(g, seat) {
+  g.winner = seat;
+  g.draw = false;
+  const seats = g.hands.map(handPips);
+  const score = g.n === 4 ? seats[1 - (seat % 2)] + seats[1 - (seat % 2) + 2] : seats[1 - seat];
+  g.pip = { kind: "out", score: score, seats: seats };
+  award(g);
+}
+function finishBlock(g) {
+  const seats = g.hands.map(handPips);
+  g.pip = { kind: "block", score: 0, seats: seats };
+  if (g.n === 4) {
+    const t0 = seats[0] + seats[2], t1 = seats[1] + seats[3];
+    if (t0 === t1) { g.draw = true; g.winner = null; return; }
+    g.winner = t0 < t1 ? 0 : 1;
+    g.draw = false;
+    g.pip.score = Math.abs(t0 - t1);
+    award(g);
+    return;
+  }
+  if (seats[0] === seats[1]) { g.draw = true; g.winner = null; return; }
+  g.winner = seats[0] < seats[1] ? 0 : 1;
+  g.draw = false;
+  g.pip.score = Math.abs(seats[0] - seats[1]);
+  award(g);
+}
+function maybeEnd(g) {
+  const empty = g.hands.findIndex(h => h.length === 0);
+  if (empty >= 0) { finishOut(g, empty); return; }
+  if (g.passes >= g.n && g.yard.length === 0) finishBlock(g);
+}
+
+function deal(seed, n, players, o) {
+  o = o || {};
+  seed = seed >>> 0;
+  const rnd = rngOf(seed);
+  const deck = shuffle(TILES.map((_, i) => i), rnd);
+  const hands = [];
+  for (let i = 0; i < n; i++) hands.push(deck.splice(0, 7));
+  const yard = n === 2 ? deck : [];
+  let best = null;
+  for (let s = 0; s < n; s++) {
+    for (const id of hands[s]) {
+      const t = TILES[id];
+      const score = (t[0] === t[1] ? 100 : 0) + t[0] + t[1];
+      if (!best || score > best.score) best = { s: s, id: id, score: score };
+    }
+  }
+  hands[best.s] = hands[best.s].filter(id => id !== best.id);
+  const openTile = TILES[best.id];
+  const pl = players.slice(0, n).map(p => ({ id: p.id, nick: p.nick, skin: p.skin, bot: p.bot || 0 }));
+  return {
+    game: "domino", n: n, seed: seed, variant: n === 4 ? "block" : "draw",
+    players: pl, hands: hands, yard: yard,
+    chain: [{ id: best.id, end: "O" }], left: openTile[0], right: openTile[1],
+    turn: (best.s + 1) % n, passes: 0, moves: [],
+    winner: null, draw: false, winners: null, pip: null,
+    open: { seat: best.s, id: best.id },
+    seq: o.seq || 1, s0: o.seq || 1,
+    mid: o.mid || ("dm" + seed.toString(36)),
+    round: o.round || 1, score: o.score ? clone(o.score) : {},
+    timer: 0, bs: o.bs || "classic", last: { i: best.s, a: { t: "open", id: best.id } },
+    mv: Array(n).fill(0), walls: []
+  };
+}
+
+function legalActs(g, seat) {
+  const plays = [];
+  const hand = g.hands[seat] || [];
+  for (const id of hand) {
+    for (const end of endsFor(id, g.left, g.right)) plays.push({ t: "play", id: id, end: end });
+  }
+  if (plays.length) return plays;
+  if (g.variant === "draw" && g.yard.length) return [{ t: "draw" }];
+  return [{ t: "pass" }];
+}
+function sameAct(a, b) {
+  if (!a || !b || a.t !== b.t) return false;
+  if (a.t === "play") return a.id === b.id && a.end === b.end;
+  return true;
+}
+function legal(g, seat, a) {
+  if (!g || g.winner != null || g.draw) return "انتهت الجولة";
+  if (seat !== g.turn) return "مو دورك";
+  if (!a || typeof a !== "object") return "حركة غير صحيحة";
+  const acts = legalActs(g, seat);
+  if (a.t === "play") {
+    if (!Number.isInteger(a.id) || a.id < 0 || a.id > 27) return "حجر غير معروف";
+    if (a.end !== "L" && a.end !== "R") return "جهة غير صحيحة";
+    if (!acts.some(x => x.t === "play" && x.id === a.id && x.end === a.end)) return "ما ينلعب هالحجر هنا";
+    return null;
+  }
+  if (a.t === "draw") return acts.some(x => x.t === "draw") ? null : "ما تقدر تسحب";
+  if (a.t === "pass") return acts.some(x => x.t === "pass") ? null : "عندك حركة";
+  return "حركة غير صحيحة";
+}
+function apply(g0, seat, a) {
+  const g = clone(g0);
+  if (a.t === "play") {
+    const i = g.hands[seat].indexOf(a.id);
+    g.hands[seat].splice(i, 1);
+    if (a.end === "L") {
+      g.left = otherPip(a.id, g.left);
+      g.chain.unshift({ id: a.id, end: "L" });
+    } else {
+      g.right = otherPip(a.id, g.right);
+      g.chain.push({ id: a.id, end: "R" });
+    }
+    g.passes = 0;
+    g.moves.push({ t: "play", id: a.id, end: a.end });
+    g.last = { i: seat, a: { t: "play", id: a.id, end: a.end } };
+    g.mv[seat] = (g.mv[seat] || 0) + 1;
+    g.seq++;
+    if (g.hands[seat].length === 0) finishOut(g, seat);
+    else { g.turn = (seat + 1) % g.n; maybeEnd(g); }
+    return g;
+  }
+  if (a.t === "draw") {
+    const id = g.yard.shift();
+    g.hands[seat].push(id);
+    g.moves.push({ t: "draw" });
+    g.last = { i: seat, a: { t: "draw" } };
+    g.mv[seat] = (g.mv[seat] || 0) + 1;
+    g.seq++;
+    if (!legalActs(g, seat).some(x => x.t === "play")) {
+      g.passes++;
+      g.turn = (seat + 1) % g.n;
+      maybeEnd(g);
+    }
+    return g;
+  }
+  g.passes++;
+  g.moves.push({ t: "pass" });
+  g.last = { i: seat, a: { t: "pass" } };
+  g.seq++;
+  g.turn = (seat + 1) % g.n;
+  maybeEnd(g);
+  return g;
+}
+
+function botPick(g) {
+  const seat = g.turn;
+  const acts = legalActs(g, seat);
+  if (!acts.length) return null;
+  const lvl = (g.players[seat] && g.players[seat].bot) || 2;
+  let x = (g.seed ^ Math.imul(g.moves.length + 1, 0x9E3779B1) ^ Math.imul(seat + 1, 0x85EBCA6B)) >>> 0;
+  const rnd = () => { x = (Math.imul(x, 1664525) + 1013904223) >>> 0; return x / 4294967296; };
+  const plays = acts.filter(a => a.t === "play");
+  if (lvl <= 1) return acts[Math.floor(rnd() * acts.length)];
+  if (!plays.length) return acts[0];
+  if (lvl === 2 && rnd() < 0.35) return plays[Math.floor(rnd() * plays.length)];
+  const hand = g.hands[seat];
+  const emptying = plays.filter(a => hand.length === 1);
+  const pool = emptying.length ? emptying : plays;
+  let best = pool[0], bv = -1e9;
+  for (const a of pool) {
+    const t = TILES[a.id];
+    let keep = 0;
+    for (const id of hand) if (id !== a.id) {
+      const u = TILES[id];
+      if (u[0] === t[0] || u[1] === t[0] || u[0] === t[1] || u[1] === t[1]) keep++;
+    }
+    const v = (t[0] === t[1] ? 40 : 0) + (t[0] + t[1]) * 3 + keep * 5;
+    if (v > bv) { bv = v; best = a; }
+  }
+  return best;
+}
+
+function replay(seed, n, moves, botLevels) {
+  if (n !== 2 && n !== 4) throw new Error("n");
+  if (!Array.isArray(moves) || moves.length > 200) throw new Error("len");
+  const levels = Array.isArray(botLevels) ? botLevels : [];
+  const players = [];
+  for (let i = 0; i < n; i++) players.push({ id: "P" + i, nick: "P" + i, skin: i, bot: levels[i] | 0 });
+  let g = deal(seed, n, players, {});
+  let steps = 0;
+  for (const m of moves) {
+    if (g.winner != null || g.draw) break;
+    if (steps++ > 200) throw new Error("long");
+    if ((g.players[g.turn].bot || 0) > 0) {
+      const expect = botPick(g);
+      if (!sameAct(expect, m)) throw new Error("bot");
+    }
+    const e = legal(g, g.turn, m);
+    if (e) throw new Error(e);
+    g = apply(g, g.turn, m);
+  }
+  if (g.winner == null && !g.draw) throw new Error("open");
+  return g;
+}
+function playerWon(g, seat) {
+  if (!g || g.draw || g.winner == null || seat < 0) return false;
+  if (g.n === 4) return seat % 2 === g.winner % 2;
+  return g.winner === seat;
+}
+
+function toPublic(g) {
+  return {
+    game: "domino", n: g.n, variant: g.variant, players: g.players.map(p => ({ id: p.id, nick: p.nick, skin: p.skin, bot: p.bot || 0 })),
+    turn: g.turn, passes: g.passes, seq: g.seq, s0: g.s0, mid: g.mid, round: g.round, score: g.score,
+    timer: g.timer, bs: g.bs, last: g.last, mv: g.mv, walls: g.walls,
+    winner: g.winner, draw: g.draw, winners: g.winners, pip: g.pip, open: g.open,
+    chain: g.chain, left: g.left, right: g.right,
+    counts: g.hands.map(h => h.length), yardN: g.yard.length, moves: g.moves.map(m => ({ t: m.t, id: m.id, end: m.end }))
+  };
+}
+function splitPriv(g) {
+  return g.hands.map(h => ({ hand: h.slice(), yard: g.yard.slice(), seed: g.seed >>> 0 }));
+}
+function rehydrate(pub, privs) {
+  const g = clone(pub);
+  g.hands = (privs || []).map(p => (p && p.hand ? p.hand.slice() : []));
+  g.yard = (privs && privs[0] && privs[0].yard) ? privs[0].yard.slice() : [];
+  g.seed = (privs && privs[0] && privs[0].seed) >>> 0;
+  g.moves = (pub.moves || []).map(m => ({ t: m.t, id: m.id, end: m.end }));
+  return g;
+}
+
+const rules = {
+  hidden: true,
+  new(players, o) {
+    o = o || {};
+    let pl = players.slice();
+    if (pl.length >= 4) pl = pl.slice(0, 4);
+    else if (pl.length !== 2) pl = pl.slice(0, 2);
+    const n = pl.length === 4 ? 4 : 2;
+    const seed = (o.seed ? (o.seed >>> 0) : ((Math.floor(Math.random() * 2147483646) + 1) >>> 0));
+    const mid = o.mid || ("dm" + seed.toString(36) + Math.random().toString(36).slice(2, 7));
+    const full = deal(seed, n, pl, { seq: o.seq || 1, mid: mid, round: o.round || 1, score: o.score || {}, bs: o.bs || "classic" });
+    const pub = toPublic(full);
+    pub.seed = seed;
+    return pub;
+  },
+  deal(g) {
+    const seed = g.seed >>> 0;
+    const full = deal(seed, g.n, g.players, { seq: g.seq, mid: g.mid, round: g.round, score: g.score, bs: g.bs });
+    delete g.seed;
+    return splitPriv(full);
+  },
+  legal(g, seat, a, pv) { return legal(rehydrate(g, pv), seat, a); },
+  apply(g, seat, a, pv) {
+    const next = apply(rehydrate(g, pv), seat, a);
+    return { g: toPublic(next), privs: splitPriv(next) };
+  },
+  bot(g, seat, pv) { return botPick(rehydrate(g, pv)); },
+  skip(g, pv) {
+    const full = rehydrate(g, pv);
+    const acts = legalActs(full, full.turn);
+    const a = acts[0] || { t: "pass" };
+    const next = apply(full, full.turn, a);
+    return { g: toPublic(next), privs: splitPriv(next) };
+  },
+  view(g, seat, pv) {
+    const p = (pv && pv[seat]) || { hand: [] };
+    return { hand: (p.hand || []).slice() };
+  }
+};
+
+root.DOMINO = {
+  tiles: TILES, endsFor, deal, legal, apply, bot: botPick, replay, playerWon, rules,
+  pips: pipSum
+};
+})(typeof globalThis !== "undefined" ? globalThis : this);
+/* @domino-engine-end */
+const DOMINO=globalThis.DOMINO;
+GAME_RULES.domino=DOMINO.rules;MIN_PLAYERS.domino=2;MAX_PLAYERS.domino=4;
+
 
 /* ================= player profile (saved on this device) =================
    Private progression (coins, XP, inventory, codes, claims) never leaves the device.
@@ -2351,7 +2685,9 @@ function matchCtx(G,seat,mode,won,role,extra){
     opponents:G.players.filter((p,i)=>i!==seat).map(p=>p.nick),comeback:won&&((G.mo||[])[seat]??99)<=1,
     xpMul:role==="owner"&&P.owner.xpBoost?10:1,coinMul:role==="owner"&&P.owner.coinBoost?10:1},extra||{});
 }
+function riyadhDay(ms){return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Riyadh",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(ms))}
 async function settle(db,uid,G,seat,mode,won,extra){
+  if(G&&G.game==="domino")return null;   /* dom_finish pays 10 or 20 after it checks the round */
   if(G.seq-(G.s0||G.seq)<(G.game==="ballclash"?1:G.game==="xo"?5:G.game==="wordweb"?3:(mode==="online"?6:3)))return null;     /* too short to count */
   const inserted=await db.insertResult({mid:G.mid,user_id:uid,mode,won,week:weekStart()});
   const w=await withProfile(db,uid,role=>finishMatch(matchCtx(G,seat,mode,won,role,extra)));
@@ -2386,8 +2722,13 @@ async function roomUpdate(db,code,fn){
 }
 function seatOf(G,uid){return G?G.players.findIndex(p=>p.id===uid):-1}
 function startRound(r){
-  const prev=r.state,game=(r.settings&&GAME_RULES[r.settings.game])?r.settings.game:"webbound",members=r.members.slice(0,MAX_PLAYERS[game]);
-  const players=distinctSkins(members.map(m=>({id:m.id,nick:m.nick,skin:m.skin,bot:0})));
+  const prev=r.state,game=(r.settings&&GAME_RULES[r.settings.game])?r.settings.game:"webbound",members=r.members.slice(0,MAX_PLAYERS[game]||4);
+  let players=distinctSkins(members.map(m=>({id:m.id,nick:m.nick,skin:m.skin,bot:0})));
+  if(game==="domino"){
+    const want=(r.settings&&r.settings.domSeats)===4||players.length>=3?4:2;
+    let b=0;while(players.length<want&&b<3){players.push({id:"B"+b,nick:BOT_NAMES_S[b]||"كمبيوتر",skin:b+1,bot:2});b++}
+    players=players.slice(0,want);
+  }
   const o={seq:(prev?prev.seq:0)+1,timer:(r.settings&&r.settings.timer)||0,score:prev?Object.assign({},prev.score):{},round:prev?prev.round+1:1,bs:(r.settings&&r.settings.bs)||"classic"};
   if(game==="wordweb")o.cat=(r.settings&&r.settings.cat)||"fruit";
   if(game==="ballclash"){o.bcSize=(r.settings&&r.settings.bcSize)||2;o.bcPick=(r.settings&&r.settings.bcPick)||"secret"}
@@ -2425,12 +2766,12 @@ function sameHex(a,b){if(typeof a!=="string"||typeof b!=="string"||a.length!==b.
 
 /* ---------- owner-only views: checked on the server for every request ---------- */
 async function ownerOn(db,uid,key){const row=await loadOrCreate(db,uid);return row.role==="owner"&&!!(row.data&&row.data.owner&&row.data.owner[key])}
-function peekFor(G,seat,pv){if(G.game==="bluff")return {dice:pv.map(x=>x?x.dice:[])};if(G.game==="flyhunt")return {ships:pv[1-seat]?pv[1-seat].ships:[]};if(G.game==="nightweb")return {roles:pv.map(x=>x?x.role:null)};return null}
+function peekFor(G,seat,pv){if(G.game==="bluff")return {dice:pv.map(x=>x?x.dice:[])};if(G.game==="flyhunt")return {ships:pv[1-seat]?pv[1-seat].ships:[]};if(G.game==="nightweb")return {roles:pv.map(x=>x?x.role:null)};if(G.game==="domino")return {hands:pv.map(x=>x?x.hand:[])};return null}
 /* ---------- hidden-information games: each seat's private data is a separate server-only record ---------- */
 async function hLoad(db,key,G){const out=[];for(let s=0;s<G.n;s++){const v=await db.getSecret(key+":h"+s);out.push(v&&v.mid===G.mid?v.d:null)}return out}
 async function hSave(db,key,G,privs,old){for(let s=0;s<privs.length;s++){if(old&&JSON.stringify(old[s])===JSON.stringify(privs[s]))continue;await db.setSecret(key+":h"+s,{mid:G.mid,d:privs[s]})}}
-function hRunBots(G,privs,steps){const HG=GAME_RULES[G.game];let k=0;
-  while(G.winner==null&&G.players[G.turn].bot&&k++<80){const a=HG.bot(G,G.turn,privs);const r=a?HG.apply(G,G.turn,a,privs):HG.skip(G,privs);G=r.g;privs=r.privs;steps.push(deep(G))}
+function hRunBots(G,privs,steps){const HG=GAME_RULES[G.game];let k=0;const cap=G.game==="domino"?160:80;
+  while(G.winner==null&&!G.draw&&G.players[G.turn]&&G.players[G.turn].bot&&k++<cap){const a=HG.bot(G,G.turn,privs);const r=a?HG.apply(G,G.turn,a,privs):HG.skip(G,privs);G=r.g;privs=r.privs;steps.push(deep(G))}
   return {G,privs}}
 /* ---------- about page settings (owner-edited) ---------- */
 const SOCIALS=["instagram","tiktok","x","discord","email","whatsapp"];
@@ -2767,7 +3108,7 @@ async function handle(action,p,user,db){
   /* ---- matches against the computer ---- */
   case "solo_start":{
     const game=GAME_RULES[p.game]?p.game:"webbound";if(game==="nightweb"||game==="ballclash")fail("bad","هذي اللعبة أونلاين بس");
-    const bots=Math.min(isInt(p.bots,1,3)?p.bots:1,MAX_PLAYERS[game]-1),lvl=isInt(p.level,1,3)?p.level:2;
+    let bots=Math.min(isInt(p.bots,1,3)?p.bots:1,MAX_PLAYERS[game]-1);if(game==="domino")bots=isInt(p.bots,3,3)?3:1;const lvl=isInt(p.level,1,3)?p.level:2;
     await db.cleanSolo(uid);
     const {profile,role}=await readProfile(db,uid);P=normalizeProfile(profile);
     const ok=role==="owner";
@@ -2892,7 +3233,7 @@ async function handle(action,p,user,db){
   }
   case "room_settings":{
     const code=String(p.code||"").toUpperCase();
-    const r=await roomUpdate(db,code,r=>{if(r.host!==uid)fail("not_host");if([0,30,60].includes(p.timer))r.settings.timer=p.timer;if(p.cat&&WW_CATS[p.cat])r.settings.cat=p.cat;if([1,2,3,4,5].includes(p.bcSize))r.settings.bcSize=p.bcSize;if(["secret","draft"].includes(p.bcPick))r.settings.bcPick=p.bcPick});
+    const r=await roomUpdate(db,code,r=>{if(r.host!==uid)fail("not_host");if([0,30,60].includes(p.timer))r.settings.timer=p.timer;if(p.cat&&WW_CATS[p.cat])r.settings.cat=p.cat;if([1,2,3,4,5].includes(p.bcSize))r.settings.bcSize=p.bcSize;if(["secret","draft"].includes(p.bcPick))r.settings.bcPick=p.bcPick;if(p.domSeats===2||p.domSeats===4)r.settings.domSeats=p.domSeats});
     return {room:r.room};
   }
   case "room_start":
@@ -2902,15 +3243,19 @@ async function handle(action,p,user,db){
       if(r.host!==uid)fail("not_host","بس صاحب الغرفة يبدأ");
       if(action==="room_start"&&r.status==="playing")return {noWrite:true};
       if(action==="room_rematch"&&r.status!=="ended")return {noWrite:true};
-      const gmn=(r.settings&&r.settings.game)||"webbound",minP=MIN_PLAYERS[gmn]||2;
+      const gmn=(r.settings&&r.settings.game)||"webbound",minP=gmn==="domino"?1:(MIN_PLAYERS[gmn]||2);
       if(r.members.length<minP)fail("need2",minP>2?"تحتاج "+minP+" لاعبين على الأقل":"ننتظر لاعب ثاني");
       if(r.status==="ended"&&r.state&&r.state.game==="wordweb"){}
       if(action==="room_start"&&!p.force){const wait=r.members.slice(0,4).filter(m=>m.id!==r.host&&!m.ready);if(wait.length)fail("not_ready","ننتظر "+wait.map(m=>m.nick).join("، ")+" يضغط جاهز")}
       startRound(r);
       if(r.state.game==="wordweb"){const w=WW.pick(r.state.cat);r.state.len=w.length;return {word:w}}
+      if(r.state.game==="domino"){const HG=GAME_RULES.domino;let privs=HG.deal(r.state);
+        if(r.state.winner==null&&!r.state.draw&&r.state.players[r.state.turn]&&r.state.players[r.state.turn].bot){const rb=hRunBots(r.state,privs,[]);r.state=rb.G;privs=rb.privs}
+        if(r.state.winner!=null||r.state.draw)r.status="ended";
+        return {privs}}
     });
     if(r.res&&r.res.word)await db.setSecret(code+":w",{word:r.res.word,mid:r.room.state.mid});
-    const HGs=r.room.state&&GAME_RULES[r.room.state.game];if(HGs&&HGs.hidden&&r.room.status==="playing")await hSave(db,code,r.room.state,HGs.deal(r.room.state),null);
+    const HGs=r.room.state&&GAME_RULES[r.room.state.game];if(HGs&&HGs.hidden&&r.room.state){const privs=(r.res&&r.res.privs)||HGs.deal(r.room.state);await hSave(db,code,r.room.state,privs,null)}
     return {room:r.room};
   }
   case "word_view":{
@@ -2932,9 +3277,11 @@ async function handle(action,p,user,db){
     const G=room.state,HG=GAME_RULES[G.game];if(!HG||!HG.hidden)fail("bad");const seat=seatOf(G,uid);if(seat<0)fail("not_player");
     const privs=await hLoad(db,code,G);if(privs.some(x=>x==null))fail("busy","لحظة، نجهّز الجولة");
     const e=HG.legal(G,seat,p.a,privs);if(e)fail("illegal",e);
-    const res=HG.apply(G,seat,p.a,privs);let before=null;
+    let res=HG.apply(G,seat,p.a,privs);
+    if(res.g.game==="domino"&&res.g.winner==null&&!res.g.draw&&res.g.players[res.g.turn]&&res.g.players[res.g.turn].bot){const rb=hRunBots(res.g,res.privs,[]);res={g:rb.G,privs:rb.privs}}
+    let before=null;
     const r=await roomUpdate(db,code,(rr,orig)=>{before=orig;if(rr.status!=="playing"||!rr.state||rr.state.seq!==G.seq||rr.state.mid!==G.mid)fail("stale","تغيّرت المباراة، جرّب مرة ثانية");
-      rr.state=res.g;rr.turn_started_at=nowIso();if(res.g.winner!=null)rr.status="ended"});
+      rr.state=res.g;rr.turn_started_at=nowIso();if(res.g.winner!=null||res.g.draw)rr.status="ended"});
     await hSave(db,code,res.g,res.privs,privs);
     const rewards=await afterRoom(db,before,r.room,null);
     const vh=HG.view(res.g,seat,res.privs);if(await ownerOn(db,uid,"seeSecrets"))vh.peek=peekFor(res.g,seat,res.privs);
@@ -3101,6 +3448,37 @@ async function handle(action,p,user,db){
     if(!r||r.error||!r.data||r.data.code!=="ok")fail("bad","هذي العبارة مو متاحة");
     return {ok:true,id};
   }
+  case "dom_finish":{
+    limit(uid,"dom",20,60000);
+    const req=String(p.requestId||"");
+    if(!/^[A-Za-z0-9:_-]{8,80}$/.test(req))fail("bad","طلب غير صحيح");
+    let won=false,amount=10;
+    if(p.code){
+      const code=String(p.code||"").toUpperCase();
+      const room=await db.getRoom(code);
+      if(!room||!(room.member_ids||[]).includes(uid)||!room.state||room.state.game!=="domino")fail("bad","الغرفة مو موجودة");
+      const seat=seatOf(room.state,uid);if(seat<0)fail("not_player","ما كنت في المباراة");
+      if(room.state.winner==null&&!room.state.draw)fail("bad","المباراة ما خلصت");
+      won=DOMINO.playerWon(room.state,seat);amount=20;
+    }else if(p.solo){
+      const row=await db.getSolo(String(p.solo),uid);
+      if(!row||!row.state||row.state.game!=="domino")fail("bad","ما لقينا المباراة");
+      if(row.state.winner==null&&!row.state.draw)fail("bad","المباراة ما خلصت");
+      won=DOMINO.playerWon(row.state,0);
+    }else{
+      const n=p.n===4?4:p.n===2?2:0;if(!n)fail("bad","عدد اللاعبين غير صحيح");
+      const moves=Array.isArray(p.moves)?p.moves.slice(0,201):null;if(!moves||moves.length>200)fail("bad","السجل غير صحيح");
+      const bots=Array.isArray(p.bots)?p.bots.map(x=>Number(x)|0):[];
+      if(bots.length!==n||bots[0]!==0||bots.some((b,i)=>i>0&&(b<1||b>3)))fail("bad","الكمبيوتر مو مضبوط");
+      let st;try{st=DOMINO.replay(Number(p.seed)>>>0,n,moves,bots)}catch(e){fail("bad","الحركات ما تطابق اللعب")}
+      won=DOMINO.playerWon(st,0);
+    }
+    if(!won)return {won:false,amount:0};
+    const day=riyadhDay(clock.now());
+    const paid=await db.rpc("coin_grant",{p_user:uid,p_request:req,p_kind:"domino",p_amount:amount,p_day:day,p_cap:8});
+    if(!paid||paid.error||!paid.data||paid.data.code!=="ok")fail("bad","ما انحسبت المكافأة");
+    return {won:true,amount:paid.data.granted||0,capped:!!paid.data.capped,idempotent:!!paid.data.idempotent,coins:paid.data.coins,version:paid.data.version};
+  }
   }
   fail("bad","طلب غير معروف");
 }
@@ -3212,5 +3590,8 @@ if(typeof Deno==="undefined"||(Deno.env&&Deno.env.get("SPIDER_NO_SERVE"))){
   BCR.autoFill({pick:"secret",n:1,size:4,locked:[false]},pv);
   if(!pv[0].picks.length||pv[0].picks.some(k=>!BC.KINDS[k]||BC.KINDS[k].shop))bootErr.push("autoFill");
   if(typeof handle!=="function"||!globalThis.BC_SHOP_HANDLER)bootErr.push("handle");
+  if(!GAME_RULES.domino||GAME_RULES.domino.hidden!==true)bootErr.push("domino");
+  const dOpen=DOMINO.rules.new([{id:"h",nick:"ح"},{id:"b",nick:"ب",bot:1}],{seed:7});
+  if(!dOpen.moves||dOpen.chain.length!==1)bootErr.push("domino-open");
   if(bootErr.length)throw new Error("spider v9 boot: "+bootErr.join(","));
 }
