@@ -1640,7 +1640,7 @@ function webSample(id){const sv=mk("svg",{viewBox:"0 0 40 22",class:"mb","aria-h
 
 function lobbyThumb(id,big){
   const el=h("div",{class:"lobthumb lt-"+id,style:`width:100%;max-width:${big?260:110}px;padding:${big?"16px":"8px"};border-radius:12px;border:1px solid var(--line);background:var(--panel);text-align:center`});
-  el.append(h("div",{class:"code",style:`font-size:${big?40:20}px;margin:0;letter-spacing:.12em`},"AB12"),h("div",{style:"font-size:"+(big?14:11)+"px;color:var(--muted)"},"غرفة "+((findItem("lobby",id)||{}).name||"")));
+  el.append(h("div",{class:"code",style:`font-size:${big?40:20}px;margin:0;letter-spacing:.12em`},"AB12"),h("div",{style:"font-size:"+(big?14:12)+"px;color:var(--muted)"},"غرفة "+((findItem("lobby",id)||{}).name||"")));
   const wrap=h("div",{id:big?"lobPrev":null,class:"lt-"+id,style:"width:100%;display:grid;place-items:center"});wrap.append(el);
   return wrap;
 }
