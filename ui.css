@@ -730,9 +730,10 @@ details[open].card>summary::after{content:"−"}
 body.in-match .wrap{display:flex;flex-direction:column;min-height:100dvh}
 body.in-match #game,body.in-match #mg,body.in-match #wl,body.in-match #nst,body.in-match #bc{display:flex;flex-direction:column;flex:1;gap:8px;min-height:calc(100dvh - 28px)}
 body.in-match .bar,body.in-match .bc-bar{min-height:52px;margin:0;padding:2px 0;align-items:center}
-body.in-match .boardbox,body.in-match .mg-board,body.in-match #wlWrap,body.in-match #nsWrap,body.in-match #bcArenaWrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:180px;width:100%}
+body.in-match .boardbox,body.in-match .mg-board,body.in-match #wlWrap,body.in-match #nsWrap,body.in-match #bcArenaWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;width:100%}
 body.in-match .boardbox svg{width:min(100%,640px);height:auto;max-height:62dvh}
-body.in-match .mg-board>*{width:min(100%,560px)}
+body.in-match .mg-board>*{width:100%;max-width:560px}
+body.in-match .ww-kb{flex:none}
 body.in-match .controls,body.in-match .ww-kb,body.in-match .wl-pad,body.in-match .ns-pad,body.in-match .bc-ctl{margin-top:auto}
 /* compact games grid */
 .glist{display:grid;gap:10px;grid-template-columns:1fr}
@@ -745,4 +746,5 @@ body.in-match .controls,body.in-match .ww-kb,body.in-match .wl-pad,body.in-match
 @media (min-width:700px){.glist{grid-template-columns:1fr 1fr}}
 @media (min-width:1200px){.glist{grid-template-columns:1fr 1fr 1fr}}
 #stMore{margin:8px 0 4px}
+#btnBots{position:sticky;bottom:calc(var(--nav-h) + 10px);z-index:4}
 .bc-shop-card{display:flex;flex-direction:column;gap:8px;padding:16px}

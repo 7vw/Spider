@@ -37,15 +37,15 @@
   padding-bottom:env(safe-area-inset-bottom,0px);
   color-scheme:dark;
   /* ---- SPIDER design tokens ---- */
-  --bg:var(--bg);--bg-2:#0C0F18;--surface:var(--surface);--surface-2:var(--surface-2);--surface-3:var(--surface-3);
+  --bg:#090B12;--bg-2:#0C0F18;--surface:#171B27;--surface-2:#1D2232;--surface-3:#272D42;
   --panel:#151925;--field:#10131D;
-  --ink:var(--ink);--muted:var(--muted);--faint:#737A96;
+  --ink:#F4F5FA;--muted:#A3A9BF;--faint:#737A96;
   --line:rgba(255,255,255,.075);--line-2:rgba(255,255,255,.13);
-  --primary:var(--primary);--primary-hi:var(--primary-hi);--secondary:var(--secondary);--secondary-hi:var(--secondary-hi);--gold:var(--gold);--gold-hi:var(--gold-hi);
+  --primary:#E62948;--primary-hi:#FF5C77;--secondary:#8D65F6;--secondary-hi:#B9A2FF;--gold:#E6B85C;--gold-hi:#F7DA97;
   --acid:var(--primary);--acid-ink:#FF6680;--violet:var(--secondary);--violet-ink:var(--secondary-hi);
-  --danger:#FF5C6C;--good:var(--good);--warn:#F5B94A;
-  --navbg:rgba(14,17,27,.96);--board:var(--bg);--turn:var(--primary);--silk:#E8EAF4;
-  --r-common:var(--r-common);--r-rare:var(--r-rare);--r-epic:var(--r-epic);--r-legendary:var(--gold);--r-secret:var(--good);
+  --danger:#FF5C6C;--good:#3DDC97;--warn:#F5B94A;
+  --navbg:rgba(14,17,27,.96);--board:#090B12;--turn:var(--primary);--silk:#E8EAF4;
+  --r-common:#A7ADC2;--r-rare:#4FB3FF;--r-epic:#A97CFF;--r-legendary:#E6B85C;--r-secret:#3DDC97;
   --display:"Readex Pro","IBM Plex Sans Arabic",system-ui,sans-serif;
   --body:"IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;
   --fs-xs:12px;--fs-sm:13.5px;--fs-md:15px;--fs-lg:17px;--fs-xl:20px;--fs-2xl:26px;--fs-3xl:32px;--fs-4xl:40px;
@@ -266,7 +266,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--secondar
 .banner.glow{border-color:rgba(230,184,92,.45);background:linear-gradient(90deg,rgba(230,184,92,.1),rgba(230,184,92,0)),var(--surface)}
 .banner.warn{border-color:rgba(245,185,74,.5);background:linear-gradient(90deg,rgba(245,185,74,.12),transparent),var(--surface);color:var(--ink);display:flex;align-items:center;gap:10px;width:100%;text-align:start;padding:12px 14px}
 .banner .ic{width:20px;height:20px;flex:none}
-body.in-match .toasts{top:auto;bottom:calc(128px + env(safe-area-inset-bottom,0px));z-index:35}
+body.in-match .toasts{top:72px;bottom:auto;z-index:35}
 /* icons */
 .ic{width:20px;height:20px;flex:none;display:inline-block;vertical-align:middle}
 .ic.gold{color:var(--gold)}
@@ -1293,9 +1293,10 @@ details[open].card>summary::after{content:"−"}
 body.in-match .wrap{display:flex;flex-direction:column;min-height:100dvh}
 body.in-match #game,body.in-match #mg,body.in-match #wl,body.in-match #nst,body.in-match #bc{display:flex;flex-direction:column;flex:1;gap:8px;min-height:calc(100dvh - 28px)}
 body.in-match .bar,body.in-match .bc-bar{min-height:52px;margin:0;padding:2px 0;align-items:center}
-body.in-match .boardbox,body.in-match .mg-board,body.in-match #wlWrap,body.in-match #nsWrap,body.in-match #bcArenaWrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:180px;width:100%}
+body.in-match .boardbox,body.in-match .mg-board,body.in-match #wlWrap,body.in-match #nsWrap,body.in-match #bcArenaWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;width:100%}
 body.in-match .boardbox svg{width:min(100%,640px);height:auto;max-height:62dvh}
-body.in-match .mg-board>*{width:min(100%,560px)}
+body.in-match .mg-board>*{width:100%;max-width:560px}
+body.in-match .ww-kb{flex:none}
 body.in-match .controls,body.in-match .ww-kb,body.in-match .wl-pad,body.in-match .ns-pad,body.in-match .bc-ctl{margin-top:auto}
 /* compact games grid */
 .glist{display:grid;gap:10px;grid-template-columns:1fr}
@@ -1308,6 +1309,7 @@ body.in-match .controls,body.in-match .ww-kb,body.in-match .wl-pad,body.in-match
 @media (min-width:700px){.glist{grid-template-columns:1fr 1fr}}
 @media (min-width:1200px){.glist{grid-template-columns:1fr 1fr 1fr}}
 #stMore{margin:8px 0 4px}
+#btnBots{position:sticky;bottom:calc(var(--nav-h) + 10px);z-index:4}
 .bc-shop-card{display:flex;flex-direction:column;gap:8px;padding:16px}
 
 /* ===================== WEBGRID / XO∞ match screen ===================== */
