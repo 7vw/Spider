@@ -3813,6 +3813,7 @@ function renderLobbyBase(){
     :(hst?"ننتظر صاحب الغرفة يبدأ المباراة…":"ننتظر صاحب الغرفة يدخل…");
   if(mode==="invite"){$("connLt").textContent=Cloud.on?"متصل":"على جهازك";$("connL").classList.toggle("on",!!Cloud.on)}
   paintChat($("chatLobby"));
+  syncChat();
 }
 function startOnline(){
   if(!room)return;
@@ -4292,6 +4293,7 @@ function render(){
   renderPlayers();renderStatus();renderBoard();renderControls();renderWin();renderConn();scheduleBot();tick();
   try{drawOwnerFx()}catch(e){}
   const hb=$("btnHint");if(hb)hb.classList.toggle("hidden",!(G&&ownerSees("seeHint")&&canAct()));
+  syncChat();
 }
 
 /* ================= emotes =================
@@ -4346,7 +4348,13 @@ function onNetChat(p){
   const m=NG.room&&NG.room.members&&NG.room.members.find(x=>x.id===p.from);
   showChatLine((m&&m.nick)||"لاعب",chatLabel(p.id));
 }
-$("btnChat").addEventListener("click",()=>{const b=$("chatBox"),open=b.classList.contains("hidden");b.classList.toggle("hidden",!open);$("btnChat").setAttribute("aria-expanded",String(open));if(open)paintChat($("chatGame"))});
+function syncChat(){
+  const on=mode==="room"||mode==="invite"||mode==="online";
+  document.body.classList.toggle("has-chat",on);
+  const el=$("chatGame");
+  if(on&&el&&!el.childElementCount)paintChat(el);
+  if(!on&&el)el.textContent="";
+}
 $("btnEmote").addEventListener("click",()=>{const b=$("emoteBox"),open=b.classList.contains("hidden");b.classList.toggle("hidden",!open);$("btnEmote").setAttribute("aria-expanded",String(open));if(open)renderEmoteTray()});
 $("btnMuteEmo").addEventListener("click",()=>{P.settings.muteEmotes=!P.settings.muteEmotes;saveProfile();renderEmoteTray()});
 
@@ -4445,7 +4453,7 @@ function goHome(){
   G=null;M=null;hist=[];ghost=null;tool="move";mode="local";boardKey="";L=null;winBuiltMid=null;bubbles={};lastEmo={};emoteState=null;
   NG.localPriv=null;NG.wwSecret=null;NG.wwMine=null;NG.ww=null;NG.hv=null;NG.wwFocus=null;
   $("emoteBox").classList.add("hidden");$("btnEmote").setAttribute("aria-expanded","false");
-  if($("chatBox")){$("chatBox").classList.add("hidden");$("btnChat").setAttribute("aria-expanded","false")}
+  document.body.classList.remove("has-chat");
   if(wasOnline)leaveRoom();
   show("home");
 }

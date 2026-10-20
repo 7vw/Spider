@@ -905,6 +905,8 @@ body.in-match .controls,body.in-match .ww-kb,body.in-match .wl-pad,body.in-match
 #stMore{margin:8px 0 4px}
 #btnBots{position:sticky;bottom:calc(var(--nav-h) + 10px);z-index:4}
 .bc-shop-card{display:flex;flex-direction:column;gap:8px;padding:16px}
+#chatBox{display:none}
+body.has-chat #chatBox{display:block}
 .chat-tray{display:flex;gap:8px;overflow-x:auto;padding:4px 0 2px;scrollbar-width:none}
 .chat-tray button{flex:none;min-height:44px;min-width:44px;padding:0 14px;border-radius:999px;font-size:var(--fs-sm)}
 .chat-log{display:flex;flex-direction:column;gap:4px;margin-top:8px;min-height:0}
