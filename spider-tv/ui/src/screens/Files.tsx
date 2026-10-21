@@ -4,7 +4,7 @@ import { Icon, type IconName } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { useT, formatBytes } from '../core/i18n';
 import { useAgent } from '../core/agent/hooks';
-import { mediaUrl } from '../core/agent/api';
+import { mediaUrl, PREVIEW } from '../core/agent/api';
 import type { DirEntry, DirListing } from '../core/agent/types';
 import { navigate } from '../core/router';
 import { toast } from '../core/store/toast';
@@ -34,7 +34,7 @@ export function Files({ dirId }: { dirId?: string }) {
         <p className="files__path" dir="ltr">{data?.path ?? t('files.roots')}</p>
       </header>
       {error && !data ? (
-        <Empty icon="alert" title={t('common.agentOffline')} />
+        <Empty icon="alert" title={PREVIEW ? t('preview.title') : t('common.agentOffline')} body={PREVIEW ? t('preview.body') : undefined} />
       ) : data && data.entries.length === 0 ? (
         <Empty icon="folder" title={t('files.empty')} />
       ) : (

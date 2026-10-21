@@ -5,7 +5,7 @@ import { Icon } from '../components/Icon';
 import { useT, formatBytes } from '../core/i18n';
 import { useAgent } from '../core/agent/hooks';
 import { useCapabilities } from '../core/agent/caps';
-import { api, thumbUrl } from '../core/agent/api';
+import { api, thumbUrl, PREVIEW } from '../core/agent/api';
 import type { MediaItem, ProgressItem } from '../core/agent/types';
 import { navigate } from '../core/router';
 
@@ -45,7 +45,7 @@ export function Media() {
       </header>
 
       {lib.error && !lib.data ? (
-        <Empty icon="alert" title={t('common.agentOffline')} />
+        <Empty icon="alert" title={PREVIEW ? t('preview.title') : t('common.agentOffline')} body={PREVIEW ? t('preview.body') : undefined} />
       ) : items.length === 0 && !lib.loading ? (
         <Empty icon="film" title={t('media.empty')} body={dirs.length ? t('media.emptyHint', { dirs: dirs.join(' · ') }) : t('media.noDirs')} />
       ) : (

@@ -5,7 +5,7 @@ import { AppArt } from '../../components/Tiles';
 import { useT, formatBytes, LANGS } from '../../core/i18n';
 import { usePrefs, setPrefs, toggleFavorite } from '../../core/store/prefs';
 import { useAgent } from '../../core/agent/hooks';
-import { api } from '../../core/agent/api';
+import { api, PREVIEW } from '../../core/agent/api';
 import { toast } from '../../core/store/toast';
 import { THEMES, type ThemeId } from '../../core/theme/themes';
 import type { BluetoothInfo, Capabilities, MirroringInfo, NetworkInfo, StorageInfo, SystemInfo, Volume } from '../../core/agent/types';
@@ -15,7 +15,7 @@ import { InfoRow, ToggleRow, ActionRow, PlannedRow, Notice, Group } from './widg
 
 function Offline() {
   const { t } = useT();
-  return <Notice tone="warn">{t('common.agentOffline')}</Notice>;
+  return <Notice tone="warn">{PREVIEW ? t('preview.body') : t('common.agentOffline')}</Notice>;
 }
 
 function Loading() {

@@ -92,6 +92,11 @@ export const en = {
     '2099': { name: 'Spider 2099', desc: 'Deep blue and red' },
   },
   volume: { title: 'Volume', muted: 'Muted' },
+  preview: {
+    title: 'Design preview',
+    body: 'This preview runs without the system service, so system features and your media are not available.',
+    launch: 'Opening {name} needs SPIDER TV running on your Mac (npm run tv).',
+  },
   units: { b: 'B', kb: 'KB', mb: 'MB', gb: 'GB', tb: 'TB', d: 'd', h: 'h', m: 'm' },
 };
 

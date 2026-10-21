@@ -5,6 +5,7 @@ import { Icon, type IconName } from './Icon';
 import { useT } from '../core/i18n';
 import { navigate, TABS, type TabName } from '../core/router';
 import { useAgentOnline } from '../core/agent/hooks';
+import { PREVIEW } from '../core/agent/api';
 
 const TAB_ICONS: Record<TabName, IconName> = { home: 'home', apps: 'apps', media: 'film', settings: 'settings' };
 
@@ -34,10 +35,16 @@ export function TopBar({ active }: { active: string }) {
         </button>
       </nav>
       <div className="topbar__status">
-        {agentOnline === false && (
-          <span className="chip chip--warn">
-            <Icon name="alert" /> {t('common.agentOffline')}
+        {PREVIEW ? (
+          <span className="chip chip--warn" title={t('preview.body')}>
+            <Icon name="info" /> {t('preview.title')}
           </span>
+        ) : (
+          agentOnline === false && (
+            <span className="chip chip--warn">
+              <Icon name="alert" /> {t('common.agentOffline')}
+            </span>
+          )
         )}
         <NetStatus />
         <Clock />

@@ -1,6 +1,6 @@
 import catalogJson from '@shared/catalog.json';
 import type { CatalogApp } from '../core/agent/types';
-import { api, ApiError } from '../core/agent/api';
+import { api, ApiError, PREVIEW } from '../core/agent/api';
 import { navigate } from '../core/router';
 import { toast } from '../core/store/toast';
 import { translate, type Lang } from '../core/i18n';
@@ -19,6 +19,10 @@ export async function launchApp(app: CatalogApp, lang: Lang, platform: string | 
   const t = (k: string, v?: Record<string, string>) => translate(lang, k, v);
   if (app.kind === 'builtin') {
     navigate({ name: app.route as 'media' | 'files' });
+    return;
+  }
+  if (PREVIEW) {
+    toast({ title: t('preview.title'), body: t('preview.launch', { name: app.name }) }, 6000);
     return;
   }
   try {

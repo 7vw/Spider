@@ -8,7 +8,11 @@ export class ApiError extends Error {
   }
 }
 
+/** Design-preview builds (VITE_PREVIEW=1) run without the system agent, e.g. as a hosted page. */
+export const PREVIEW = import.meta.env.VITE_PREVIEW === '1';
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  if (PREVIEW) throw new ApiError(0, 'agent-unreachable');
   let res: Response;
   try {
     res = await fetch(path, {
