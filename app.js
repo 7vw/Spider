@@ -5349,12 +5349,14 @@ function domClaim(){
     if(!NG.domNonce){lastResult={mid:G.mid,won:true,skipped:"offline"};return}
     body.nonce=NG.domNonce;body.moves=G.moves||[];
   }
-  api("dom_finish",body).then(r=>{
+  const send=()=>api("dom_finish",body).then(r=>{
     if(typeof r.coins==="number"){P.coins=r.coins;if(r.version)P.__ver=r.version;saveProfile()}
     if(r.capped&&!(r.amount>0))lastResult={mid:G.mid,won:true,skipped:"cap"};
     else lastResult={mid:G.mid,won:!!r.won,out:r.won?{xp:0,coins:r.amount||0,items:[],levelUps:[],ach:[],missions:[],xpBefore:P.xp,levelBefore:P.level,streak:0}:null,skipped:r.won?null:"loss"};
     if(screen==="mg"){const rb=$("mgRewards");if(rb)rb.dataset.k="";render()}
   }).catch(()=>{lastResult={mid:G.mid,won:true,skipped:"offline"};if(screen==="mg")render()});
+  if(body.nonce){const wait=Math.max(0,12000-(Date.now()-(NG.domT0||Date.now())));setTimeout(send,wait)}
+  else send();
 }
 let dmSel=null;
 function dmHasCapture(g0,s){const acc=[];for(let i=0;i<64&&!acc.length;i++)if(DM.own(g0.b[i],s))DM.capt(g0.b,i,s,g0.b[i],[i],0,acc,null);return acc.length>0}
@@ -5533,7 +5535,7 @@ function mgLocalBots(delay){
 }
 function mgBeginLocal(gm,RU,pl,prev,cat,seed){
   const o={seq:prev?prev.seq+1:1,round:prev?prev.round+1:1,score:prev?Object.assign({},prev.score):{},cat};
-  if(seed)o.seed=seed>>>0;
+  if(seed){o.seed=seed>>>0;NG.domT0=Date.now()}
   G=RU.new(distinctSkins(pl),o);
   if(gm.id==="wordweb"){NG.wwSecret=WW.pick(G.cat||cat);G.len=[...NG.wwSecret].length;NG.wwMine=G.players.map(()=>({tried:[],found:[]}));syncWwView()}
   else if(RU.hidden&&RU.deal){NG.localPriv=RU.deal(G);syncHiddenView();if(G.game==="domino"&&NG.localPriv&&NG.localPriv[0])NG.domSeed=NG.localPriv[0].seed>>>0}
