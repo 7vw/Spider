@@ -25,7 +25,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <title>SPIDER</title>
-<noscript><link rel="stylesheet" href="ui.css?v=2"></noscript>
+<noscript><link rel="stylesheet" href="ui.css?v=3"></noscript>
 <noscript><link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=optional" rel="stylesheet"></noscript>
 <style>
 @property --a{syntax:"<angle>";inherits:false;initial-value:0deg}
@@ -457,6 +457,7 @@ body{overflow-x:clip}
     <button class="gtile" type="button" data-game="xo"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>XO∞</b><span>لاعبين</span></span></button>
     <button class="gtile" type="button" data-game="wordweb"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>WORDWEB</b><span>٢–٤ لاعبين</span></span></button>
     <button class="gtile" type="button" data-game="kalima"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>KALIMA</b><span>كلمة اليوم</span></span></button>
+    <button class="gtile" type="button" data-game="chess"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>CHESS</b><span>شطرنج</span></span></button>
     <button class="gtile" type="button" data-game="webline"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>WEBLINE</b><span>لاعب واحد</span></span></button>
     <button class="gtile" type="button" data-game="dama"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>DAMA</b><span>لاعبين</span></span></button>
     <button class="gtile" type="button" data-game="bluff"><span class="gc-icon" aria-hidden="true"></span><span class="gt-t"><b>BLUFF</b><span>٢–٦ لاعبين</span></span></button>
@@ -526,6 +527,42 @@ body{overflow-x:clip}
     <button type="button" class="primary" id="kmDaily">كلمة اليوم</button>
     <button type="button" id="kmPractice">تدريب</button>
     <button type="button" class="hidden" id="kmShare">شارك</button>
+  </div>
+</section>
+
+<section id="ch" class="hidden">
+  <div class="bar">
+    <button class="quit" id="chQuit" type="button">خروج</button>
+    <button class="icon" id="chSound" type="button" aria-label="الصوت"><svg class="ic" aria-hidden="true"><use href="#i-sound"/></svg></button>
+    <button class="icon" id="chFlip" type="button" aria-label="اقلب الرقعة">قلب</button>
+    <span class="mg-title">شطرنج</span>
+  </div>
+  <div class="ch-clocks hidden" id="chClocks">
+    <span id="chClockTop" class="ch-clock"></span>
+    <span id="chClockBot" class="ch-clock"></span>
+  </div>
+  <p class="status" id="chStatus" role="status" aria-live="polite"></p>
+  <div class="ch-caps" id="chCapsTop"></div>
+  <div class="ch-board" id="chBoard" role="grid" aria-label="رقعة الشطرنج"></div>
+  <div class="ch-caps" id="chCapsBot"></div>
+  <ol class="ch-moves" id="chMoves" aria-label="سجل النقلات"></ol>
+  <div class="ch-actions">
+    <button type="button" id="chResign">استسلام</button>
+    <button type="button" id="chDraw">عرض تعادل</button>
+  </div>
+  <div class="ch-promo hidden" id="chPromo" role="dialog" aria-modal="true" aria-label="اختر ترقية"></div>
+  <div class="mg-win hidden" id="chWin" role="dialog" aria-modal="true" aria-labelledby="chWinText">
+    <div class="card">
+      <div class="result-kicker" id="chKicker">انتهت</div>
+      <div class="win" id="chWinText"></div>
+      <p class="lead" id="chWinSub"></p>
+      <div id="chRewards"></div>
+      <div class="row" style="margin-top:12px">
+        <button class="primary" id="chAgain" type="button">جولة ثانية</button>
+        <button id="chHome" type="button">الرئيسية</button>
+      </div>
+      <button class="wide hidden" id="chLobby" type="button" style="margin-top:8px">رجوع للغرفة</button>
+    </div>
   </div>
 </section>
 

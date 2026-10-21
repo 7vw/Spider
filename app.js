@@ -515,10 +515,22 @@ const DOMTABLES=[
   {id:"felt",name:"جوخ",rar:"rare",how:"store",price:280,look:"felt"},
   {id:"royal",name:"ملكي",rar:"rare",how:"store",price:420,look:"royal"}
 ];
-const CATS={skin:SKINS,frame:FRAMES,deco:DECOS,bg:BGS,badge:BADGES,theme:THEMES,title:TITLES,board:BOARDS,web:WEBS,move:MOVES,win:WINS,emote:EMOTES,lobby:LOBBIES,sound:SOUNDS,xmark:XMARKS,domtile:DOMTILES,domtable:DOMTABLES};
-const CAT_NAME={skin:"سكنات",frame:"إطارات",deco:"زينة",bg:"خلفيات",badge:"شارات",theme:"ألوان الاسم",title:"ألقاب",board:"طاولات",web:"خيوط",move:"تأثيرات الحركة",win:"تأثيرات الفوز",emote:"تفاعلات",lobby:"غرف الانتظار",sound:"حزم الأصوات",xmark:"أشكال XO",domtile:"أحجار الدومينو",domtable:"طاولات الدومينو"};
-const CAT_ONE={skin:"سكن",xmark:"شكل XO",frame:"إطار",deco:"زينة",bg:"خلفية",badge:"شارة",theme:"لون اسم",title:"لقب",board:"طاولة",web:"خيط",move:"تأثير حركة",win:"تأثير فوز",emote:"تفاعل",lobby:"غرفة انتظار",sound:"حزمة أصوات",domtile:"حجر دومينو",domtable:"طاولة دومينو"};
-const CAT_MINE={skin:"سكنك",frame:"إطارك",deco:"زينتك",bg:"خلفيتك",badge:"شارتك",theme:"لون اسمك",title:"لقبك",board:"طاولتك",web:"خيطك",move:"تأثير حركتك",win:"تأثير فوزك",emote:"تفاعلك",lobby:"غرفتك",sound:"أصواتك",xmark:"شكل XO حقك",domtile:"حجارك",domtable:"طاولة الدومينو"};
+const CHBOARDS=[
+  {id:"classic",name:"ليل",rar:"common",how:"free",look:"classic",sq:["#2A241C","#C4B49A","#E6B85C"]},
+  {id:"night",name:"منتصف الليل",rar:"common",how:"store",price:180,look:"night",sq:["#12151E","#3A4158","#9BB0D0"]},
+  {id:"marble",name:"رخام",rar:"rare",how:"store",price:320,look:"marble",sq:["#1C2430","#A8B0BE","#E6E1D6"]},
+  {id:"royal",name:"ملكي",rar:"rare",how:"store",price:450,look:"royal",sq:["#160E22","#5A3E78","#E6B85C"]}
+];
+const CHPIECES=[
+  {id:"classic",name:"عاج وحبر",rar:"common",how:"free",look:"classic",pc:["#F4EFE4","#1A140E","#E6B85C"]},
+  {id:"gold",name:"ذهب",rar:"common",how:"store",price:160,look:"gold",pc:["#F8E7B0","#5C4310","#FFE7A3"]},
+  {id:"jade",name:"يشم",rar:"rare",how:"store",price:280,look:"jade",pc:["#E7FFF6","#0E3D30","#5CFFD1"]},
+  {id:"blood",name:"عقيق",rar:"rare",how:"store",price:420,look:"blood",pc:["#FFE8E4","#6A1220","#FF6B7A"]}
+];
+const CATS={skin:SKINS,frame:FRAMES,deco:DECOS,bg:BGS,badge:BADGES,theme:THEMES,title:TITLES,board:BOARDS,web:WEBS,move:MOVES,win:WINS,emote:EMOTES,lobby:LOBBIES,sound:SOUNDS,xmark:XMARKS,domtile:DOMTILES,domtable:DOMTABLES,chboard:CHBOARDS,chpiece:CHPIECES};
+const CAT_NAME={skin:"سكنات",frame:"إطارات",deco:"زينة",bg:"خلفيات",badge:"شارات",theme:"ألوان الاسم",title:"ألقاب",board:"طاولات",web:"خيوط",move:"تأثيرات الحركة",win:"تأثيرات الفوز",emote:"تفاعلات",lobby:"غرف الانتظار",sound:"حزم الأصوات",xmark:"أشكال XO",domtile:"أحجار الدومينو",domtable:"طاولات الدومينو",chboard:"رقاع الشطرنج",chpiece:"قطع الشطرنج"};
+const CAT_ONE={skin:"سكن",xmark:"شكل XO",frame:"إطار",deco:"زينة",bg:"خلفية",badge:"شارة",theme:"لون اسم",title:"لقب",board:"طاولة",web:"خيط",move:"تأثير حركة",win:"تأثير فوز",emote:"تفاعل",lobby:"غرفة انتظار",sound:"حزمة أصوات",domtile:"حجر دومينو",domtable:"طاولة دومينو",chboard:"رقعة شطرنج",chpiece:"قطع شطرنج"};
+const CAT_MINE={skin:"سكنك",frame:"إطارك",deco:"زينتك",bg:"خلفيتك",badge:"شارتك",theme:"لون اسمك",title:"لقبك",board:"طاولتك",web:"خيطك",move:"تأثير حركتك",win:"تأثير فوزك",emote:"تفاعلك",lobby:"غرفتك",sound:"أصواتك",xmark:"شكل XO حقك",domtile:"حجارك",domtable:"طاولة الدومينو",chboard:"رقعتك",chpiece:"قطعك"};
 const EQUIP_TYPES=Object.keys(CATS).filter(t=>t!=="emote");
 const ITEM_INDEX={};
 for(const t in CATS){ITEM_INDEX[t]={};CATS[t].forEach((it,i)=>{it.type=t;ITEM_INDEX[t][it.id]=it;if(t==="skin")it.idx=i})}
@@ -820,7 +832,7 @@ function ensureGamesCss(){
     let link=document.querySelector("link[data-games-css]");
     if(link&&link.rel==="stylesheet"){if(link.sheet){ok();return}link.addEventListener("load",()=>ok(),{once:true});link.addEventListener("error",()=>ok(),{once:true});return}
     link=document.createElement("link");
-    link.rel="stylesheet";link.href="games.css?v=11";link.setAttribute("data-games-css","");
+    link.rel="stylesheet";link.href="games.css?v=14";link.setAttribute("data-games-css","");
     link.onload=()=>ok();link.onerror=()=>ok();
     document.head.append(link);
   });
@@ -843,6 +855,7 @@ function ensureGames(){
       await loadGameScript("js/minigames.js?v=6");
     }
     takeGames();
+    registerChess();
   })().catch(e=>{gamesP=null;throw e});
   return gamesP;
 }
@@ -859,6 +872,24 @@ function ensureKalima(){
   return kalimaP;
 }
 /* @kalima-load-end */
+/* @chess-load-start */
+let chessP=null;
+function registerChess(){
+  if(!globalThis.CHESS)return;
+  GAME_RULES.chess=globalThis.CHESS.rules;
+  MIN_PLAYERS.chess=2;MAX_PLAYERS.chess=2;
+}
+function ensureChess(){
+  if(chessP)return chessP;
+  chessP=(async()=>{
+    await ensureGamesCss();
+    if(!globalThis.Chess)await loadGameScript("js/vendor/chess.global.js?v=1");
+    if(!globalThis.CHESS)await loadGameScript("js/chess_rules.js?v=2");
+    registerChess();
+  })().catch(e=>{chessP=null;throw e});
+  return chessP;
+}
+/* @chess-load-end */
 
 /* ================= player profile (saved on this device) =================
    Private progression (coins, XP, inventory, codes, claims) never leaves the device.
@@ -1689,8 +1720,20 @@ function itemPreview(t,it,big){
     case "sound":return h("span",{class:"snd-ic"},ic("sound"));
     case "xmark":{const st=it.st,z=big?66:54;return htmlEl("span","fx-mini",`<svg viewBox="0 0 64 40" width="${z*1.5}" height="${z}" aria-hidden="true">${xoStyled(0,18,20,20,st,"#B9A2FF",1)}${xoStyled(1,46,20,20,st,"#FFB02E",1)}</svg>`)}
     case "domtile":case "domtable":return domSwatch(t,it,!!big);
+    case "chboard":case "chpiece":return chSwatch(t,it,!!big);
   }
   return h("span",{},"?");
+}
+function chSwatch(t,it,big){
+  const z=big?96:46;
+  if(t==="chboard"){
+    const s=it.sq||["#2A241C","#C4B49A","#E6B85C"];
+    let cells="";
+    for(let r=0;r<4;r++)for(let c=0;c<4;c++)cells+=`<rect x="${c}" y="${r}" width="1" height="1" fill="${(r+c)%2?s[0]:s[1]}"/>`;
+    return htmlEl("span","",`<svg viewBox="0 0 4 4" width="${z}" height="${z}" aria-hidden="true">${cells}</svg>`);
+  }
+  const p=it.pc||["#F4EFE4","#1A140E","#E6B85C"];
+  return htmlEl("span","",`<svg viewBox="0 0 46 46" width="${z}" height="${z}" aria-hidden="true"><rect width="46" height="46" rx="10" fill="#1A1420"/><circle cx="16" cy="24" r="8" fill="${p[1]}"/><circle cx="30" cy="24" r="8" fill="${p[0]}" stroke="${p[2]}"/></svg>`);
 }
 let sheetTimers=[];
 /* larger, live preview used in the item sheet and the customize screen */
@@ -1723,6 +1766,7 @@ function bigPreview(t,it,box){
     sheetTimers.push(setInterval(()=>{b.classList.remove("a-"+it.anim);void b.offsetWidth;b.classList.add("a-"+it.anim)},1800))}
   else if(t==="lobby")wrap.append(lobbyThumb(it.id,true));
   else if(t==="domtile"||t==="domtable")wrap.append(domSwatch(t,it,true));
+  else if(t==="chboard"||t==="chpiece")wrap.append(chSwatch(t,it,true));
   else if(t==="sound"){const r=h("div",{class:"row",style:"flex-wrap:wrap;padding:12px;width:100%"});
     for(const [k,l] of [["move","حركة"],["wall","خيط"],["win","فوز"],["unlock","فتح مكافأة"]])r.append(h("button",{class:"small",onclick:()=>sfx(k,it.id,true)},"▶ "+l));
     wrap.append(r);if(P.settings.mute)wrap.append(h("p",{class:"hint",style:"margin:0 0 8px"},"الصوت مكتوم من الإعدادات، والمعاينة تشتغل رغم كذا."))}
@@ -1747,6 +1791,7 @@ function miniIcon(t,id){
     case "sound":return ic("sound");
     case "xmark":return htmlEl("span","",`<svg viewBox="0 0 40 20" width="30" height="15" aria-hidden="true">${xoStyled(0,10,10,11,it.st,"#B9A2FF",1)}${xoStyled(1,30,10,11,it.st,"#FFB02E",1)}</svg>`);
     case "domtile":case "domtable":return domSwatch(t,it,false);
+    case "chboard":case "chpiece":return chSwatch(t,it,false);
   }
   return h("span",{});
 }
@@ -2007,13 +2052,13 @@ function levelUpSheet(out){
 }
 
 /* ================= navigation ================= */
-const PAGES=["home","games","webbound","leaders","store","profile","about"],SCREENS=["home","games","webbound","leaders","store","profile","about","customize","owner","lobby","game","mg","wl","nst","bc","km"];
+const PAGES=["home","games","webbound","leaders","store","profile","about"],SCREENS=["home","games","webbound","leaders","store","profile","about","customize","owner","lobby","game","mg","wl","nst","bc","km","ch"];
 let screen="home";
 let lastScreen="home";
 function show(id){if(typeof screen!=="undefined"&&screen&&screen!==id&&screen!=="about")lastScreen=screen;
   if(id==="owner"&&!Owner.verified)id="profile";
   screen=id;
-  document.body.classList.toggle("in-match",["game","mg","wl","nst","bc","lobby","km"].includes(id));
+  document.body.classList.toggle("in-match",["game","mg","wl","nst","bc","lobby","km","ch"].includes(id));
   for(const s of SCREENS)$(s).classList.toggle("hidden",s!==id);
   const navOn=PAGES.includes(id);
   $("nav").classList.toggle("hidden",!navOn);document.body.classList.toggle("has-nav",navOn);
@@ -2269,6 +2314,13 @@ const GAMES=[{
   modes:["online","bot","local"],cosmetics:["domtile","domtable"],maxBots:3,maxLocal:4,
   rules:["الجولة وحدة، مو سباق لمية.","اثنين: كل واحد ٧ أحجار، والباقي سحب. ما عندك لعب؟ تسحب حجر، وإذا انلعب تكمل، وإلا يمر الدور.","أربعة: فرق متقابلة، ٧ أحجار وما فيه سحب. اللي ما يقدر يلعب يمرّر.","يفتح أعلى دبل، وإذا ما فيه دبل يفتح أعلى مجموع. الدبل يعرض عرض بس وما يفتح طرف ثالث.","اللي يخلّص أحجاره ياخذ نقاط الخصم. وإذا انسدّت الطاولة، الأقل نقاط ياخذ الفرق. التعادل ما يعطي عملات."]
 },{
+  id:"chess",name:"CHESS",nameAr:"شطرنج",category:"strategy",status:"live",
+  tagline:"رقعة كاملة، ضد الكمبيوتر أو مع أصحابك",
+  desc:"شطرنج بقواعده: تبييت، أخذ بالمرور، ترقية، كش مات، بات، وتكرار وخمسين نقلة. تلعب أبيض أو أسود ضد الكمبيوتر، أو تفتح غرفة خاصة بساعة.",
+  players:"لاعبين",length:"٣–١٠ دقايق",colors:["#C4B49A","#1A140E"],
+  modes:["online","bot"],cosmetics:["chboard","chpiece"],maxBots:1,maxLocal:0,
+  rules:["الأبيض يبدأ. اختر قطعة ثم وجهتها، أو اسحبها على الشاشة الكبيرة.","التبييت والأخذ بالمرور والترقية لقائد أو قلعة أو فيل أو حصان كلها محسوبة.","الكش مات ينهي الجولة. البات والتكرار والخمسين نقلة ونقص القطع تعادل.","فوز الكش مات على الكمبيوتر ١٠ عملات، وفوز الغرفة ٢٠. الحد ٨ انتصارات في اليوم. التعادل والخسارة ما يعطون."]
+},{
   id:"kalima",name:"KALIMA",nameAr:"كلمة اليوم",category:"word",status:"live",
   tagline:"خمّن كلمة من خمسة حروف",
   desc:"كلمة واحدة في اليوم، يختارها الخادم وما تنرسل لجهازك. عندك ست محاولات، والحروف تصير أخضر أو ذهبي أو رمادي.",
@@ -2277,6 +2329,9 @@ const GAMES=[{
   rules:["الكلمة خمسة حروف، وشكل الألف والتاء المربوطة يتوحّد.","الأخضر: الحرف في مكانه. الذهبي: الحرف موجود في مكان ثاني. الرمادي: الحرف مو في الكلمة.","كلمة اليوم مرة واحدة لكل يوم، والسلسلة تكمل لو لعبت اليوم اللي بعده.","التدريب يشتغل بدون نت، وما يحسب في السلسلة."]
 }];
 let curGame="webbound";
+let chColor="w",chClock="none",chFlipManual=null;
+function chLevel(){try{const n=+localStorage.getItem("spider_chlevel");if(n>=1&&n<=4)return n}catch(e){}return Math.min(3,Math.max(1,P.settings.botLevel||2))}
+function chSetLevel(n){try{localStorage.setItem("spider_chlevel",String(n))}catch(e){}}
 let wlBoardCache=null,wlBoardAt=0;
 let wwCat=(()=>{try{return localStorage.getItem("spider_wwcat")||"fruit"}catch(e){return "fruit"}})();
 const MODES={
@@ -2302,14 +2357,23 @@ function kmCoverSvg(){
 <rect width="40" height="48" rx="8" fill="#1F8A4C"/><rect x="48" width="40" height="48" rx="8" fill="#8A6A22"/><rect x="96" width="40" height="48" rx="8" fill="#2A3142"/><rect x="144" width="40" height="48" rx="8" fill="#2A3142"/><rect x="192" width="40" height="48" rx="8" fill="#1F8A4C"/>
 </g></svg>`;
 }
+function chCoverSvg(){
+  return `<svg viewBox="0 0 360 200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="غلاف شطرنج: رقعة داكنة وقطع">
+<rect width="360" height="200" fill="#120E18"/>
+<g transform="translate(108 28)">${[0,1,2,3].map(r=>[0,1,2,3].map(c=>`<rect x="${c*36}" y="${r*36}" width="36" height="36" fill="${(r+c)%2?"#2A241C":"#C4B49A"}"/>`).join("")).join("")}
+<circle cx="54" cy="54" r="10" fill="#1A140E"/><circle cx="90" cy="90" r="10" fill="#F4EFE4" stroke="#E6B85C"/></g></svg>`;
+}
+function chIconSvg(){
+  return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#1A1420"/><rect x="14" y="14" width="18" height="18" fill="#C4B49A"/><rect x="32" y="14" width="18" height="18" fill="#2A241C"/><rect x="14" y="32" width="18" height="18" fill="#2A241C"/><rect x="32" y="32" width="18" height="18" fill="#C4B49A"/><circle cx="23" cy="23" r="5" fill="#1A140E"/><circle cx="41" cy="41" r="5" fill="#F4EFE4"/></svg>`;
+}
 function kmIconSvg(){
   return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#1A1424"/><rect x="8" y="18" width="10" height="12" rx="2" fill="#39FF88"/><rect x="20" y="18" width="10" height="12" rx="2" fill="#E6B85C"/><rect x="32" y="18" width="10" height="12" rx="2" fill="#3A4256"/><rect x="44" y="18" width="10" height="12" rx="2" fill="#3A4256"/><rect x="14" y="34" width="10" height="12" rx="2" fill="#3A4256"/><rect x="26" y="34" width="10" height="12" rx="2" fill="#39FF88"/><rect x="38" y="34" width="10" height="12" rx="2" fill="#E6B85C"/></svg>`;
 }
 function domIconSvg(){
   return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#24180F"/><rect x="22" y="8" width="20" height="48" rx="4" fill="#F3E6C8"/><line x1="26" y1="32" x2="38" y2="32" stroke="#C8B48A"/><circle cx="32" cy="20" r="2.4" fill="#1C140C"/><circle cx="28" cy="42" r="2.2" fill="#1C140C"/><circle cx="36" cy="48" r="2.2" fill="#1C140C"/></svg>`;
 }
-const coverSvg=id=>id==="kalima"?kmCoverSvg():id==="domino"?domCoverSvg():id==="ballclash"?bcCoverSvg():id==="nightweb"?nwCoverSvg():id==="webnest"?nsCoverSvg():id==="bluff"?bfCoverSvg():id==="flyhunt"?fhCoverSvg():id==="webwar"?wrCoverSvg():id==="dama"?dmCoverSvg():id==="webline"?wlCoverSvg():id==="webgrid"?wgCoverSvg():id==="xo"?xoCoverSvg():id==="wordweb"?wwCoverSvg():wbCoverSvg();
-const iconSvg=id=>id==="kalima"?kmIconSvg():id==="domino"?domIconSvg():id==="ballclash"?bcIconSvg():id==="nightweb"?nwIconSvg():id==="webnest"?nsIconSvg():id==="bluff"?bfIconSvg():id==="flyhunt"?fhIconSvg():id==="webwar"?wrIconSvg():id==="dama"?dmIconSvg():id==="webline"?wlIconSvg():id==="webgrid"?wgIconSvg():id==="xo"?xoIconSvg():id==="wordweb"?wwIconSvg():wbIconSvg();
+const coverSvg=id=>id==="chess"?chCoverSvg():id==="kalima"?kmCoverSvg():id==="domino"?domCoverSvg():id==="ballclash"?bcCoverSvg():id==="nightweb"?nwCoverSvg():id==="webnest"?nsCoverSvg():id==="bluff"?bfCoverSvg():id==="flyhunt"?fhCoverSvg():id==="webwar"?wrCoverSvg():id==="dama"?dmCoverSvg():id==="webline"?wlCoverSvg():id==="webgrid"?wgCoverSvg():id==="xo"?xoCoverSvg():id==="wordweb"?wwCoverSvg():wbCoverSvg();
+const iconSvg=id=>id==="chess"?chIconSvg():id==="kalima"?kmIconSvg():id==="domino"?domIconSvg():id==="ballclash"?bcIconSvg():id==="nightweb"?nwIconSvg():id==="webnest"?nsIconSvg():id==="bluff"?bfIconSvg():id==="flyhunt"?fhIconSvg():id==="webwar"?wrIconSvg():id==="dama"?dmIconSvg():id==="webline"?wlIconSvg():id==="webgrid"?wgIconSvg():id==="xo"?xoIconSvg():id==="wordweb"?wwIconSvg():wbIconSvg();
 const SVGNS="http://www.w3.org/2000/svg";
 function ic(n,cls){const s=document.createElementNS(SVGNS,"svg");s.setAttribute("aria-hidden","true");s.setAttribute("class","ic"+(cls?" "+cls:""));const u=document.createElementNS(SVGNS,"use");u.setAttribute("href","#i-"+n);s.append(u);return s}
 function coinEl(txt){return h("span",{class:"coin-amt"},ic("coin","gold"),h("span",{},String(txt)))}
@@ -2398,6 +2462,7 @@ async function openGame(id,mode){
   if(need){document.documentElement.classList.add("app-loading");document.documentElement.setAttribute("aria-busy","true")}
   try{
     if(id!=="webbound"){try{await ensureGames()}catch(e){toast("تعذّر تحميل اللعبة، تحقق من الاتصال وحاول مرة ثانية","bad");return}}
+    if(id==="chess"){try{await ensureChess()}catch(e){toast("تعذّر تحميل اللعبة، تحقق من الاتصال وحاول مرة ثانية","bad");return}}
     if(gameById(id).id!==curGame){curGame=gameById(id).id;roomsCache=null;roomsAt=0}
     try{localStorage.setItem("spider_last",gameById(id).id)}catch(e){}
     if(mode&&MODES[mode]){wbMode=mode;modeChosen=true}
@@ -2522,7 +2587,7 @@ function renderGames(){
     feat.textContent="";
     if(gameCat==="all"){
       const row=h("div",{class:"hscroll game-feat"});
-      for(const id of ["webbound","ballclash","wordweb","kalima","webline"]){
+      for(const id of ["webbound","ballclash","wordweb","kalima","chess","webline"]){
         const fg=GAMES.find(x=>x.id===id);if(!fg)continue;
         row.append(h("button",{class:"gtile feat-tile",onclick:()=>openGame(fg.id)},htmlEl("span","gc-icon",iconSvg(fg.id)),h("span",{class:"gt-t"},h("b",{},fg.name),h("span",{},fg.nameAr))));
       }
@@ -2563,9 +2628,22 @@ function renderWebbound(){
   document.querySelectorAll("#botCount button").forEach(b=>{const v=+b.dataset.v;b.classList.toggle("hidden",g.id==="domino"?v===2:v>mb);b.textContent=g.id==="domino"?(v>=3?"٤ لاعبين":"٢ لاعبين"):["٠","١","٢","٣"][v]});
   if(g.id==="domino"&&P.settings.botCount===2)P.settings.botCount=1;
   $("botCount").closest(".card").querySelectorAll(".lbl")[0].classList.toggle("hidden",mb<2);$("botCount").classList.toggle("hidden",mb<2);
-  document.querySelectorAll("[data-local]").forEach(b=>b.classList.toggle("hidden",g.id==="domino"?+b.dataset.local===3:+b.dataset.local>(g.maxLocal||4)));
+  document.querySelectorAll("[data-local]").forEach(b=>b.classList.toggle("hidden",g.id==="chess"||(g.id==="domino"?+b.dataset.local===3:+b.dataset.local>(g.maxLocal||4))));
+  const lvlRow=$("botLevel");
+  lvlRow.classList.toggle("hidden",g.id==="chess");
+  if(lvlRow.previousElementSibling)lvlRow.previousElementSibling.classList.toggle("hidden",g.id==="chess");
+  const botLead=document.querySelector('#webbound [data-panel="bot"] .lead');
+  if(botLead)botLead.textContent=g.id==="chess"?"فوز الكش مات على الكمبيوتر يعطي ١٠ عملات، بحد ٨ في اليوم. التعادل والخسارة ما يعطون.":"كل فوز يعطيك XP وعملات، والصعب يعطي أكثر.";
   seg("botCount",P.settings.botCount,v=>{Act.settings({botCount:v});renderWebbound()});
   seg("botLevel",P.settings.botLevel,v=>{Act.settings({botLevel:v});renderWebbound()});
+  let chp=$("chLobby");if(!chp){chp=h("div",{id:"chLobby"});$("btnBots").before(chp)}
+  chp.textContent="";chp.classList.toggle("hidden",g.id!=="chess");
+  if(g.id==="chess"){
+    const lv=chLevel();
+    chp.append(h("span",{class:"lbl"},"المستوى"),h("div",{class:"chips"},...[[1,"سهل"],[2,"متوسط"],[3,"صعب"],[4,"أستاذ"]].map(([n,name])=>h("button",{type:"button",class:"chip"+(lv===n?" on":""),onclick:()=>{chSetLevel(n);sfx("move");renderWebbound()}},name))),
+      h("span",{class:"lbl mt"},"لونك"),h("div",{class:"chips"},h("button",{type:"button",class:"chip"+(chColor!=="b"?" on":""),onclick:()=>{chColor="w";renderWebbound()}},"أبيض"),h("button",{type:"button",class:"chip"+(chColor==="b"?" on":""),onclick:()=>{chColor="b";renderWebbound()}},"أسود")),
+      h("span",{class:"lbl mt"},"الساعة"),h("div",{class:"chips"},...[["none","بدون"],["3+2","٣+٢"],["5+0","٥+٠"],["10+0","١٠+٠"]].map(([id,name])=>h("button",{type:"button",class:"chip"+(chClock===id?" on":""),onclick:()=>{chClock=id;renderWebbound()}},name))));
+  }
 }
 $("wbBack").addEventListener("click",()=>show("games"));
 $("wbModes").addEventListener("keydown",e=>{
@@ -2779,7 +2857,7 @@ function bcIconSvg(){return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect w
 /* ================= store ================= */
 let stTab="all",stShown=24;
 const SF={q:"",own:"all",rar:"all",sort:"price"};
-const ST_TABS=[["all","الكل"],["wish","المفضلة"],["bundles","الحزم"],["balls","صراع الكور"],["domtile","أحجار"],["domtable","طاولة دومينو"],["skin","سكنات"],["board","طاولات"],["web","خيوط"],["xmark","XO"],["frame","إطارات"],["deco","زينة"],["bg","خلفيات"],["badge","شارات"],["theme","ألوان الاسم"],["title","ألقاب"],["move","تأثيرات الحركة"],["win","تأثيرات الفوز"],["emote","تفاعلات"],["lobby","غرف الانتظار"],["sound","أصوات"]];
+const ST_TABS=[["all","الكل"],["wish","المفضلة"],["bundles","الحزم"],["balls","صراع الكور"],["domtile","أحجار"],["domtable","طاولة دومينو"],["chboard","رقعة"],["chpiece","قطع"],["skin","سكنات"],["board","طاولات"],["web","خيوط"],["xmark","XO"],["frame","إطارات"],["deco","زينة"],["bg","خلفيات"],["badge","شارات"],["theme","ألوان الاسم"],["title","ألقاب"],["move","تأثيرات الحركة"],["win","تأثيرات الفوز"],["emote","تفاعلات"],["lobby","غرف الانتظار"],["sound","أصوات"]];
 function tabs(el,list,cur,onPick){
   el.textContent="";
   for(const [id,label] of list)el.append(h("button",{class:"tab"+(id===cur?" on":""),role:"tab","aria-selected":String(id===cur),onclick:()=>onPick(id)},label));
@@ -3021,7 +3099,7 @@ const AVATAR_ICONS=[["spark","شرارة"],["moon","قمر"],["star","نجمة"]
 const CHAT_PRESETS=[["hi","هلا والله"],["come","يلا تعال"],["nice","كفو عليك"],["wait","استنى شوي"],["gg","لعبة حلوة"],["again","نلعب مرة ثانية؟"],["fast","يلا بسرعة"],["luck","حظ أوفر"]];
 const CHAT_EMOJI=[["e0","😂"],["e1","🔥"],["e2","👏"],["e3","😎"],["e4","🕸️"],["e5","👍"],["e6","😮"],["e7","❤️"]];
 let JOIN_CODE=(()=>{try{const q=new URLSearchParams(location.search).get("join")||"";const c=q.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,4);return /^[A-Z0-9]{4}$/.test(c)?c:""}catch(e){return ""}})();
-let JOIN_GAME=(()=>{try{return new URLSearchParams(location.search).get("g")==="domino"?"domino":""}catch(e){return ""}})();
+let JOIN_GAME=(()=>{try{const g=new URLSearchParams(location.search).get("g");return g==="domino"||g==="chess"?g:""}catch(e){return ""}})();
 let INVITE_GAME="";
 function localFriendCode(){
   const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -3859,6 +3937,7 @@ function renderConn(){
 function renderLobby(){renderLobbyBase();if(mode==="room")decorateNetLobby()}
 function renderLobbyBase(){
   if(screen!=="lobby")return;
+  const turnTimer=$("timerSeg");if(turnTimer){turnTimer.classList.remove("hidden");if(turnTimer.previousElementSibling)turnTimer.previousElementSibling.classList.remove("hidden")}
   let r=roster(),hst=hostEntry(r),host=amHost();
   if(mode==="invite"){
     r=[{id:cid||"me",nick:myNick(),skin:skinIdx(eff("skin")),host:true,isMe:true,owner:!!Owner.verified,pub:myPub(Owner.verified),lt:eff("lobby"),bs:eff("board"),timer:P.settings.timer}];
@@ -3924,6 +4003,10 @@ function startLocal(n){
   beginLocal(pl);
 }
 function startBots(){
+  if(curGame==="chess"){
+    ensureChess().then(()=>Platform.kind==="web"&&Cloud.on?netSoloStart(false):chStartLocal()).catch(()=>toast("تعذّر تحميل اللعبة، تحقق من الاتصال وحاول مرة ثانية","bad"));
+    return;
+  }
   if(Platform.kind==="web"&&Cloud.on)return netSoloStart(false);
   if(curGame!=="webbound")return mgStartLocal(true);
   const pl=[{id:"L0",nick:P.nickname?myNick():"أنت",skin:skinIdx(eff("skin")),bot:0}];
@@ -3946,6 +4029,12 @@ function again(){
 /* ================= turns ================= */
 function mySeat(){if(!G)return -1;if(mode==="local")return G.turn;return G.players.findIndex(p=>p.id===cid)}
 function canAct(){
+  if(G&&G.game==="chess"){
+    if(G.winner!=null||G.draw)return false;
+    if((mode==="solo"||mode==="room")&&NG.busy)return false;
+    const s=chMySeat();
+    return s>=0&&G.turn===s&&!(G.players[s]&&G.players[s].bot);
+  }
   if(G&&G.game==="ballclash"){const s=mySeat();return G.winner==null&&!NG.busy&&s>=0&&G.phase==="pick"}
   if(G&&G.game==="nightweb"){const s=mySeat();return G.winner==null&&!NG.busy&&s>=0&&G.alive[s]}
   if(G&&G.game==="wordweb"){if(G.winner!=null||NG.busy)return false;const s=mode==="solo"?0:mode==="local"?wwSeat():mySeat();if(s<0)return false;const p=G.prog[s];return !p.done&&!p.out}
@@ -4370,6 +4459,7 @@ function paintKicker(el,won,seat){
 }
 function render(){
   if(G)stampSeen();
+  if(G&&G.game==="chess"){if(screen==="ch")chRender();return}
   if(G&&G.game){if(screen==="mg")mgRender();return}
   if(!G)return;
   trackMatch();
@@ -4445,6 +4535,7 @@ $("btnMuteEmo").addEventListener("click",()=>{P.settings.muteEmotes=!P.settings.
 let lbTick=0;
 function tick(){
   if(G)stampSeen();
+  if(screen==="ch")chTick();
   if(screen==="leaders"&&Date.now()-lbTick>30000){lbTick=Date.now();const cd=document.querySelector("#lbCountdown .lb-cd");if(cd)cd.replaceChildren(ic("clock"),"ينتهي الأسبوع بعد "+leftText(weekEndsAt()-clock.now()))}
   if(G&&G.game&&screen==="mg"){
     if(G.winner!=null){const lr=lastResult&&lastResult.mid===G.mid?lastResult:null,key=G.mid+"|"+(lr?(lr.out?"out":lr.skipped||""):"wait");if($("mgRewards").dataset.k!==key)renderMgWin()}
@@ -4491,6 +4582,7 @@ $("btnJoin").onclick=()=>{const c=joinEl.value.trim().toUpperCase();if(!/^[A-Z0-
 $("btnStart").onclick=()=>{
   if(mode==="invite"){
     if(INVITE_GAME==="domino"){curGame="domino";ensureGames().then(()=>mgStartLocal(true)).catch(()=>toast("تعذّر تحميل اللعبة، تحقق من الاتصال وحاول مرة ثانية","bad"));return}
+    if(INVITE_GAME==="chess"){curGame="chess";ensureChess().then(()=>chStartLocal()).catch(()=>toast("تعذّر تحميل اللعبة، تحقق من الاتصال وحاول مرة ثانية","bad"));return}
     curGame="webbound";beginLocal([{id:"L0",nick:P.nickname?myNick():"أنت",skin:skinIdx(eff("skin")),bot:0},{id:"B0",nick:BOT_NAMES[0],skin:1,bot:P.settings.botLevel}]);return}
   if(mode!=="room")return startOnline();
   const row=NG.room,wait=row?row.members.slice(0,4).filter(m=>m.id!==row.host&&!m.ready):[];
@@ -4505,7 +4597,7 @@ function inviteUrl(code){
   if(!code||!/^https?:/.test(location.href))return "";
   const u=new URL(location.href);u.search="";u.hash="";u.searchParams.set("join",code);
   const gm=(NG.room&&NG.room.settings&&NG.room.settings.game)||(mode==="invite"?INVITE_GAME:curGame);
-  if(gm==="domino")u.searchParams.set("g","domino");
+  if(gm==="domino"||gm==="chess")u.searchParams.set("g",gm);
   return u.toString();
 }
 function inviteText(code){const url=inviteUrl(code);return "تعال نلعب معي على SPIDER 🕸️\nالغرفة الخاصة: "+code+(url?"\n"+url:"")}
@@ -4531,7 +4623,7 @@ $("btnCopy").onclick=async()=>{
   setTimeout(()=>{$("btnCopy").textContent="انسخ رسالة الدعوة"},2200);
 };
 function goHome(){
-  wwStop();
+  wwStop();chStop();
   if(mode==="solo")netSoloForfeit();
   if(mode==="room")netRoomLeave();
   NG.solo=null;
@@ -4799,7 +4891,7 @@ function passwordSheet(){
 
 /* ---------- matches the server runs ---------- */
 const NG={solo:null,room:null,busy:false,ch:null,poll:null,online:new Set(),connected:false,lastRowAt:0,myResult:null,skipSeq:-1};
-function setNetBusy(b){NG.busy=b;if(G&&screen==="game")renderControls();else if(G&&screen==="mg")mgRender()}
+function setNetBusy(b){NG.busy=b;if(G&&screen==="game")renderControls();else if(G&&screen==="ch")chRender();else if(G&&screen==="mg")mgRender()}
 async function playSteps(steps,mine){
   for(let i=0;i<steps.length;i++){
     const prev=G;G=steps[i];afterChange(prev,i===0&&mine?"me":"bot");render();
@@ -4814,10 +4906,13 @@ function netMatchMeta(modeName,seat){NG.snap={mid:G&&G.mid,p:JSON.parse(JSON.str
 async function netSoloStart(rematch){
   if(NG.busy)return;setNetBusy(true);
   try{
-    const r=rematch?await api("solo_rematch",{id:NG.solo.id}):await api("solo_start",{game:curGame,bots:P.settings.botCount,level:P.settings.botLevel,cat:wwCat});
+    const start=curGame==="chess"?{game:"chess",bots:1,level:chLevel(),color:chColor,clock:chClock==="none"?"":chClock,cat:wwCat}:{game:curGame,bots:P.settings.botCount,level:P.settings.botLevel,cat:wwCat};
+    const r=rematch?await api("solo_rematch",{id:NG.solo.id}):await api("solo_start",start);
     NG.ww=r.ww||null;NG.wwMid=r.state&&r.state.mid;NG.hv=r.view||null;NG.hvKey=r.state?r.state.mid+":"+(r.state.rnd||0):"";
     clearBot();mode="solo";hist=[];NG.solo={id:r.id,practice:false};
-    G=r.state;netMatchMeta("bot",0);show(G.game?"mg":"game");render();
+    G=r.state;
+    const seat=G.game==="chess"?Math.max(0,G.players.findIndex(p=>p.id===cid)):0;
+    netMatchMeta("bot",seat);show(G.game==="chess"?"ch":G.game?"mg":"game");render();
   }catch(e){toast(e.message,"bad")}
   finally{setNetBusy(false);if(G)render()}
 }
@@ -4850,6 +4945,7 @@ async function netSoloAct(a){
     G=r.state;
     if(r.result){applyProfile(r.result.profile);lastResult={mid:G.mid,out:r.result.out,won:G.winner===0};M.done=true;winBuiltMid=null}
     else if(G.winner!=null){M.done=true;lastResult={mid:G.mid,skipped:NG.solo.practice||r.practice?"practice":"short"};winBuiltMid=null}
+    if(G&&G.game==="chess"&&(G.winner!=null||G.draw))chessClaim();
   }catch(e){G=prev;toast(e.message,"bad")}
   finally{setNetBusy(false);if(G)render()}
 }
@@ -4912,7 +5008,8 @@ function decorateNetLobby(){
   const list=$("lobbyList");list.textContent="";list.className="slots";
   const ms=row.members,gm=(row.settings&&row.settings.game)||"webbound",maxS=MAX_PLAYERS[gm]||4;
   let gc=$("lobbyGameChip");if(!gc){gc=h("span",{class:"chip on sm",id:"lobbyGameChip"});$("lobbyCode").before(gc)}gc.textContent=gameById(gm).name;
-  let wc=$("lobbyCat");if(!wc){wc=h("div",{id:"lobbyCat"});list.after(wc)}wc.textContent="";wc.classList.toggle("hidden",gm!=="wordweb"&&gm!=="ballclash"&&gm!=="domino");
+  let wc=$("lobbyCat");if(!wc){wc=h("div",{id:"lobbyCat"});list.after(wc)}wc.textContent="";wc.classList.toggle("hidden",gm!=="wordweb"&&gm!=="ballclash"&&gm!=="domino"&&gm!=="chess");
+  const ts=$("timerSeg");if(ts){ts.classList.toggle("hidden",gm==="chess");if(ts.previousElementSibling)ts.previousElementSibling.classList.toggle("hidden",gm==="chess")}
   if(gm==="ballclash"){const st=row.settings||{},sz=st.bcSize||2,pk=st.bcPick||"secret",host=row.host===cid;
     wc.append(h("span",{class:"lbl mt"},"عدد الكور لكل لاعب"),host?h("div",{class:"chips"},...[1,2,3,4,5].map(n=>h("button",{class:"chip"+(sz===n?" on":""),onclick:()=>netRoomCall("room_settings",{bcSize:n})},fmt(n)))):h("p",{class:"hint",style:"margin:4px 0 0"},fmt(sz)+" كور"),
       h("span",{class:"lbl mt"},"طريقة الاختيار"),host?h("div",{class:"chips"},...[["secret","سري"],["draft","بالتناوب"]].map(v=>h("button",{class:"chip"+(pk===v[0]?" on":""),onclick:()=>netRoomCall("room_settings",{bcPick:v[0]})},v[1]))):h("p",{class:"hint",style:"margin:4px 0 0"},pk==="draft"?"بالتناوب":"سري"))}
@@ -4931,13 +5028,17 @@ function decorateNetLobby(){
   if(me&&!host){rb.textContent=me.ready?"إلغاء الجاهزية":"أنا جاهز";rb.classList.toggle("primary",!me.ready);rb.onclick=()=>{sfx("move");netRoomCall("room_ready",{ready:!me.ready})}}
   if(gm==="domino"){const seats=(row.settings&&row.settings.domSeats)===4?4:2;
     wc.append(h("span",{class:"lbl mt"},"حجم الطاولة"),row.host===cid?h("div",{class:"chips"},h("button",{class:"chip"+(seats===2?" on":""),onclick:()=>netRoomCall("room_settings",{domSeats:2})},"٢ سحب"),h("button",{class:"chip"+(seats===4?" on":""),onclick:()=>netRoomCall("room_settings",{domSeats:4})},"٤ فرق")):h("p",{class:"hint",style:"margin:4px 0 0"},seats===4?"أربعة، والكمبيوتر يكمّل المقاعد":"اثنين، والكمبيوتر يكمّل لو لحالك"))}
+  if(gm==="chess"){const ck=(row.settings&&row.settings.chessClock)||"";
+    const opts=[["","بدون"],["3+2","٣+٢"],["5+0","٥+٠"],["10+0","١٠+٠"]];
+    wc.append(h("span",{class:"lbl mt"},"الساعة"),row.host===cid?h("div",{class:"chips"},...opts.map(([id,name])=>h("button",{type:"button",class:"chip"+(ck===id?" on":""),onclick:()=>netRoomCall("room_settings",{chessClock:id||"none"})},name))):h("p",{class:"hint",style:"margin:4px 0 0"},(opts.find(o=>o[0]===ck)||opts[0])[1]))}
   const wait=ms.slice(0,maxS).filter(m=>m.id!==row.host&&!m.ready),sb=$("btnStart"),minP=gm==="domino"?1:(MIN_PLAYERS[gm]||2);
   if(host){sb.disabled=ms.length<minP;sb.textContent=ms.length<minP?(minP>2?"تحتاج "+fmt(minP)+" لاعبين ("+fmt(ms.length)+" الحين)":"ننتظر لاعب ثاني"):wait.length?"ابدأ (ننتظر "+plural(wait.length,"لاعب","لاعبين","لاعبين","لاعب")+")":"ابدأ المباراة"}
-  $("lobbyHint").textContent=gm==="domino"&&host?"غرفة دومينو خاصة. شارك الرابط، أو ابدأ والكمبيوتر يكمّل لين تصير ٢ أو ٤.":host?(ms.length<2?"شارك الكود مع أصحابك، أو انتظر لاعبين من الغرف العامة.":wait.length?"تقدر تبدأ لما الكل يضغط «أنا جاهز».":"الكل جاهز، ابدأ متى ما تبي."):(me&&me.ready?"أنت جاهز، ننتظر صاحب الغرفة يبدأ.":"اضغط «أنا جاهز» لما تكون مستعد.");
+  $("lobbyHint").textContent=gm==="chess"&&host?"غرفة شطرنج خاصة. شارك الرابط، وتحتاج لاعبين اثنين. الأبيض هو صاحب الغرفة.":gm==="domino"&&host?"غرفة دومينو خاصة. شارك الرابط، أو ابدأ والكمبيوتر يكمّل لين تصير ٢ أو ٤.":host?(ms.length<2?"شارك الكود مع أصحابك، أو انتظر لاعبين من الغرف العامة.":wait.length?"تقدر تبدأ لما الكل يضغط «أنا جاهز».":"الكل جاهز، ابدأ متى ما تبي."):(me&&me.ready?"أنت جاهز، ننتظر صاحب الغرفة يبدأ.":"اضغط «أنا جاهز» لما تكون مستعد.");
 }
 async function openNetRoom(row){
   const gm=(row.settings&&row.settings.game)||"webbound";
-  if(gm!=="webbound"){try{await ensureGames()}catch(e){toast("تعذّر تحميل اللعبة، تحقق من الاتصال وحاول مرة ثانية","bad");return}}
+  if(gm==="chess"){try{await ensureChess()}catch(e){toast("تعذّر تحميل اللعبة، تحقق من الاتصال وحاول مرة ثانية","bad");return}}
+  else if(gm!=="webbound"){try{await ensureGames()}catch(e){toast("تعذّر تحميل اللعبة، تحقق من الاتصال وحاول مرة ثانية","bad");return}}
   leaveRoom();clearBot();mode="room";NG.room=null;NG.myResult=null;G=null;M=null;roomCode=row.code;
   try{localStorage.setItem("spider_room",row.code)}catch(e){}
   $("lobbyCode").textContent=row.code;subscribeNetRoom(row.code);onRoomRow(row,true);renderConn();
@@ -4983,15 +5084,16 @@ function onRoomRow(row,force){
   for(const m of row.members)if(m.owner&&(before?!before.has(m.id):m.id===cid))royalEntrance(m);
   if(row.status==="lobby"||!row.state){G=null;if(screen!=="lobby")show("lobby");else renderLobby();renderConn();return}
   /* my own move is already on screen while the server confirms it */
-  if(NG.busy&&!force&&G&&row.state.mid===G.mid&&row.state.seq<G.seq){if(screen==="game")render();return}
+  if(NG.busy&&!force&&G&&row.state.mid===G.mid&&row.state.seq<G.seq){if(screen==="game"||screen==="mg"||screen==="ch")render();return}
   const prev=G;G=row.state;
   const seat=G.players.findIndex(p=>p.id===cid);
   if(!prev||prev.mid!==G.mid)netMatchMeta("online",seat);
   const mine=G.last&&G.players[G.last.i]&&G.players[G.last.i].id===cid;
   afterChange(prev,mine?"me":"remote");
-  if(G.game==="domino"&&(G.winner!=null||G.draw)){if(M)M.done=true;domClaim()}
+  if(G.game==="chess"&&(G.winner!=null||G.draw)){if(M)M.done=true;chessClaim()}
+  else if(G.game==="domino"&&(G.winner!=null||G.draw)){if(M)M.done=true;domClaim()}
   else if(G.winner!=null&&M&&!M.done){M.done=true;if(seat>=0)netFetchResult(G,seat)}
-  const scr=G.game?"mg":"game";if(screen!==scr)show(scr);render();
+  const scr=G.game==="chess"?"ch":G.game?"mg":"game";if(screen!==scr)show(scr);render();
 }
 async function netFetchResult(g,seat){
   if(g.seq-(g.s0||g.seq)<(g.game==="ballclash"?1:g.game==="xo"?5:g.game==="wordweb"?3:6)){lastResult={mid:g.mid,skipped:"short"};winBuiltMid=null;render();return}
@@ -5866,6 +5968,402 @@ addEventListener("keydown",e=>{
   const n=K.norm(e.key);
   if(n.length===1&&K.ALPHA.includes(n)&&kmCur.length<5){e.preventDefault();kmCur+=n;kmRender()}
 });
+
+/* ================= chess ================= */
+const CH_GLYPH={k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"};
+const CH_NAME={k:"ملك",q:"وزير",r:"قلعة",b:"فيل",n:"حصان",p:"بيدق"};
+const CH_WHY={mate:"كش مات",resign:"استسلام",stalemate:"بات",rep:"تكرار ثلاثي","50":"قاعدة الخمسين نقلة",material:"نقص القطع",time:"خلص الوقت",agree:"اتفاق على التعادل"};
+let chSel="",chPromo=null,chDrag=null,chBotToken=0,chClaimed="",chFlagSeq=-1,chAnimSeq=-1,chWorker=null,chReq=0;
+const chPending=new Map();
+function chStop(){chBotToken++;chSel="";chPromo=null;chDrag=null;chHidePromo();const g=$("chGhost");if(g)g.remove()}
+function chMySeat(){
+  if(!G||G.game!=="chess")return -1;
+  if(mode==="local"){const i=G.players.findIndex(p=>!p.bot);return i<0?G.turn:i}
+  if(mode==="solo"||mode==="room")return G.players.findIndex(p=>p.id===cid);
+  return -1;
+}
+function chFlip(){if(chFlipManual!=null)return !!chFlipManual;return chMySeat()===1}
+function chClockText(ms){const s=Math.max(0,Math.ceil(ms/1000));return fmt(Math.floor(s/60))+":"+(s%60<10?"٠":"")+fmt(s%60)}
+function chPos(){
+  const c=new Chess();
+  for(const s of (G&&G.sans)||[]){if(!c.move(s))break}
+  return c;
+}
+function chLook(){
+  const b=findItem("chboard",eff("chboard"))||CHBOARDS[0];
+  const p=findItem("chpiece",eff("chpiece"))||CHPIECES[0];
+  return {sq:b.sq||["#2A241C","#C4B49A","#E6B85C"],pc:p.pc||["#F4EFE4","#1A140E","#E6B85C"]};
+}
+function chEnsureWorker(){
+  if(chWorker)return chWorker;
+  try{
+    chWorker=new Worker("js/chess_worker.js?v=2");
+    chWorker.onmessage=ev=>{const d=ev.data||{},fn=chPending.get(d.id);if(fn){chPending.delete(d.id);fn(d)}};
+    chWorker.onerror=()=>{try{chWorker.terminate()}catch(e){}chWorker=null};
+  }catch(e){chWorker=null}
+  return chWorker;
+}
+function chAsk(sans,level,tie){
+  return new Promise(res=>{
+    const w=chEnsureWorker();
+    if(!w){
+      setTimeout(()=>{try{res(globalThis.CHESS.pick({sans:sans.slice(),tie:tie|0},level,{deadline:Date.now()+1800}))}catch(e){res(null)}},0);
+      return;
+    }
+    const id=++chReq;
+    const t=setTimeout(()=>{chPending.delete(id);res(null)},5000);
+    chPending.set(id,d=>{clearTimeout(t);res(d&&d.ok?d.mv:null)});
+    try{w.postMessage({id,sans,level,tie:tie|0})}catch(e){clearTimeout(t);chPending.delete(id);res(null)}
+  });
+}
+function chLocalBot(){
+  if(mode!=="local"||!G||G.game!=="chess"||G.winner!=null||G.draw)return;
+  if(!G.players[G.turn]||!G.players[G.turn].bot)return;
+  const token=++chBotToken,sans=G.sans.slice(),level=G.players[G.turn].bot||1,seq=G.seq,tie=G.tie|0;
+  setTimeout(()=>{
+    chAsk(sans,level,tie).then(mv=>{
+      if(token!==chBotToken||!G||G.seq!==seq||mode!=="local"||G.winner!=null||G.draw)return;
+      if(!mv)return;
+      const act=Object.assign({now:Date.now()},mv);
+      const err=globalThis.CHESS.rules.legal(G,G.turn,act);
+      if(err)return;
+      G=globalThis.CHESS.rules.apply(G,G.turn,act);
+      chSel="";sfx(G.winner!=null?"win":G.check?"bad":"move2");
+      chRender();
+      if(G.winner!=null||G.draw)chessClaim();
+      else chLocalBot();
+    });
+  },320);
+}
+function chBeginLocal(pl,tie){
+  NG.chT0=Date.now();
+  G=globalThis.CHESS.rules.new(pl,{seq:1,round:1,score:{},clock:chClock==="none"?"":chClock,now:Date.now(),tie:tie|0});
+  show("ch");chRender();chLocalBot();
+}
+function chStartLocal(){
+  if(!globalThis.CHESS)return;
+  chStop();clearBot();mode="local";hist=[];NG.solo=null;M=null;NG.chNonce="";
+  const me={id:"L0",nick:P.nickname?myNick():"أنت",skin:skinIdx(eff("skin")),bot:0};
+  const bot={id:"B0",nick:"كمبيوتر",skin:1,bot:chLevel()};
+  const pl=chColor==="b"?[bot,me]:[me,bot];
+  chFlipManual=null;
+  if(Cloud.on){
+    api("bot_deal",{game:"chess",level:chLevel(),color:chColor==="b"?"b":"w"}).then(d=>{
+      NG.chNonce=d&&d.nonce||"";
+      chBeginLocal(pl,d&&d.seed||0);
+    }).catch(()=>{NG.chNonce="";chBeginLocal(pl,0)});
+    return;
+  }
+  chBeginLocal(pl,(Math.floor(Math.random()*0x7fffffff)||1));
+}
+function chPaintSound(){
+  const b=$("chSound");if(!b)return;
+  b.replaceChildren(ic(P.settings.mute?"mute":"sound"));
+  b.setAttribute("aria-pressed",String(!P.settings.mute));
+}
+function chHidePromo(){const p=$("chPromo");if(p){p.classList.add("hidden");p.textContent=""}}
+function chShowPromo(){
+  const box=$("chPromo");if(!box||!chPromo)return;
+  const lk=chLook(),seat=chMySeat();
+  box.textContent="";
+  const row=h("div",{class:"row"});
+  for(const t of ["q","r","b","n"]){
+    if(chPromo.opts&&!chPromo.opts.includes(t))continue;
+    row.append(h("button",{type:"button","data-promo":t,"aria-label":CH_NAME[t],style:"color:"+(seat===0?lk.pc[0]:lk.pc[1])},CH_GLYPH[t]));
+  }
+  box.append(row);box.classList.remove("hidden");
+}
+function chCaptures(board,color){
+  const start={q:1,r:2,b:2,n:2,p:8},have={q:0,r:0,b:0,n:0,p:0};
+  for(const row of board)for(const p of row)if(p&&p.color===color&&have[p.type]!=null)have[p.type]++;
+  const out=[];
+  for(const t of ["q","r","b","n","p"])for(let i=0;i<start[t]-have[t];i++)out.push({t,color});
+  return out;
+}
+function chPaintCaps(el,list,lk){
+  if(!el)return;el.textContent="";
+  for(const p of list)el.append(h("span",{class:"ch-mini","aria-hidden":"true",style:"color:"+(p.color==="w"?lk.pc[0]:lk.pc[1])},CH_GLYPH[p.t]));
+}
+function chPaintClocks(){
+  const wrap=$("chClocks");if(!wrap)return;
+  if(!G||!G.ck){wrap.classList.add("hidden");return}
+  wrap.classList.remove("hidden");
+  const flip=chFlip(),topSeat=flip?0:1,botSeat=1-topSeat,now=Date.now();
+  const label=seat=>{
+    let left=G.ck.left[seat];
+    if(G.winner==null&&!G.draw&&G.turn===seat)left-=Math.max(0,now-(G.ck.at||now));
+    const nick=G.players[seat]?G.players[seat].nick:"";
+    return nick+"  "+chClockText(left);
+  };
+  const top=$("chClockTop"),bot=$("chClockBot");
+  if(top){top.textContent=label(topSeat);top.classList.toggle("on",G.winner==null&&!G.draw&&G.turn===topSeat)}
+  if(bot){bot.textContent=label(botSeat);bot.classList.toggle("on",G.winner==null&&!G.draw&&G.turn===botSeat)}
+}
+function chStatusText(){
+  if(!G)return "";
+  const mine=chMySeat();
+  if(G.draw)return "تعادل"+(CH_WHY[G.reason]?" · "+CH_WHY[G.reason]:"");
+  if(G.winner!=null){const w=G.players[G.winner];return (mine===G.winner?"فزت":"فاز "+(w?w.nick:""))+(CH_WHY[G.reason]?" · "+CH_WHY[G.reason]:"");}
+  if(G.offer!=null)return G.offer===mine?"عرضت التعادل":(G.players[G.offer]?G.players[G.offer].nick:"الخصم")+" يعرض التعادل";
+  if(G.check)return "كش";
+  if(mine>=0&&G.turn===mine&&!(G.players[mine]&&G.players[mine].bot))return "دورك";
+  return "دور "+(G.players[G.turn]?G.players[G.turn].nick:"");
+}
+function chPaintWin(){
+  const box=$("chWin");if(!box||!G)return;
+  const over=G.winner!=null||G.draw;
+  box.classList.toggle("hidden",!over);
+  if(!over)return;
+  const mine=chMySeat(),won=mine>=0&&G.winner===mine&&!G.draw;
+  const k=$("chKicker");
+  if(k){k.classList.remove("is-win","is-loss");k.textContent=G.draw?"تعادل":mine<0?"انتهت":won?"فوز":"خسارة";if(!G.draw&&mine>=0)k.classList.add(won?"is-win":"is-loss")}
+  const t=$("chWinText");
+  if(t){t.classList.remove("is-win","is-loss","is-draw");t.textContent=G.draw?"تعادل":won?"فزت":"انتهت";t.classList.add(G.draw?"is-draw":won?"is-win":"is-loss")}
+  const sub=$("chWinSub");if(sub)sub.textContent=CH_WHY[G.reason]||"";
+  const rw=$("chRewards");
+  if(rw){
+    rw.textContent="";
+    const lr=lastResult&&lastResult.mid===G.mid?lastResult:null;
+    if(!lr)rw.append(h("p",{class:"hint"},"…"));
+    else if(lr.skipped==="offline")rw.append(h("p",{class:"hint"},"فوزك واضح، والعملات تحتاج اتصال بالخادم."));
+    else if(lr.skipped==="cap")rw.append(h("p",{class:"hint"},"وصلت حد مكافآت الشطرنج اليوم: ٨ جولات."));
+    else if(lr.out&&lr.out.coins)rw.append(h("p",{class:"hint"},"+"+fmt(lr.out.coins)+" عملة"));
+    else if(G.draw)rw.append(h("p",{class:"hint"},"التعادل ما يعطي عملات."));
+    else if(!won)rw.append(h("p",{class:"hint"},"الخسارة ما تعطي عملات."));
+    else rw.append(h("p",{class:"hint"},"هالنتيجة ما تعطيك عملات."));
+  }
+  const lobby=$("chLobby");if(lobby)lobby.classList.toggle("hidden",mode!=="room");
+}
+function chAnimate(el,fromSq){
+  if(!el||reduceMotion())return;
+  const from=$("chBoard").querySelector('[data-sq="'+fromSq+'"]');
+  const to=el.parentElement;if(!from||!to)return;
+  const a=from.getBoundingClientRect(),b=to.getBoundingClientRect();
+  el.style.transform="translate("+(a.left-b.left)+"px,"+(a.top-b.top)+"px)";
+  requestAnimationFrame(()=>{requestAnimationFrame(()=>{el.style.transition="transform .18s ease";el.style.transform="translate(0,0)"})});
+}
+function chRender(){
+  if(!G||G.game!=="chess"||!$("chBoard"))return;
+  if(!globalThis.Chess||!globalThis.CHESS)return;
+  chPaintSound();chPaintClocks();
+  const st=$("chStatus");if(st)st.textContent=chStatusText();
+  const lk=chLook(),flip=chFlip(),c=chPos(),board=c.board();
+  const mine=chMySeat(),myColor=mine===0?"w":mine===1?"b":"";
+  const act=canAct();
+  const moves=act?c.moves({verbose:true}):[];
+  const fromSet=new Set(chSel?moves.filter(m=>m.from===chSel).map(m=>m.to):[]);
+  const bd=$("chBoard");bd.textContent="";
+  bd.style.setProperty("--ch-dark",lk.sq[0]);bd.style.setProperty("--ch-light",lk.sq[1]);
+  for(let rr=0;rr<8;rr++)for(let cc=0;cc<8;cc++){
+    const r=flip?7-rr:rr,f=flip?7-cc:cc;
+    const sq="abcdefgh"[f]+(8-r);
+    const piece=board[r][f];
+    const dark=(r+f)%2===1;
+    const btn=h("button",{type:"button",class:"ch-sq"+(G.last&&(G.last.from===sq||G.last.to===sq)?" last":"")+(G.check===sq?" chk":"")+(chSel===sq?" sel":""),"data-sq":sq,"aria-label":(piece?(piece.color==="w"?"أبيض ":"أسود ")+CH_NAME[piece.type]+" ":"")+sq,style:"background:"+(dark?lk.sq[0]:lk.sq[1])});
+    if(piece){
+      const pc=h("span",{class:"ch-pc",style:"color:"+(piece.color==="w"?lk.pc[0]:lk.pc[1])},CH_GLYPH[piece.type]);
+      btn.append(pc);
+    }else if(fromSet.has(sq)){
+      const cap=moves.some(m=>m.from===chSel&&m.to===sq&&m.captured);
+      btn.append(h("span",{class:"ch-dot"+(cap?" cap":""),"aria-hidden":"true"}));
+    }
+    if(fromSet.has(sq)&&piece)btn.append(h("span",{class:"ch-dot cap","aria-hidden":"true"}));
+    bd.append(btn);
+  }
+  if(G.last&&G.last.from&&G.last.to&&chAnimSeq!==G.seq){
+    chAnimSeq=G.seq;
+    const pc=bd.querySelector('[data-sq="'+G.last.to+'"] .ch-pc');
+    chAnimate(pc,G.last.from);
+  }
+  const botSeat=flip?1:0,topSeat=1-botSeat;
+  const topColor=topSeat===0?"w":"b",botColor=botSeat===0?"w":"b";
+  chPaintCaps($("chCapsTop"),chCaptures(board,botColor),lk);
+  chPaintCaps($("chCapsBot"),chCaptures(board,topColor),lk);
+  const ol=$("chMoves");if(ol){ol.textContent="";
+    for(let i=0;i<G.sans.length;i+=2){
+      const n=fmt(i/2+1);
+      ol.append(h("li",{},n+". "+G.sans[i]+(G.sans[i+1]?" "+G.sans[i+1]:"")));
+    }
+    ol.scrollLeft=ol.scrollWidth;
+  }
+  const rs=$("chResign"),dr=$("chDraw");
+  const live=G.winner==null&&!G.draw;
+  if(rs)rs.disabled=!live||mine<0;
+  if(dr){
+    dr.disabled=!live||mine<0;
+    if(G.offer==null)dr.textContent="عرض تعادل";
+    else if(G.offer===mine)dr.textContent="عرضت تعادل";
+    else dr.textContent="اقبل التعادل";
+  }
+  chPaintWin();
+  if(chPromo)chShowPromo();else chHidePromo();
+  void myColor;
+}
+function chTick(){
+  if(screen!=="ch"||!G||G.game!=="chess")return;
+  chPaintClocks();
+  if(G.winner!=null||G.draw||!G.ck)return;
+  const now=Date.now();
+  const left=G.ck.left[G.turn]-Math.max(0,now-(G.ck.at||now));
+  if(left>-150||chFlagSeq===G.seq)return;
+  chFlagSeq=G.seq;
+  chSend({t:"flag"});
+}
+async function chSend(a){
+  if(!G||G.game!=="chess"||!globalThis.CHESS)return;
+  const seat=chMySeat();
+  if(seat<0)return;
+  const act=Object.assign({now:Date.now()},a);
+  const selfFlag=a.t==="flag"&&G.turn===seat;
+  const who=selfFlag?1-seat:seat;
+  if(!selfFlag){
+    const err=globalThis.CHESS.rules.legal(G,who,act);
+    if(err){sfx("bad");toast(err,"bad");return}
+  }else if(mode==="local"){
+    const err=globalThis.CHESS.rules.legal(G,who,act);
+    if(err){sfx("bad");toast(err,"bad");return}
+  }
+  chPromo=null;chHidePromo();chSel="";
+  if(mode==="local"){
+    G=globalThis.CHESS.rules.apply(G,who,act);
+    sfx(G.winner!=null?"win":G.draw?"move":G.check?"bad":"move");
+    chRender();
+    if(G.winner!=null||G.draw)chessClaim();
+    else chLocalBot();
+    return;
+  }
+  if(mode==="solo"){
+    if(NG.busy||!NG.solo)return;
+    setNetBusy(true);
+    try{
+      const r=await api("solo_act",{id:NG.solo.id,gseq:G.seq,a:act});
+      G=r.state;sfx(G.winner!=null?"win":G.check?"bad":"move");
+      if(G.winner!=null||G.draw)chessClaim();
+    }catch(e){if(!(a.t==="flag"&&G&&(G.winner!=null||G.draw))){toast(e.message,"bad");sfx("bad")}}
+    finally{setNetBusy(false);if(G)chRender()}
+    return;
+  }
+  if(mode==="room"){
+    if(NG.busy||!NG.room)return;
+    const seq=G.seq;setNetBusy(true);
+    try{
+      const r=await api("room_act",{code:NG.room.code,gseq:seq,a:act});
+      if(r&&r.room)onRoomRow(r.room,true);
+    }catch(e){if(!(a.t==="flag"&&G&&(G.winner!=null||G.draw))){toast(e.message,"bad");sfx("bad");chFlagSeq=-1}}
+    finally{setNetBusy(false);if(G&&screen==="ch")chRender()}
+  }
+}
+function chTryMove(from,to){
+  if(!from||!to||from===to){chSel=to&&chOwn(to)?to:"";chRender();return}
+  const c=chPos();
+  const ms=c.moves({verbose:true}).filter(m=>m.from===from&&m.to===to);
+  if(!ms.length){if(chOwn(to))chSel=to;else{sfx("bad");chSel=""}chRender();return}
+  if(ms.some(m=>m.promotion)){chPromo={from,to,opts:[...new Set(ms.map(m=>m.promotion))]};chShowPromo();return}
+  chSend({t:"mv",from,to,promotion:""});
+}
+function chOwn(sq){
+  const mine=chMySeat();if(mine<0||!G)return false;
+  const c=chPos(),b=c.board();
+  const f="abcdefgh".indexOf(sq[0]),r=8-Number(sq[1]);
+  const p=b[r]&&b[r][f];
+  return !!(p&&p.color===(mine===0?"w":"b"));
+}
+function chGhostAt(x,y,glyph,color){
+  let g=$("chGhost");
+  if(!g){g=h("div",{id:"chGhost",style:"position:fixed;z-index:40;pointer-events:none;font-size:42px;line-height:1;transform:translate(-50%,-50%)"});document.body.append(g)}
+  g.style.left=x+"px";g.style.top=y+"px";g.style.color=color;g.textContent=glyph;
+}
+function chessClaim(){
+  if(!G||G.game!=="chess"||chClaimed===G.mid)return;
+  if(G.winner==null&&!G.draw)return;
+  chClaimed=G.mid;
+  const seat=chMySeat();
+  const won=seat>=0&&G.winner===seat&&!G.draw;
+  const payable=won&&((mode==="local"||mode==="solo")&&G.reason==="mate"||mode==="room"&&(G.reason==="mate"||G.reason==="resign"||G.reason==="time"));
+  if(!payable){lastResult={mid:G.mid,won:!!won,skipped:G.draw?"draw":"loss"};chPaintWin();return}
+  if(!Cloud.on){lastResult={mid:G.mid,won:true,skipped:"offline"};chPaintWin();return}
+  let requestId=("ch-"+String(G.mid||"")).replace(/[^A-Za-z0-9:_-]/g,"").slice(0,80);
+  if(requestId.length<8)requestId=("ch-req-"+Date.now()).slice(0,80);
+  const body={requestId};
+  if(mode==="room"&&NG.room)body.code=NG.room.code;
+  else if(mode==="solo"&&NG.solo)body.solo=NG.solo.id;
+  else{
+    if(!NG.chNonce){lastResult={mid:G.mid,won:true,skipped:"offline"};chPaintWin();return}
+    body.nonce=NG.chNonce;body.sans=(G.sans||[]).slice();
+  }
+  const send=()=>api("chess_finish",body).then(r=>{
+    if(typeof r.coins==="number"){P.coins=r.coins;if(r.version)P.__ver=r.version;saveProfile()}
+    if(r.capped&&!(r.amount>0))lastResult={mid:G.mid,won:true,skipped:"cap"};
+    else lastResult={mid:G.mid,won:!!r.won,out:r.won?{xp:0,coins:r.amount||0,items:[],levelUps:[],ach:[],missions:[],xpBefore:P.xp,levelBefore:P.level,streak:0}:null,skipped:r.won?null:"loss"};
+    if(screen==="ch")chPaintWin();
+  }).catch(()=>{lastResult={mid:G.mid,won:true,skipped:"offline"};if(screen==="ch")chPaintWin()});
+  if(body.nonce){const wait=Math.max(0,12000-(Date.now()-(NG.chT0||Date.now())));setTimeout(send,wait)}
+  else send();
+}
+function chAgain(){
+  if(mode==="solo")return netSoloStart(true);
+  if(mode==="room"){if(NG.room&&NG.room.host===cid)netRoomCall("room_rematch");return}
+  chStartLocal();
+}
+$("chQuit").onclick=()=>{
+  const q=$("chQuit");
+  if(G&&G.winner==null&&!G.draw&&Date.now()-quitArm>2500){
+    quitArm=Date.now();q.textContent="متأكد؟";q.classList.add("arm");
+    setTimeout(()=>{q.textContent="خروج";q.classList.remove("arm")},2500);return;
+  }
+  quitArm=0;q.textContent="خروج";q.classList.remove("arm");goHome();
+};
+$("chSound").onclick=()=>{P.settings.mute=!P.settings.mute;saveProfile();chPaintSound();renderSound();if(!P.settings.mute)sfx("move")};
+$("chFlip").onclick=()=>{chFlipManual=!chFlip();sfx("move");chRender()};
+$("chResign").onclick=()=>{if(!G||G.winner!=null||G.draw)return;confirmSheet("استسلام","تسلّم الجولة للخصم؟","استسلام",()=>chSend({t:"resign"}))};
+$("chDraw").onclick=()=>{
+  if(!G||G.winner!=null||G.draw)return;
+  const mine=chMySeat();
+  if(G.offer==null){if(G.turn!==mine){toast("عرض التعادل في دورك");return}chSend({t:"draw"});return}
+  if(G.offer===mine){toast("ننتظر رد الخصم");return}
+  openSheet((c,close)=>{
+    c.append(h("h3",{},"عرض تعادل"),h("p",{class:"lead"},"الخصم يعرض التعادل."),
+      h("div",{class:"row"},
+        h("button",{class:"primary",type:"button",onclick:()=>{close();chSend({t:"draw_yes"})}},"أقبل"),
+        h("button",{type:"button",onclick:()=>{close();chSend({t:"draw_no"})}},"أرفض")));
+  });
+};
+$("chAgain").onclick=chAgain;
+$("chHome").onclick=goHome;
+$("chLobby").onclick=()=>{if(mode==="room")netRoomCall("room_lobby")};
+$("chPromo").addEventListener("click",e=>{
+  const b=e.target.closest("[data-promo]");if(!b||!chPromo)return;
+  const pr=chPromo;chPromo=null;chHidePromo();
+  chSend({t:"mv",from:pr.from,to:pr.to,promotion:b.dataset.promo});
+});
+$("chBoard").addEventListener("pointerdown",e=>{
+  if(!G||G.game!=="chess"||(e.button!=null&&e.button!==0))return;
+  const sqEl=e.target.closest(".ch-sq");if(!sqEl)return;
+  const sq=sqEl.dataset.sq;
+  if(chSel&&chSel!==sq){chTryMove(chSel,sq);return}
+  if(!chOwn(sq)||!canAct()){chSel="";chRender();return}
+  const lk=chLook(),mine=chMySeat();
+  chDrag={from:sq,x:e.clientX,y:e.clientY,moved:false,id:e.pointerId,glyph:sqEl.querySelector(".ch-pc")?sqEl.querySelector(".ch-pc").textContent:"",color:mine===0?lk.pc[0]:lk.pc[1]};
+  chSel=sq;
+  try{$("chBoard").setPointerCapture(e.pointerId)}catch(err){}
+  sqEl.classList.add("sel");
+});
+$("chBoard").addEventListener("pointermove",e=>{
+  if(!chDrag||e.pointerId!==chDrag.id)return;
+  if(Math.hypot(e.clientX-chDrag.x,e.clientY-chDrag.y)>8)chDrag.moved=true;
+  if(chDrag.moved)chGhostAt(e.clientX,e.clientY,chDrag.glyph,chDrag.color);
+});
+$("chBoard").addEventListener("pointerup",e=>{
+  if(!chDrag||e.pointerId!==chDrag.id)return;
+  const d=chDrag;chDrag=null;
+  const ghost=$("chGhost");if(ghost)ghost.remove();
+  if(!d.moved){chSel=d.from;chRender();return}
+  const under=document.elementFromPoint(e.clientX,e.clientY);
+  const sq=under&&under.closest?under.closest(".ch-sq"):null;
+  if(sq)chTryMove(d.from,sq.dataset.sq);
+  else{chSel="";chRender()}
+});
+$("chBoard").addEventListener("pointercancel",()=>{chDrag=null;const g=$("chGhost");if(g)g.remove()});
 
 /* ---- helpers shared with games that live in their own files (BALL CLASH) ---- */
 window.SP={h,ic,htmlEl,fmt,show,toast,sfx,buzz,openSheet,openGame,api,applyProfile,setCoins,coinEl,online:()=>Platform.kind==="web"&&!!Cloud.on,reduced:()=>matchMedia("(prefers-reduced-motion: reduce)").matches,get P(){return P},get screen(){return screen}};

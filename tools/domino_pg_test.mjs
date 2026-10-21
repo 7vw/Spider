@@ -95,4 +95,54 @@ catch (e) { tableDenied = /permission denied/i.test(e.message); }
 assert.equal(tableDenied, true);
 console.log("ok only the definer function can write receipts");
 
+const NONCE = "ABCDEFGHJKLMNPQR23";
+const opened = await withRole("service_role", c => c.query(
+  "select public.bot_deal_open($1::uuid,$2,'domino',7,'{\"n\":2,\"bots\":[0,2]}'::jsonb,7200) as j",
+  [A, NONCE]
+));
+assert.equal(opened.rows[0].j.code, "ok");
+const early = await withRole("service_role", c => c.query(
+  "select public.bot_deal_take($1::uuid,$2,'domino',12000) as j",
+  [A, NONCE]
+));
+assert.equal(early.rows[0].j.code, "early");
+await admin.query("update private.bot_deals set created_at = pg_catalog.now() - interval '30 seconds' where nonce = $1", [NONCE]);
+const taken = await withRole("service_role", c => c.query(
+  "select public.bot_deal_take($1::uuid,$2,'domino',12000) as j",
+  [A, NONCE]
+));
+assert.equal(taken.rows[0].j.code, "ok");
+assert.equal(taken.rows[0].j.seed, 7);
+assert.equal(taken.rows[0].j.spec.n, 2);
+const takenAgain = await withRole("service_role", c => c.query(
+  "select public.bot_deal_take($1::uuid,$2,'domino',12000) as j",
+  [A, NONCE]
+));
+assert.equal(takenAgain.rows[0].j.code, "used");
+const missing = await withRole("service_role", c => c.query(
+  "select public.bot_deal_take($1::uuid,$2,'domino',12000) as j",
+  [A, "ZZZZZZZZZZZZZZZZZZ"]
+));
+assert.equal(missing.rows[0].j.code, "missing");
+const OLD = "CHESSDEALNONCE1234";
+await withRole("service_role", c => c.query(
+  "select public.bot_deal_open($1::uuid,$2,'chess',11,'{\"bots\":[0,2],\"level\":2,\"color\":\"w\"}'::jsonb,60) as j",
+  [A, OLD]
+));
+await admin.query("update private.bot_deals set expires_at = pg_catalog.now() - interval '1 second', created_at = pg_catalog.now() - interval '1 hour' where nonce = $1", [OLD]);
+const expired = await withRole("service_role", c => c.query(
+  "select public.bot_deal_take($1::uuid,$2,'chess',12000) as j",
+  [A, OLD]
+));
+assert.equal(expired.rows[0].j.code, "expired");
+let dealDenied = false;
+try { await withRole("anon", c => c.query("select public.bot_deal_open($1::uuid,$2,'domino',7,'{}'::jsonb,7200)", [A, "ANONSHOULDNOTOPEN1"])); }
+catch (e) { dealDenied = /permission denied/i.test(e.message); }
+assert.equal(dealDenied, true);
+let dealTable = false;
+try { await withRole("service_role", c => c.query("select * from private.bot_deals")); }
+catch (e) { dealTable = /permission denied/i.test(e.message); }
+assert.equal(dealTable, true);
+console.log("ok a bot deal is private, single-use, and refuses an early finish");
+
 await admin.end();
