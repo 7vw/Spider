@@ -2,7 +2,9 @@
 // Live v8 plus the Ball Clash coin shop. Paste this whole file into
 // Supabase Dashboard → Edge Functions → spider → Code → Deploy.
 // Rollback is the saved v8 file (v8.index.ts). Do not deploy until Mohammed approves.
-// It needs no secrets from you: Supabase provides SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to every function.
+// Supabase provides SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to every function.
+// Daily word is the exception. Set KALIMA_SECRET, or one row in public.game_secrets, before turning it on.
+// Without that secret the daily game stays off and the function does not send an answer.
 // Shop balls are added by BC_NEW_DATA.apply inside the pasted scripts below.
 // Do not also call merge(): apply already defined those ids, and merge throws.
 // @ts-nocheck
@@ -2743,6 +2745,67 @@ function matchCtx(G,seat,mode,won,role,extra){
     xpMul:role==="owner"&&P.owner.xpBoost?10:1,coinMul:role==="owner"&&P.owner.coinBoost?10:1},extra||{});
 }
 function riyadhDay(ms){return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Riyadh",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(ms))}
+/* @kalima-pick-start */
+/* Daily answer. The pool order in this file is not the schedule.
+   The owner sets one of these and never commits the value:
+     KALIMA_SECRET=a-random-string-of-at-least-16-chars
+     insert into public.game_secrets (k, v) values ('kalima', '{"s":"REPLACE-WITH-A-RANDOM-STRING-OF-AT-LEAST-16-CHARS"}') on conflict (k) do update set v = excluded.v, updated_at = now();
+   The env var wins over the table. If both are missing or shorter than 16 characters,
+   word_start returns disabled and word_guess refuses. Neither response includes the answer. */
+let kalimaPermCache=null;
+function kalimaSecretText(env, row){
+  const e=String(env||"");
+  if(e.length>=16)return e;
+  let s="";
+  if(typeof row==="string")s=row;
+  else if(row&&typeof row==="object")s=typeof row.s==="string"?row.s:(typeof row.secret==="string"?row.secret:"");
+  return s.length>=16?s:"";
+}
+async function kalimaHmac(secret, msg){
+  const enc=new TextEncoder();
+  const key=await crypto.subtle.importKey("raw", enc.encode(secret), {name:"HMAC", hash:"SHA-256"}, false, ["sign"]);
+  return new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(String(msg))));
+}
+async function kalimaPerm(secret, n){
+  if(kalimaPermCache&&kalimaPermCache.secret===secret&&kalimaPermCache.n===n)return kalimaPermCache.perm;
+  const perm=Array.from({length:n}, (_,i)=>i);
+  let block=0, buf=new Uint8Array(0), at=0;
+  async function next32(){
+    if(at+4>buf.length){buf=await kalimaHmac(secret, "kalima-perm:"+block); block++; at=0}
+    const x=((buf[at]<<24)|(buf[at+1]<<16)|(buf[at+2]<<8)|buf[at+3])>>>0;
+    at+=4;
+    return x;
+  }
+  for(let i=n-1;i>0;i--){
+    const span=i+1;
+    const limit=Math.floor(0x100000000/span)*span;
+    let r=await next32();
+    while(r>=limit)r=await next32();
+    const j=r%span;
+    const t=perm[i]; perm[i]=perm[j]; perm[j]=t;
+  }
+  kalimaPermCache={secret, n, perm};
+  return perm;
+}
+async function kalimaAnswer(secret, day, list){
+  const perm=await kalimaPerm(secret, list.length);
+  const mac=await kalimaHmac(secret, String(day));
+  const x=((mac[0]<<24)|(mac[1]<<16)|(mac[2]<<8)|mac[3])>>>0;
+  return list[perm[x%list.length]];
+}
+async function kalimaSecret(db){
+  let env="";
+  try{
+    if(typeof Deno!=="undefined"&&Deno.env)env=String(Deno.env.get("KALIMA_SECRET")||"");
+    else if(typeof process!=="undefined"&&process.env)env=String(process.env.KALIMA_SECRET||"");
+  }catch(e){env=""}
+  let row=null;
+  if(env.length<16&&db&&typeof db.getSecret==="function"){
+    try{row=await db.getSecret("kalima")}catch(e){row=null}
+  }
+  return kalimaSecretText(env, row);
+}
+/* @kalima-pick-end */
 async function settle(db,uid,G,seat,mode,won,extra){
   if(G&&G.game==="domino")return null;   /* dom_finish pays 10 or 20 after it checks the round */
   if(G.seq-(G.s0||G.seq)<(G.game==="ballclash"?1:G.game==="xo"?5:G.game==="wordweb"?3:(mode==="online"?6:3)))return null;     /* too short to count */
@@ -3561,6 +3624,8 @@ async function handle(action,p,user,db){
   case "word_start":{
     limit(uid,"word",40,60000);
     const day=riyadhDay(clock.now());
+    const secret=await kalimaSecret(db);
+    if(!secret)return {day,guesses:[],status:"off",disabled:true,streak:0,best:0,tries:6};
     const r=await db.rpc("word_load",{p_user:uid,p_day:day});
     if(!r||r.error||!r.data||r.data.code!=="ok")fail("bad","تعذّر فتح كلمة اليوم");
     return {day,guesses:r.data.guesses||[],status:r.data.status||"open",streak:r.data.streak||0,best:r.data.best||0,tries:6};
@@ -3569,6 +3634,8 @@ async function handle(action,p,user,db){
     limit(uid,"wordfast",1,350);
     limit(uid,"word",40,60000);
     const day=riyadhDay(clock.now());
+    const secret=await kalimaSecret(db);
+    if(!secret)fail("bad","كلمة اليوم غير مفعّلة");
     const guess=KALIMA.norm(p.word);
     if(!/^[\u0627-\u064A]{5}$/.test(guess)||!KALIMA_GUESS.has(guess))fail("bad","الكلمة مو في القائمة");
     const cur=await db.rpc("word_load",{p_user:uid,p_day:day});
@@ -3576,7 +3643,7 @@ async function handle(action,p,user,db){
     const rows=Array.isArray(cur.data.guesses)?cur.data.guesses:[];
     if(rows.some(g=>g&&g.w===guess))return {day,guesses:rows,status:cur.data.status||"open",streak:cur.data.streak||0,best:cur.data.best||0,tries:6,idempotent:true};
     if((cur.data.status&&cur.data.status!=="open")||rows.length>=6)fail("bad","خلصت كلمة اليوم");
-    const answer=KALIMA_ANSWERS[KALIMA.dayIndex(day,KALIMA_ANSWERS.length)];
+    const answer=await kalimaAnswer(secret, day, KALIMA_ANSWERS);
     const marks=KALIMA.score(answer,guess);
     const status=marks==="ggggg"?"won":rows.length+1>=6?"lost":"open";
     const saved=await db.rpc("word_apply",{p_user:uid,p_day:day,p_prev:KALIMA.prevDay(day),p_guess:guess,p_marks:marks,p_status:status});
@@ -3701,5 +3768,9 @@ if(typeof Deno==="undefined"||(Deno.env&&Deno.env.get("SPIDER_NO_SERVE"))){
   if(!KALIMA||KALIMA.score("مدرسه","مدرسه")!=="ggggg"||KALIMA.norm("مدرسة")!=="مدرسه")bootErr.push("kalima");
   if(!KALIMA_ANSWERS||KALIMA_ANSWERS.length<365||!KALIMA_GUESS.has(KALIMA_ANSWERS[0]))bootErr.push("kalima-list");
   if(KALIMA.dayIndex("2026-01-01",KALIMA_ANSWERS.length)!==0)bootErr.push("kalima-day");
+  if(riyadhDay(Date.parse("2026-10-20T20:59:00Z"))!=="2026-10-20")bootErr.push("riyadh-before");
+  if(riyadhDay(Date.parse("2026-10-20T21:00:00Z"))!=="2026-10-21")bootErr.push("riyadh-after");
+  if(kalimaSecretText("short", null)!=="")bootErr.push("kalima-secret-short");
+  if(kalimaSecretText("", {s:"0123456789abcdef"})!=="0123456789abcdef")bootErr.push("kalima-secret-row");
   if(bootErr.length)throw new Error("spider v9 boot: "+bootErr.join(","));
 }

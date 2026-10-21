@@ -5772,6 +5772,11 @@ function kmStart(mode){
   if(!Cloud.on){kmMsg="كلمة اليوم تحتاج اتصال بالخادم";kmStatus="offline";kmRender();return}
   api("word_start",{}).then(r=>{
     if(kmMode!=="daily")return;
+    if(r.disabled||r.status==="off"){
+      kmRows=[];kmStatus="off";kmStreak=0;kmBest=0;
+      kmMsg="كلمة اليوم غير مفعّلة على الخادم.";
+      kmRender();return;
+    }
     kmRows=Array.isArray(r.guesses)?r.guesses.filter(g=>g&&typeof g.w==="string"&&typeof g.m==="string").slice(0,6):[];
     kmStatus=r.status||"open";kmStreak=r.streak||0;kmBest=r.best||0;
     kmMsg=kmStatus==="won"?"صح! السلسلة "+fmt(kmStreak):kmStatus==="lost"?"خلصت محاولات اليوم.":"كلمة اليوم · سلسلة "+fmt(kmStreak);
