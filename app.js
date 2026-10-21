@@ -503,10 +503,22 @@ const XMARKS=[
   {id:"royal",name:"ملكي",rar:"legendary",how:"store",price:1350,st:{x:["#E6B85C","#8D65F6"],o:["#FFE7A3","#8D65F6"],k:"round",g:1}},
   {id:"creator",name:"الخالق",rar:"owner",how:"owner",st:{x:["#FFE7A3","#8D65F6"],o:["#FFF1C4","#B9A2FF"],k:"double",g:1}}
 ];
-const CATS={skin:SKINS,frame:FRAMES,deco:DECOS,bg:BGS,badge:BADGES,theme:THEMES,title:TITLES,board:BOARDS,web:WEBS,move:MOVES,win:WINS,emote:EMOTES,lobby:LOBBIES,sound:SOUNDS,xmark:XMARKS};
-const CAT_NAME={skin:"سكنات",frame:"إطارات",deco:"زينة",bg:"خلفيات",badge:"شارات",theme:"ألوان الاسم",title:"ألقاب",board:"طاولات",web:"خيوط",move:"تأثيرات الحركة",win:"تأثيرات الفوز",emote:"تفاعلات",lobby:"غرف الانتظار",sound:"حزم الأصوات",xmark:"أشكال XO"};
-const CAT_ONE={skin:"سكن",xmark:"شكل XO",frame:"إطار",deco:"زينة",bg:"خلفية",badge:"شارة",theme:"لون اسم",title:"لقب",board:"طاولة",web:"خيط",move:"تأثير حركة",win:"تأثير فوز",emote:"تفاعل",lobby:"غرفة انتظار",sound:"حزمة أصوات"};
-const CAT_MINE={skin:"سكنك",frame:"إطارك",deco:"زينتك",bg:"خلفيتك",badge:"شارتك",theme:"لون اسمك",title:"لقبك",board:"طاولتك",web:"خيطك",move:"تأثير حركتك",win:"تأثير فوزك",emote:"تفاعلك",lobby:"غرفتك",sound:"أصواتك",xmark:"شكل XO حقك"};
+const DOMTILES=[
+  {id:"classic",name:"عاجي",rar:"common",how:"free",look:"classic"},
+  {id:"night",name:"ليل",rar:"common",how:"store",price:180,look:"night"},
+  {id:"jade",name:"يشم",rar:"rare",how:"store",price:320,look:"jade"},
+  {id:"blood",name:"عقيق",rar:"rare",how:"store",price:450,look:"blood"}
+];
+const DOMTABLES=[
+  {id:"wood",name:"خشب",rar:"common",how:"free",look:"wood"},
+  {id:"marble",name:"رخام",rar:"common",how:"store",price:160,look:"marble"},
+  {id:"felt",name:"جوخ",rar:"rare",how:"store",price:280,look:"felt"},
+  {id:"royal",name:"ملكي",rar:"rare",how:"store",price:420,look:"royal"}
+];
+const CATS={skin:SKINS,frame:FRAMES,deco:DECOS,bg:BGS,badge:BADGES,theme:THEMES,title:TITLES,board:BOARDS,web:WEBS,move:MOVES,win:WINS,emote:EMOTES,lobby:LOBBIES,sound:SOUNDS,xmark:XMARKS,domtile:DOMTILES,domtable:DOMTABLES};
+const CAT_NAME={skin:"سكنات",frame:"إطارات",deco:"زينة",bg:"خلفيات",badge:"شارات",theme:"ألوان الاسم",title:"ألقاب",board:"طاولات",web:"خيوط",move:"تأثيرات الحركة",win:"تأثيرات الفوز",emote:"تفاعلات",lobby:"غرف الانتظار",sound:"حزم الأصوات",xmark:"أشكال XO",domtile:"أحجار الدومينو",domtable:"طاولات الدومينو"};
+const CAT_ONE={skin:"سكن",xmark:"شكل XO",frame:"إطار",deco:"زينة",bg:"خلفية",badge:"شارة",theme:"لون اسم",title:"لقب",board:"طاولة",web:"خيط",move:"تأثير حركة",win:"تأثير فوز",emote:"تفاعل",lobby:"غرفة انتظار",sound:"حزمة أصوات",domtile:"حجر دومينو",domtable:"طاولة دومينو"};
+const CAT_MINE={skin:"سكنك",frame:"إطارك",deco:"زينتك",bg:"خلفيتك",badge:"شارتك",theme:"لون اسمك",title:"لقبك",board:"طاولتك",web:"خيطك",move:"تأثير حركتك",win:"تأثير فوزك",emote:"تفاعلك",lobby:"غرفتك",sound:"أصواتك",xmark:"شكل XO حقك",domtile:"حجارك",domtable:"طاولة الدومينو"};
 const EQUIP_TYPES=Object.keys(CATS).filter(t=>t!=="emote");
 const ITEM_INDEX={};
 for(const t in CATS){ITEM_INDEX[t]={};CATS[t].forEach((it,i)=>{it.type=t;ITEM_INDEX[t][it.id]=it;if(t==="skin")it.idx=i})}
@@ -808,25 +820,28 @@ function ensureGamesCss(){
     let link=document.querySelector("link[data-games-css]");
     if(link&&link.rel==="stylesheet"){if(link.sheet){ok();return}link.addEventListener("load",()=>ok(),{once:true});link.addEventListener("error",()=>ok(),{once:true});return}
     link=document.createElement("link");
-    link.rel="stylesheet";link.href="games.css?v=9";link.setAttribute("data-games-css","");
+    link.rel="stylesheet";link.href="games.css?v=10";link.setAttribute("data-games-css","");
     link.onload=()=>ok();link.onerror=()=>ok();
     document.head.append(link);
   });
   return gamesCssP;
 }
+function loadGameScript(src){
+  return new Promise((ok,bad)=>{
+    const s=document.createElement("script");
+    s.src=src;s.onload=()=>ok();s.onerror=()=>bad(new Error("games"));
+    document.head.append(s);
+  });
+}
 function ensureGames(){
   if(gamesP)return gamesP;
   gamesP=(async()=>{
     await ensureGamesCss();
-    await new Promise((ok,bad)=>{
-      if(globalThis.SPIDER_GAMES&&globalThis.SPIDER_GAMES.games){ok();return}
+    if(!(globalThis.SPIDER_GAMES&&globalThis.SPIDER_GAMES.games)){
       globalThis.SPIDER_GAMES={clock, newMid};
-      const s=document.createElement("script");
-      s.src="js/minigames.js?v=5";
-      s.onload=()=>ok();
-      s.onerror=()=>bad(new Error("games"));
-      document.head.append(s);
-    });
+      await loadGameScript("js/domino_engine.js?v=1");
+      await loadGameScript("js/minigames.js?v=6");
+    }
     takeGames();
   })().catch(e=>{gamesP=null;throw e});
   return gamesP;
@@ -1661,6 +1676,7 @@ function itemPreview(t,it,big){
     case "lobby":return lobbyThumb(it.id,false);
     case "sound":return h("span",{class:"snd-ic"},ic("sound"));
     case "xmark":{const st=it.st,z=big?66:54;return htmlEl("span","fx-mini",`<svg viewBox="0 0 64 40" width="${z*1.5}" height="${z}" aria-hidden="true">${xoStyled(0,18,20,20,st,"#B9A2FF",1)}${xoStyled(1,46,20,20,st,"#FFB02E",1)}</svg>`)}
+    case "domtile":case "domtable":return domSwatch(t,it,!!big);
   }
   return h("span",{},"?");
 }
@@ -1694,6 +1710,7 @@ function bigPreview(t,it,box){
   else if(t==="emote"){const b=h("span",{class:"emo-st a-"+it.anim},emoteNode(it,60));wrap.append(b);
     sheetTimers.push(setInterval(()=>{b.classList.remove("a-"+it.anim);void b.offsetWidth;b.classList.add("a-"+it.anim)},1800))}
   else if(t==="lobby")wrap.append(lobbyThumb(it.id,true));
+  else if(t==="domtile"||t==="domtable")wrap.append(domSwatch(t,it,true));
   else if(t==="sound"){const r=h("div",{class:"row",style:"flex-wrap:wrap;padding:12px;width:100%"});
     for(const [k,l] of [["move","حركة"],["wall","خيط"],["win","فوز"],["unlock","فتح مكافأة"]])r.append(h("button",{class:"small",onclick:()=>sfx(k,it.id,true)},"▶ "+l));
     wrap.append(r);if(P.settings.mute)wrap.append(h("p",{class:"hint",style:"margin:0 0 8px"},"الصوت مكتوم من الإعدادات، والمعاينة تشتغل رغم كذا."))}
@@ -1717,6 +1734,7 @@ function miniIcon(t,id){
     case "lobby":return h("span",{class:"lt-"+id,style:"display:inline-block;line-height:0"},h("span",{class:"lobthumb mini-lob"}));
     case "sound":return ic("sound");
     case "xmark":return htmlEl("span","",`<svg viewBox="0 0 40 20" width="30" height="15" aria-hidden="true">${xoStyled(0,10,10,11,it.st,"#B9A2FF",1)}${xoStyled(1,30,10,11,it.st,"#FFB02E",1)}</svg>`);
+    case "domtile":case "domtable":return domSwatch(t,it,false);
   }
   return h("span",{});
 }
@@ -2231,6 +2249,13 @@ const GAMES=[{
   players:"١–٤ لاعبين",length:"١–٢ دقيقة",colors:["#E62948","#E6B85C"],
   modes:["online","quick","team"],cosmetics:[],maxBots:0,maxLocal:0,
   rules:["اختر كورة لفريقك، والكمبيوتر يختار كورته (أو اختر له).","المعركة تمشي لحالها: الكور تنط وتتصادم، والأسلحة تضرب.","كل ضربة ناجحة تطوّر سلاح الكورة: يطول، أو يسرع، أو تقوى دفعته.","يفوز الفريق اللي يبقى له آخر كورة. ولو خلص الوقت، يفوز الأكثر صحة."]
+},{
+  id:"domino",name:"DOMINO",nameAr:"دومينو",category:"strategy",status:"live",
+  tagline:"أبو ستة: سحب لاثنين، وفرق لأربعة",
+  desc:"دومينو الدبل سكس بجولة وحدة. تلعب لحالك ضد الكمبيوتر، أو تفتح غرفة خاصة والكمبيوتر يكمّل المقاعد الفاضية.",
+  players:"٢ أو ٤",length:"٥–١٢ دقيقة",colors:["#E6B85C","#1C140C"],
+  modes:["online","bot","local"],cosmetics:["domtile","domtable"],maxBots:3,maxLocal:4,
+  rules:["الجولة وحدة، مو سباق لمية.","اثنين: كل واحد ٧ أحجار، والباقي سحب. ما عندك لعب؟ تسحب حجر، وإذا انلعب تكمل، وإلا يمر الدور.","أربعة: فرق متقابلة، ٧ أحجار وما فيه سحب. اللي ما يقدر يلعب يمرّر.","يفتح أعلى دبل، وإذا ما فيه دبل يفتح أعلى مجموع. الدبل يعرض عرض بس وما يفتح طرف ثالث.","اللي يخلّص أحجاره ياخذ نقاط الخصم. وإذا انسدّت الطاولة، الأقل نقاط ياخذ الفرق. التعادل ما يعطي عملات."]
 }];
 let curGame="webbound";
 let wlBoardCache=null,wlBoardAt=0;
@@ -2242,8 +2267,20 @@ const MODES={
   local:{name:"نفس الجهاز",sub:"٢–٤ لاعبين على جوال واحد",icon:"users"}
 };
 const gameById=id=>GAMES.find(g=>g.id===id)||GAMES[0];
-const coverSvg=id=>id==="ballclash"?bcCoverSvg():id==="nightweb"?nwCoverSvg():id==="webnest"?nsCoverSvg():id==="bluff"?bfCoverSvg():id==="flyhunt"?fhCoverSvg():id==="webwar"?wrCoverSvg():id==="dama"?dmCoverSvg():id==="webline"?wlCoverSvg():id==="webgrid"?wgCoverSvg():id==="xo"?xoCoverSvg():id==="wordweb"?wwCoverSvg():wbCoverSvg();
-const iconSvg=id=>id==="ballclash"?bcIconSvg():id==="nightweb"?nwIconSvg():id==="webnest"?nsIconSvg():id==="bluff"?bfIconSvg():id==="flyhunt"?fhIconSvg():id==="webwar"?wrIconSvg():id==="dama"?dmIconSvg():id==="webline"?wlIconSvg():id==="webgrid"?wgIconSvg():id==="xo"?xoIconSvg():id==="wordweb"?wwIconSvg():wbIconSvg();
+function domCoverSvg(){
+  return `<svg viewBox="0 0 360 200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="غلاف دومينو: طاولة غامقة وحجرين">
+<defs><linearGradient id="dmf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2A1840"/><stop offset="1" stop-color="#140E12"/></linearGradient></defs>
+<rect width="360" height="200" fill="url(#dmf)"/>
+<ellipse cx="180" cy="118" rx="150" ry="46" fill="#3A2416"/>
+<g transform="translate(132 78) rotate(-18)"><rect width="36" height="68" rx="6" fill="#F3E6C8"/><line x1="4" y1="34" x2="32" y2="34" stroke="#C8B48A"/><circle cx="18" cy="17" r="3.2" fill="#1C140C"/><circle cx="12" cy="46" r="3" fill="#1C140C"/><circle cx="24" cy="56" r="3" fill="#1C140C"/></g>
+<g transform="translate(188 84) rotate(12)"><rect width="36" height="68" rx="6" fill="#1B2433" stroke="#E6B85C"/><line x1="4" y1="34" x2="32" y2="34" stroke="#E6B85C"/><circle cx="18" cy="12" r="2.6" fill="#E6B85C"/><circle cx="18" cy="22" r="2.6" fill="#E6B85C"/><circle cx="12" cy="46" r="2.6" fill="#E6B85C"/><circle cx="24" cy="46" r="2.6" fill="#E6B85C"/><circle cx="12" cy="56" r="2.6" fill="#E6B85C"/><circle cx="24" cy="56" r="2.6" fill="#E6B85C"/></g>
+</svg>`;
+}
+function domIconSvg(){
+  return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#24180F"/><rect x="22" y="8" width="20" height="48" rx="4" fill="#F3E6C8"/><line x1="26" y1="32" x2="38" y2="32" stroke="#C8B48A"/><circle cx="32" cy="20" r="2.4" fill="#1C140C"/><circle cx="28" cy="42" r="2.2" fill="#1C140C"/><circle cx="36" cy="48" r="2.2" fill="#1C140C"/></svg>`;
+}
+const coverSvg=id=>id==="domino"?domCoverSvg():id==="ballclash"?bcCoverSvg():id==="nightweb"?nwCoverSvg():id==="webnest"?nsCoverSvg():id==="bluff"?bfCoverSvg():id==="flyhunt"?fhCoverSvg():id==="webwar"?wrCoverSvg():id==="dama"?dmCoverSvg():id==="webline"?wlCoverSvg():id==="webgrid"?wgCoverSvg():id==="xo"?xoCoverSvg():id==="wordweb"?wwCoverSvg():wbCoverSvg();
+const iconSvg=id=>id==="domino"?domIconSvg():id==="ballclash"?bcIconSvg():id==="nightweb"?nwIconSvg():id==="webnest"?nsIconSvg():id==="bluff"?bfIconSvg():id==="flyhunt"?fhIconSvg():id==="webwar"?wrIconSvg():id==="dama"?dmIconSvg():id==="webline"?wlIconSvg():id==="webgrid"?wgIconSvg():id==="xo"?xoIconSvg():id==="wordweb"?wwIconSvg():wbIconSvg();
 const SVGNS="http://www.w3.org/2000/svg";
 function ic(n,cls){const s=document.createElementNS(SVGNS,"svg");s.setAttribute("aria-hidden","true");s.setAttribute("class","ic"+(cls?" "+cls:""));const u=document.createElementNS(SVGNS,"use");u.setAttribute("href","#i-"+n);s.append(u);return s}
 function coinEl(txt){return h("span",{class:"coin-amt"},ic("coin","gold"),h("span",{},String(txt)))}
@@ -2480,9 +2517,10 @@ function renderWebbound(){
   $("pubSec").classList.toggle("hidden",Platform.kind!=="web");
   if(Platform.kind==="web"&&wbMode==="online"&&Date.now()-roomsAt>15000)loadRooms();
   const mb=g.maxBots||3;if(P.settings.botCount>mb)P.settings.botCount=mb;
-  document.querySelectorAll("#botCount button").forEach(b=>b.classList.toggle("hidden",+b.dataset.v>mb));
+  document.querySelectorAll("#botCount button").forEach(b=>{const v=+b.dataset.v;b.classList.toggle("hidden",g.id==="domino"?v===2:v>mb);b.textContent=g.id==="domino"?(v>=3?"٤ لاعبين":"٢ لاعبين"):["٠","١","٢","٣"][v]});
+  if(g.id==="domino"&&P.settings.botCount===2)P.settings.botCount=1;
   $("botCount").closest(".card").querySelectorAll(".lbl")[0].classList.toggle("hidden",mb<2);$("botCount").classList.toggle("hidden",mb<2);
-  document.querySelectorAll("[data-local]").forEach(b=>b.classList.toggle("hidden",+b.dataset.local>(g.maxLocal||4)));
+  document.querySelectorAll("[data-local]").forEach(b=>b.classList.toggle("hidden",g.id==="domino"?+b.dataset.local===3:+b.dataset.local>(g.maxLocal||4)));
   seg("botCount",P.settings.botCount,v=>{Act.settings({botCount:v});renderWebbound()});
   seg("botLevel",P.settings.botLevel,v=>{Act.settings({botLevel:v});renderWebbound()});
 }
@@ -2698,7 +2736,7 @@ function bcIconSvg(){return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect w
 /* ================= store ================= */
 let stTab="all",stShown=24;
 const SF={q:"",own:"all",rar:"all",sort:"price"};
-const ST_TABS=[["all","الكل"],["wish","المفضلة"],["bundles","الحزم"],["balls","صراع الكور"],["skin","سكنات"],["board","طاولات"],["web","خيوط"],["xmark","XO"],["frame","إطارات"],["deco","زينة"],["bg","خلفيات"],["badge","شارات"],["theme","ألوان الاسم"],["title","ألقاب"],["move","تأثيرات الحركة"],["win","تأثيرات الفوز"],["emote","تفاعلات"],["lobby","غرف الانتظار"],["sound","أصوات"]];
+const ST_TABS=[["all","الكل"],["wish","المفضلة"],["bundles","الحزم"],["balls","صراع الكور"],["domtile","أحجار"],["domtable","طاولة دومينو"],["skin","سكنات"],["board","طاولات"],["web","خيوط"],["xmark","XO"],["frame","إطارات"],["deco","زينة"],["bg","خلفيات"],["badge","شارات"],["theme","ألوان الاسم"],["title","ألقاب"],["move","تأثيرات الحركة"],["win","تأثيرات الفوز"],["emote","تفاعلات"],["lobby","غرف الانتظار"],["sound","أصوات"]];
 function tabs(el,list,cur,onPick){
   el.textContent="";
   for(const [id,label] of list)el.append(h("button",{class:"tab"+(id===cur?" on":""),role:"tab","aria-selected":String(id===cur),onclick:()=>onPick(id)},label));
@@ -2940,6 +2978,8 @@ const AVATAR_ICONS=[["spark","شرارة"],["moon","قمر"],["star","نجمة"]
 const CHAT_PRESETS=[["hi","هلا والله"],["come","يلا تعال"],["nice","كفو عليك"],["wait","استنى شوي"],["gg","لعبة حلوة"],["again","نلعب مرة ثانية؟"],["fast","يلا بسرعة"],["luck","حظ أوفر"]];
 const CHAT_EMOJI=[["e0","😂"],["e1","🔥"],["e2","👏"],["e3","😎"],["e4","🕸️"],["e5","👍"],["e6","😮"],["e7","❤️"]];
 let JOIN_CODE=(()=>{try{const q=new URLSearchParams(location.search).get("join")||"";const c=q.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,4);return /^[A-Z0-9]{4}$/.test(c)?c:""}catch(e){return ""}})();
+let JOIN_GAME=(()=>{try{return new URLSearchParams(location.search).get("g")==="domino"?"domino":""}catch(e){return ""}})();
+let INVITE_GAME="";
 function localFriendCode(){
   const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let h=2166136261;const s=String((P&&P.id)||"spider");
@@ -4176,7 +4216,7 @@ function buildRewards(box,r){
   box.textContent="";
   if(!r)return;
   if(r.skipped){
-    const msg={local:"مباريات نفس الجوال للمتعة وما تدخل في حسابك.",practice:"مباراة تدريب، بدون مكافآت.",spectator:"",short:"المباراة كانت قصيرة جدًا عشان تنحسب.",dup:""}[r.skipped];
+    const msg={local:"مباريات نفس الجوال للمتعة وما تدخل في حسابك.",practice:"مباراة تدريب، بدون مكافآت.",spectator:"",short:"المباراة كانت قصيرة جدًا عشان تنحسب.",dup:"",offline:"ما فيه اتصال، المكافأة تنحسب لما تتصل بالخادم.",cap:"وصلت حد مكافآت الدومينو اليوم: ٨ جولات.",draw:"تعادل، وما فيه عملات.",loss:""}[r.skipped];
     if(msg)box.append(h("p",{class:"hint",style:"margin:10px 0"},msg));
     return;
   }
@@ -4406,7 +4446,9 @@ joinEl.addEventListener("input",()=>{const v=joinEl.value.toUpperCase().replace(
 joinEl.addEventListener("keydown",e=>{if(e.key==="Enter")$("btnJoin").click()});
 $("btnJoin").onclick=()=>{const c=joinEl.value.trim().toUpperCase();if(!/^[A-Z0-9]{4}$/.test(c)){onlineErr("كود الغرفة ٤ حروف وأرقام، تأكد منه.");return}enterRoom(c,false)};
 $("btnStart").onclick=()=>{
-  if(mode==="invite"){curGame="webbound";beginLocal([{id:"L0",nick:P.nickname?myNick():"أنت",skin:skinIdx(eff("skin")),bot:0},{id:"B0",nick:BOT_NAMES[0],skin:1,bot:P.settings.botLevel}]);return}
+  if(mode==="invite"){
+    if(INVITE_GAME==="domino"){curGame="domino";ensureGames().then(()=>mgStartLocal(true)).catch(()=>toast("تعذّر تحميل اللعبة، تحقق من الاتصال وحاول مرة ثانية","bad"));return}
+    curGame="webbound";beginLocal([{id:"L0",nick:P.nickname?myNick():"أنت",skin:skinIdx(eff("skin")),bot:0},{id:"B0",nick:BOT_NAMES[0],skin:1,bot:P.settings.botLevel}]);return}
   if(mode!=="room")return startOnline();
   const row=NG.room,wait=row?row.members.slice(0,4).filter(m=>m.id!==row.host&&!m.ready):[];
   if(wait.length)confirmSheet("تبدأ الحين؟",(wait.length===1?wait[0].nick+" ما ضغط «أنا جاهز»":"فيه "+fmt(wait.length)+" لاعبين ما ضغطوا «أنا جاهز»")+". تبدأ رغم كذا؟","ابدأ",()=>netRoomCall("room_start",{force:true}));
@@ -4418,7 +4460,10 @@ $("btnRooms").addEventListener("click",()=>loadRooms());
 $("btnLobby").addEventListener("click",()=>{winDismissed=G?G.seq:-1;netRoomCall("room_lobby")});
 function inviteUrl(code){
   if(!code||!/^https?:/.test(location.href))return "";
-  const u=new URL(location.href);u.search="";u.hash="";u.searchParams.set("join",code);return u.toString();
+  const u=new URL(location.href);u.search="";u.hash="";u.searchParams.set("join",code);
+  const gm=(NG.room&&NG.room.settings&&NG.room.settings.game)||(mode==="invite"?INVITE_GAME:curGame);
+  if(gm==="domino")u.searchParams.set("g","domino");
+  return u.toString();
 }
 function inviteText(code){const url=inviteUrl(code);return "تعال نلعب معي على SPIDER 🕸️\nالغرفة الخاصة: "+code+(url?"\n"+url:"")}
 async function shareRoom(){
@@ -4740,7 +4785,7 @@ async function netHSolo(a){
     else if(r.state.winner!=null)lastResult={mid:r.state.mid,skipped:NG.solo.practice||r.practice?"practice":"short"};
     const steps=r.steps.slice(),fin=r.state;let prev=G;G=steps.shift()||fin;mgSound(prev);mgRender();
     for(const st of steps){await sleep(G.game==="bluff"?900:520);prev=G;G=st;mgSound(prev);mgRender()}
-    G=fin;}
+    G=fin;if(G&&G.game==="domino"&&(G.winner!=null||G.draw)&&!r.result)domClaim()}
   catch(e){toast(e.message,"bad");sfx("bad")}finally{setNetBusy(false);if(G)render()}
 }
 async function netSoloAct(a){
@@ -4824,7 +4869,7 @@ function decorateNetLobby(){
   const list=$("lobbyList");list.textContent="";list.className="slots";
   const ms=row.members,gm=(row.settings&&row.settings.game)||"webbound",maxS=MAX_PLAYERS[gm]||4;
   let gc=$("lobbyGameChip");if(!gc){gc=h("span",{class:"chip on sm",id:"lobbyGameChip"});$("lobbyCode").before(gc)}gc.textContent=gameById(gm).name;
-  let wc=$("lobbyCat");if(!wc){wc=h("div",{id:"lobbyCat"});list.after(wc)}wc.textContent="";wc.classList.toggle("hidden",gm!=="wordweb"&&gm!=="ballclash");
+  let wc=$("lobbyCat");if(!wc){wc=h("div",{id:"lobbyCat"});list.after(wc)}wc.textContent="";wc.classList.toggle("hidden",gm!=="wordweb"&&gm!=="ballclash"&&gm!=="domino");
   if(gm==="ballclash"){const st=row.settings||{},sz=st.bcSize||2,pk=st.bcPick||"secret",host=row.host===cid;
     wc.append(h("span",{class:"lbl mt"},"عدد الكور لكل لاعب"),host?h("div",{class:"chips"},...[1,2,3,4,5].map(n=>h("button",{class:"chip"+(sz===n?" on":""),onclick:()=>netRoomCall("room_settings",{bcSize:n})},fmt(n)))):h("p",{class:"hint",style:"margin:4px 0 0"},fmt(sz)+" كور"),
       h("span",{class:"lbl mt"},"طريقة الاختيار"),host?h("div",{class:"chips"},...[["secret","سري"],["draft","بالتناوب"]].map(v=>h("button",{class:"chip"+(pk===v[0]?" on":""),onclick:()=>netRoomCall("room_settings",{bcPick:v[0]})},v[1]))):h("p",{class:"hint",style:"margin:4px 0 0"},pk==="draft"?"بالتناوب":"سري"))}
@@ -4841,9 +4886,11 @@ function decorateNetLobby(){
   const me=ms.find(m=>m.id===cid),host=row.host===cid,rb=$("btnReady");
   rb.classList.toggle("hidden",host||!me||ms.indexOf(me)>=maxS);
   if(me&&!host){rb.textContent=me.ready?"إلغاء الجاهزية":"أنا جاهز";rb.classList.toggle("primary",!me.ready);rb.onclick=()=>{sfx("move");netRoomCall("room_ready",{ready:!me.ready})}}
-  const wait=ms.slice(0,maxS).filter(m=>m.id!==row.host&&!m.ready),sb=$("btnStart"),minP=MIN_PLAYERS[gm]||2;
+  if(gm==="domino"){const seats=(row.settings&&row.settings.domSeats)===4?4:2;
+    wc.append(h("span",{class:"lbl mt"},"حجم الطاولة"),row.host===cid?h("div",{class:"chips"},h("button",{class:"chip"+(seats===2?" on":""),onclick:()=>netRoomCall("room_settings",{domSeats:2})},"٢ سحب"),h("button",{class:"chip"+(seats===4?" on":""),onclick:()=>netRoomCall("room_settings",{domSeats:4})},"٤ فرق")):h("p",{class:"hint",style:"margin:4px 0 0"},seats===4?"أربعة، والكمبيوتر يكمّل المقاعد":"اثنين، والكمبيوتر يكمّل لو لحالك"))}
+  const wait=ms.slice(0,maxS).filter(m=>m.id!==row.host&&!m.ready),sb=$("btnStart"),minP=gm==="domino"?1:(MIN_PLAYERS[gm]||2);
   if(host){sb.disabled=ms.length<minP;sb.textContent=ms.length<minP?(minP>2?"تحتاج "+fmt(minP)+" لاعبين ("+fmt(ms.length)+" الحين)":"ننتظر لاعب ثاني"):wait.length?"ابدأ (ننتظر "+plural(wait.length,"لاعب","لاعبين","لاعبين","لاعب")+")":"ابدأ المباراة"}
-  $("lobbyHint").textContent=host?(ms.length<2?"شارك الكود مع أصحابك، أو انتظر لاعبين من الغرف العامة.":wait.length?"تقدر تبدأ لما الكل يضغط «أنا جاهز».":"الكل جاهز، ابدأ متى ما تبي."):(me&&me.ready?"أنت جاهز، ننتظر صاحب الغرفة يبدأ.":"اضغط «أنا جاهز» لما تكون مستعد.");
+  $("lobbyHint").textContent=gm==="domino"&&host?"غرفة دومينو خاصة. شارك الرابط، أو ابدأ والكمبيوتر يكمّل لين تصير ٢ أو ٤.":host?(ms.length<2?"شارك الكود مع أصحابك، أو انتظر لاعبين من الغرف العامة.":wait.length?"تقدر تبدأ لما الكل يضغط «أنا جاهز».":"الكل جاهز، ابدأ متى ما تبي."):(me&&me.ready?"أنت جاهز، ننتظر صاحب الغرفة يبدأ.":"اضغط «أنا جاهز» لما تكون مستعد.");
 }
 async function openNetRoom(row){
   const gm=(row.settings&&row.settings.game)||"webbound";
@@ -4899,7 +4946,8 @@ function onRoomRow(row,force){
   if(!prev||prev.mid!==G.mid)netMatchMeta("online",seat);
   const mine=G.last&&G.players[G.last.i]&&G.players[G.last.i].id===cid;
   afterChange(prev,mine?"me":"remote");
-  if(G.winner!=null&&M&&!M.done){M.done=true;if(seat>=0)netFetchResult(G,seat)}
+  if(G.game==="domino"&&(G.winner!=null||G.draw)){if(M)M.done=true;domClaim()}
+  else if(G.winner!=null&&M&&!M.done){M.done=true;if(seat>=0)netFetchResult(G,seat)}
   const scr=G.game?"mg":"game";if(screen!==scr)show(scr);render();
 }
 async function netFetchResult(g,seat){
@@ -4980,9 +5028,11 @@ if($("heroWeb"))cornerWeb($("heroWeb"),0,0,1,1,150,"currentColor",.8);
 renderFaq();renderSound();show("home");
 setTimeout(maybeIntro,500);
 function openInvite(code){
+  INVITE_GAME=JOIN_GAME||INVITE_GAME;JOIN_GAME="";
   JOIN_CODE="";roomCode=code;mode="invite";isCreator=true;G=null;hist=[];
-  try{const u=new URL(location.href);u.searchParams.delete("join");history.replaceState({},"",u.pathname+u.search+u.hash)}catch(e){}
+  try{const u=new URL(location.href);u.searchParams.delete("join");u.searchParams.delete("g");history.replaceState({},"",u.pathname+u.search+u.hash)}catch(e){}
   const box=$("lobbyCode");if(box)box.textContent=code;show("lobby");
+  if(navigator.onLine)cloudStart().then(()=>{if(!Cloud.on||mode!=="invite")return;return api("room_join",{code})}).then(r=>{if(r&&r.room&&mode==="invite")openNetRoom(r.room)}).catch(()=>{});
 }
 function maybeIntro(){
   if(JOIN_CODE){openInvite(JOIN_CODE);return}
@@ -5050,21 +5100,23 @@ function mgRender(){
   if(!G||!G.game)return;
   $("mgTitle").textContent=gameById(G.game).name;
   const pb=$("mgPlayers");pb.textContent="";
-  G.players.forEach((p,i)=>{const pub=pubFor(p),sk=skinOf(i),on=G.winner==null?G.turn===i:G.winner===i;
-    const sc=G.game==="ballclash"?(G.phase==="pick"?(G.pick==="draft"?fmt(G.picks[i].length)+"/"+fmt(G.size):G.locked[i]?"قفل":"يختار"):""):G.game==="nightweb"?(G.alive[i]?(G.phase==="day"&&G.votes[i]!=null?"صوّت":"حي"):"طلع · "+NW.ROLE[G.dead[i]]):G.game==="bluff"?(G.out[i]?"خرج":"نرد "+fmt(G.dice[i])):G.game==="flyhunt"?"ذباب باقي "+fmt(G.left[i]):G.game==="webwar"?"الأرض "+fmt(WR.count(G,i)):G.game==="dama"?"القطع "+fmt(G.b.filter(q=>DM.own(q,i)).length):G.game==="webgrid"?fmt(G.pts[i])+" مربع":G.game==="wordweb"?(G.prog[i].done?"كمّل الكلمة!":G.prog[i].out?"انقطع خيطه":"لقى "+fmt(G.prog[i].found)+"/"+fmt(G.len)+" · أخطاء "+fmt(G.prog[i].wrong)+"/"+fmt(G.max)):"علامات "+fmt((G.order&&G.order[i]||[]).length)+"/٣";
+  G.players.forEach((p,i)=>{const pub=pubFor(p),sk=skinOf(i),on=G.game==="domino"?(G.winner==null&&!G.draw?G.turn===i:(G.winners?G.winners.includes(i):G.winner===i)):(G.winner==null?G.turn===i:G.winner===i);
+    const sc=G.game==="domino"?((G.n===4?(i%2?"فريق ب":"فريق أ")+" · ":"")+"أحجار "+fmt((G.counts&&G.counts[i])||0)):G.game==="ballclash"?(G.phase==="pick"?(G.pick==="draft"?fmt(G.picks[i].length)+"/"+fmt(G.size):G.locked[i]?"قفل":"يختار"):""):G.game==="nightweb"?(G.alive[i]?(G.phase==="day"&&G.votes[i]!=null?"صوّت":"حي"):"طلع · "+NW.ROLE[G.dead[i]]):G.game==="bluff"?(G.out[i]?"خرج":"نرد "+fmt(G.dice[i])):G.game==="flyhunt"?"ذباب باقي "+fmt(G.left[i]):G.game==="webwar"?"الأرض "+fmt(WR.count(G,i)):G.game==="dama"?"القطع "+fmt(G.b.filter(q=>DM.own(q,i)).length):G.game==="webgrid"?fmt(G.pts[i])+" مربع":G.game==="wordweb"?(G.prog[i].done?"كمّل الكلمة!":G.prog[i].out?"انقطع خيطه":"لقى "+fmt(G.prog[i].found)+"/"+fmt(G.len)+" · أخطاء "+fmt(G.prog[i].wrong)+"/"+fmt(G.max)):"علامات "+fmt((G.order&&G.order[i]||[]).length)+"/٣";
     pb.append(h("div",{class:"pc"+(on?" turn":""),style:"--tc:"+seatColor(i)},pub?avatar(sk.id,pub.fr,34,pub.dc):h("span",{class:"pc-ball"},ballSvg(sk,30)),
       h("div",{class:"meta"},h("span",{class:"nm"},p.nick,p.bot?ic("cpu","pc-bot"):null,(mode==="room"||mode==="online")&&p.id===cid?h("span",{class:"you"},"أنت"):null),h("span",{class:"sub"},sc))))});
   const p=G.players[G.turn];let t;
   if(G.winner!=null&&G.game==="ballclash"&&NG.bcDone!==G.mid)t="المعركة شغّالة…";
+  else if(G.game==="domino"&&(G.winner!=null||G.draw)){const mine=mode==="solo"?0:mode==="room"?mySeat():(hasBots()?0:-1);t=G.draw?"تعادل":(mine>=0&&globalThis.DOMINO&&DOMINO.playerWon(G,mine)?"فزت!":"فاز "+G.players[G.winner].nick)}
   else if(G.winner!=null){const w=G.players[G.winner];t=(w.id===cid||(mode==="local"&&hasBots()&&!w.bot))?"فزت!":"فاز "+w.nick}
   else if(G.game==="ballclash"){const s=mySeat();t=G.phase==="battle"?"المعركة شغّالة":G.pick==="draft"?(G.turn===s?"دورك تختار كورة":"دور "+G.players[G.turn].nick+" يختار"):s>=0&&G.locked[s]?"قفلت تشكيلتك، ننتظر الباقين":"اختر "+fmt(G.size)+" كور وقفّل بالسر"}
   else if(G.game==="nightweb"){const s=mySeat();t=s<0?"تتفرّج":!G.alive[s]?"طلعت من اللعبة، تقدر تتفرّج":G.phase==="night"?"الليل "+fmt(G.day)+": أصحاب الأدوار يختارون بالسر":"النهار "+fmt(G.day)+": تناقشوا وصوّتوا"}
   else if(G.game==="wordweb"){const s=mode==="solo"?0:mode==="local"?wwSeat():mySeat(),q=s>=0?G.prog[s]:null;t=!q?"تتفرّج على المباراة":q.out?"انقطع خيطك، ننتظر الباقين…":(mode==="local"&&!hasBots()?"دور "+G.players[s].nick+" — خمّن حرف":"خمّن حرف من الكيبورد")}
+  else if(G.game==="domino")t=p&&p.bot?p.nick+" يفكّر…":canAct()?"دورك! العب حجر على أحد الطرفين":"ننتظر "+(p?p.nick:"")+"…";
   else if(mode==="local"&&!hasBots())t="دور "+p.nick+(G.game==="webwar"?": مد خيطك":G.game==="webgrid"?": ارسم خيط":G.game==="dama"?": حرّك قطعة":": اختر خانة");
   else if(p.bot)t=p.nick+" يفكّر…";
   else t=canAct()?(G.game==="bluff"?"دورك! زايد، أو قل كذّاب":G.game==="flyhunt"?"دورك! اضرب خانة في شبكة خصمك":G.game==="webwar"?"دورك! مد خيطك لخانة جنب أرضك":G.game==="webgrid"?"دورك! ارسم خيط بين نقطتين":G.game==="dama"?(dmHasCapture(G,G.turn)?"دورك! عندك أكل إجباري":"دورك! حرّك قطعة"):"دورك! اختر خانة"):"ننتظر "+p.nick+" يلعب…";
   $("mgStatus").textContent=t;
-  const bd=$("mgBoard");bd.textContent="";bd.classList.toggle("bc-host",G.game==="ballclash");if(G.game==="ballclash")renderBCR(bd);else if(G.game==="nightweb")renderNW(bd);else if(G.game==="bluff")renderBF(bd);else if(G.game==="flyhunt")renderFH(bd);else if(G.game==="webwar")renderWR(bd);else if(G.game==="webgrid")renderWG(bd);else if(G.game==="wordweb")renderWW(bd);else if(G.game==="dama")renderDM(bd);else renderXO(bd);
+  const bd=$("mgBoard");bd.textContent="";bd.classList.toggle("bc-host",G.game==="ballclash");if(G.game==="ballclash")renderBCR(bd);else if(G.game==="nightweb")renderNW(bd);else if(G.game==="bluff")renderBF(bd);else if(G.game==="flyhunt")renderFH(bd);else if(G.game==="webwar")renderWR(bd);else if(G.game==="webgrid")renderWG(bd);else if(G.game==="wordweb")renderWW(bd);else if(G.game==="domino")renderDOM(bd);else if(G.game==="dama")renderDM(bd);else renderXO(bd);
   renderMgWin();
   const hb=$("mgHint"),hintable=["webgrid","xo","dama","webwar"].includes(G.game);if(hb)hb.classList.toggle("hidden",!(hintable&&ownerSees("seeHint")&&canAct()));
 }
@@ -5231,6 +5283,81 @@ let mgHintA=null;
 $("mgHint").addEventListener("click",()=>{if(!G||!canAct())return;const g2=JSON.parse(JSON.stringify(G));g2.players[g2.turn].bot=3;const a=GAME_RULES[G.game].bot(g2);if(!a){toast("ما فيه حركة مقترحة");return}
   mgHintA={seq:G.seq,a};sfx("move");toast("التلميح ظاهر بالذهبي","good");mgRender()});
 const hintOn=()=>mgHintA&&G&&mgHintA.seq===G.seq?mgHintA.a:null;
+const DOM_FACE={classic:{face:"#F3E6C8",pip:"#1C140C",edge:"#C8B48A"},night:{face:"#1B2433",pip:"#E6B85C",edge:"#3D4B66"},jade:{face:"#12362C",pip:"#E7FFF3",edge:"#1F6B52"},blood:{face:"#3A1218",pip:"#FFD5D5",edge:"#7A2430"}};
+const DOM_FELT={wood:"#3A2416",marble:"#243044",felt:"#0E3A2A",royal:"#2A1840"};
+const DOM_PIP=[[],[[1,1]],[[0,0],[2,2]],[[0,0],[1,1],[2,2]],[[0,0],[0,2],[2,0],[2,2]],[[0,0],[0,2],[1,1],[2,0],[2,2]],[[0,0],[1,0],[2,0],[0,2],[1,2],[2,2]]];
+function domLook(){
+  const tile=findItem("domtile",eff("domtile"));const table=findItem("domtable",eff("domtable"));
+  return {face:DOM_FACE[(tile&&tile.look)||"classic"]||DOM_FACE.classic,felt:DOM_FELT[(table&&table.look)||"wood"]||DOM_FELT.wood};
+}
+function domHalf(n,x,y,w,h,col){
+  const cell=Math.min(w,h)/3;
+  return (DOM_PIP[n]||[]).map(([cx,cy])=>`<circle cx="${(x+cell*(cx+.5)).toFixed(1)}" cy="${(y+cell*(cy+.5)).toFixed(1)}" r="${(cell*.22).toFixed(1)}" fill="${col}"/>`).join("");
+}
+function domTileHtml(id,wide){
+  const D=globalThis.DOMINO;if(!D||!D.tiles[id])return "";
+  const [a,b]=D.tiles[id],lk=domLook().face,w=wide?72:40,h=wide?40:76;
+  const pips=wide?domHalf(a,4,4,32,32,lk.pip)+domHalf(b,36,4,32,32,lk.pip):domHalf(a,4,4,32,32,lk.pip)+domHalf(b,4,40,32,32,lk.pip);
+  const mid=wide?`<line x1="36" y1="6" x2="36" y2="34" stroke="${lk.edge}"/>`:`<line x1="6" y1="38" x2="34" y2="38" stroke="${lk.edge}"/>`;
+  return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><rect width="${w}" height="${h}" rx="6" fill="${lk.face}" stroke="${lk.edge}"/>${mid}${pips}</svg>`;
+}
+function domSwatch(t,it,big){
+  const face=DOM_FACE[it.look]||DOM_FACE.classic,felt=DOM_FELT[it.look]||DOM_FELT.wood;
+  if(t==="domtable")return h("span",{class:"dom-swatch",style:"display:inline-block;width:"+(big?120:46)+"px;height:"+(big?72:28)+"px;border-radius:12px;background:"+felt+";box-shadow:inset 0 0 0 2px rgba(255,255,255,.12)"});
+  return htmlEl("span","dom-swatch",`<svg viewBox="0 0 40 76" width="${big?40:28}" height="${big?76:52}" aria-hidden="true"><rect width="40" height="76" rx="6" fill="${face.face}" stroke="${face.edge}"/><line x1="6" y1="38" x2="34" y2="38" stroke="${face.edge}"/>${domHalf(6,4,4,32,32,face.pip)}${domHalf(6,4,40,32,32,face.pip)}</svg>`);
+}
+let domSel=null;
+function renderDOM(bd){
+  const D=globalThis.DOMINO;if(!D){bd.append(h("p",{},"تعذّر تحميل الدومينو"));return}
+  const lk=domLook(),hand=(NG.hv&&NG.hv.hand)||[],act=canAct();
+  if(domSel&&domSel.seq!==G.seq)domSel=null;
+  const table=h("div",{class:"dom-table",style:"background:"+lk.felt});
+  const chain=h("div",{class:"dom-chain","aria-label":"سلسلة الأحجار"});
+  (G.chain||[]).forEach(c=>{const tile=D.tiles[c.id]||[0,0];chain.append(htmlEl("span","dom-chain-tile"+(tile[0]===tile[1]?" dbl":""),domTileHtml(c.id,tile[0]===tile[1])))});
+  table.append(chain);bd.append(table);
+  const mine=h("div",{class:"dom-hand",role:"group","aria-label":"أحجارك"});
+  if(!hand.length&&G.winner==null&&!G.draw)mine.append(h("p",{class:"hint"},"أحجار الخصم مخفية."));
+  hand.forEach(id=>{const ends=D.endsFor(id,G.left,G.right),on=domSel&&domSel.id===id;
+    mine.append(h("button",{type:"button",class:"dom-play"+(on?" on":"")+(ends.length?"":" dead"),"data-id":String(id),disabled:!act,"aria-label":"حجر "+(D.tiles[id]||[]).join("-")},htmlEl("span","",domTileHtml(id,false))))});
+  bd.append(mine);
+  if(act&&domSel&&hand.includes(domSel.id)){
+    const ends=D.endsFor(domSel.id,G.left,G.right);
+    if(ends.length>1)bd.append(h("div",{class:"dom-ends"},...ends.map(end=>h("button",{type:"button",class:"dom-end", "data-end":end},"طرف "+fmt(end==="L"?G.left:G.right)))));
+  }
+  const only=(NG.hv&&hand.length)?null:null;
+  if(act&&hand.length){
+    const any=hand.some(id=>D.endsFor(id,G.left,G.right).length);
+    if(!any)bd.append(h("button",{type:"button",class:"primary wide dom-go","data-act":G.variant==="draw"&&G.yardN?"draw":"pass",style:"margin-top:8px"},G.variant==="draw"&&G.yardN?"اسحب حجر":"مرّر الدور"));
+  }
+  bd.append(h("p",{class:"hint"},G.variant==="block"?"أربعة لاعبين، فرق متقابلة، بدون سحب.":"اثنين، وإذا ما عندك لعب تسحب حجر."));
+  void only;
+}
+let domClaimed="";
+function domClaim(){
+  if(!G||G.game!=="domino"||domClaimed===G.mid)return;
+  if(G.winner==null&&!G.draw)return;
+  domClaimed=G.mid;
+  const seat=mode==="solo"?0:mode==="room"?mySeat():(hasBots()?0:-1);
+  const won=seat>=0&&globalThis.DOMINO&&DOMINO.playerWon(G,seat);
+  if(G.draw||!won){lastResult={mid:G.mid,won:false,skipped:G.draw?"draw":"loss"};return}
+  if(!Cloud.on){lastResult={mid:G.mid,won:true,skipped:"offline"};return}
+  const body={requestId:("dom-"+String(G.mid)).replace(/[^A-Za-z0-9:_-]/g,"").slice(0,80)};
+  if(body.requestId.length<8)body.requestId=("dom-req-"+Date.now()).slice(0,80);
+  if(mode==="room"&&NG.room)body.code=NG.room.code;
+  else if(mode==="solo"&&NG.solo)body.solo=NG.solo.id;
+  else{
+    if(!NG.domNonce){lastResult={mid:G.mid,won:true,skipped:"offline"};return}
+    body.nonce=NG.domNonce;body.moves=G.moves||[];
+  }
+  const send=()=>api("dom_finish",body).then(r=>{
+    if(typeof r.coins==="number"){P.coins=r.coins;if(r.version)P.__ver=r.version;saveProfile()}
+    if(r.capped&&!(r.amount>0))lastResult={mid:G.mid,won:true,skipped:"cap"};
+    else lastResult={mid:G.mid,won:!!r.won,out:r.won?{xp:0,coins:r.amount||0,items:[],levelUps:[],ach:[],missions:[],xpBefore:P.xp,levelBefore:P.level,streak:0}:null,skipped:r.won?null:"loss"};
+    if(screen==="mg"){const rb=$("mgRewards");if(rb)rb.dataset.k="";render()}
+  }).catch(()=>{lastResult={mid:G.mid,won:true,skipped:"offline"};if(screen==="mg")render()});
+  if(body.nonce){const wait=Math.max(0,12000-(Date.now()-(NG.domT0||Date.now())));setTimeout(send,wait)}
+  else send();
+}
 let dmSel=null;
 function dmHasCapture(g0,s){const acc=[];for(let i=0;i<64&&!acc.length;i++)if(DM.own(g0.b[i],s))DM.capt(g0.b,i,s,g0.b[i],[i],0,acc,null);return acc.length>0}
 function dmMine(){return mode==="local"?G.turn:mode==="solo"?0:mySeat()}
@@ -5274,25 +5401,30 @@ function mgSub(seat){
   if(G.game==="wordweb")return "الكلمة: «"+(G.reveal||"")+"»";
   if(G.game==="webgrid")return "المربعات: "+G.players.map((p,i)=>p.nick+" "+fmt(G.pts[i])).join("، ");
   if(G.game==="dama")return "خلصت قطع الخصم، أو ما بقى له حركة.";
+  if(G.game==="domino")return G.draw?"النقاط متساوية.":(G.pip&&G.pip.kind==="out"?"خلّص أحجاره وأخذ "+fmt(G.pip.score)+" نقطة.":"انسدّت الطاولة، والفرق "+fmt((G.pip&&G.pip.score)||0)+".");
   if(G.game==="xo")return G.long?"بعد ١٢٠ حركة فاز صاحب الدور الجاي.":"صفّيت ثلاث علامات!";
   if(seat>=0&&G.winner!==seat)return "فاز "+w.nick+". تجيها المرة الجاية.";
   return "";
 }
 function renderMgWin(){
   if(G&&G.game==="ballclash"&&G.winner!=null&&!(NG.bcDone&&NG.bcDone===G.mid)){$("mgWin").classList.add("hidden");return}
-  const box=$("mgWin");if(!G||G.winner==null){box.classList.add("hidden");return}
+  const box=$("mgWin");if(!G||(G.winner==null&&!(G.game==="domino"&&G.draw))){box.classList.add("hidden");return}
   box.classList.remove("hidden");
-  const w=G.players[G.winner],seat=mode==="local"?(hasBots()?0:-1):mySeat();
+  if(G.game==="domino"&&G.draw){paintKicker($("mgKicker"),false,-1);$("mgWinText").textContent="تعادل";paintWinTitle($("mgWinText"),false,-1);$("mgWinSub").textContent="النقاط متساوية في جولة أبو ستة.";
+    const ul=$("mgScores");ul.textContent="";G.players.forEach((q,k)=>{ul.append(h("li",{},ballSvg(skinOf(k),22),h("span",{},q.nick),h("b",{class:"wins"},fmt((G.pip&&G.pip.seats&&G.pip.seats[k])||0))))});
+    const rb=$("mgRewards");rb.textContent="";rb.append(h("p",{class:"hint center"},"التعادل ما يعطي عملات."));
+    $("mgAgain").classList.toggle("hidden",!(mode==="local"||mode==="solo"||amHost()));return}
+  const w=G.players[G.winner],seat=mode==="local"?(hasBots()?0:-1):mode==="solo"?0:mySeat();
   const won=G.winners?G.winners.includes(seat):G.winner===seat;
   paintKicker($("mgKicker"),!!won,seat);
   $("mgWinText").textContent=seat>=0?(won?"فزت!":"خسرت"):G.team?(G.team==="flies"?"فاز الذباب!":"فازت العناكب!"):"فاز "+w.nick+"!";
   paintWinTitle($("mgWinText"),seat<0||won,seat);
   $("mgWinSub").textContent=mgSub(seat);
-  const ul=$("mgScores");ul.textContent="";G.players.forEach((q,k)=>{const n=G.score[q.id]||0;ul.append(h("li",{},ballSvg(skinOf(k),22),h("span",{},q.nick,q.bot?ic("cpu","pc-bot"):null),h("b",{class:"wins"},ic("trophy"),fmt(n))))});
+  const ul=$("mgScores");ul.textContent="";G.players.forEach((q,k)=>{const n=G.game==="domino"?((G.pip&&G.pip.seats&&G.pip.seats[k])||0):(G.score[q.id]||0);ul.append(h("li",{},ballSvg(skinOf(k),22),h("span",{},q.nick,q.bot?ic("cpu","pc-bot"):null),h("b",{class:"wins"},G.game==="domino"?null:ic("trophy"),fmt(n))))});
   const rb=$("mgRewards"),lr=lastResult&&lastResult.mid===G.mid?lastResult:null,key=G.mid+"|"+(lr?(lr.out?"out":lr.skipped||""):"wait");
   if(rb.dataset.k!==key){rb.dataset.k=key;rb.textContent="";
     if(lr&&lr.out){winBuiltMid=null;buildRewards(rb,lr)}
-    else if(lr&&lr.skipped){const msg={local:"مباريات نفس الجوال للمتعة وما تدخل في حسابك.",practice:"مباراة تدريب، بدون مكافآت.",spectator:"",short:"المباراة كانت قصيرة جدًا عشان تنحسب.",dup:""}[lr.skipped];if(msg)rb.append(h("p",{class:"hint center"},msg))}
+    else if(lr&&lr.skipped){const msg={local:"مباريات نفس الجوال للمتعة وما تدخل في حسابك.",practice:"مباراة تدريب، بدون مكافآت.",spectator:"",short:"المباراة كانت قصيرة جدًا عشان تنحسب.",dup:"",offline:"ما فيه اتصال، المكافأة تنحسب لما تتصل بالخادم.",cap:"وصلت حد مكافآت الدومينو اليوم: ٨ جولات.",draw:"تعادل، وما فيه عملات.",loss:""}[lr.skipped];if(msg)rb.append(h("p",{class:"hint center"},msg))}
     else if(mode==="solo"||mode==="room")rb.append(h("div",{class:"skel",style:"height:54px"}))}
   const canAgain=mode==="local"||mode==="solo"||amHost();
   $("mgAgain").classList.toggle("hidden",!canAgain);$("mgAgainHint").classList.toggle("hidden",canAgain);
@@ -5331,7 +5463,12 @@ function mgBeginRewards(){
     botLevel:bots.reduce((m,p)=>Math.max(m,p.bot||0),0),bots:bots.length};
   lastResult=null;
 }
-function mgSettle(){if(!G||G.winner==null||!M||M.done||M.mode==="local")return;endMatch()}
+function mgSettle(){
+  if(!G||!M||M.done||M.mode==="local")return;
+  if(G.winner==null&&!(G.game==="domino"&&G.draw))return;
+  if(G.game==="domino"){M.done=true;domClaim();return}
+  endMatch();
+}
 function wwLocalGuess(seat,ch){
   if(!G||G.game!=="wordweb"||!NG.wwSecret||!NG.wwMine||!NG.wwMine[seat])return;
   const mine=NG.wwMine[seat];
@@ -5379,38 +5516,54 @@ function mgPlay(a){
   const prev=G,seat=G.turn;G=RU.apply(G,seat,a);if(M&&seat===M.seat)M.moves++;mgSound(prev);mgSettle();mgRender();mgLocalBots();
 }
 function mgLocalBots(delay){
-  if(mode!=="local"||!G||!G.game||G.winner!=null)return;
+  if(mode!=="local"||!G||!G.game||G.winner!=null||G.draw)return;
   if(G.game==="wordweb"){wwArm();return}
   if(!G.players[G.turn]||!G.players[G.turn].bot)return;
   const wait=delay==null?mgBotDelay():delay;
   setTimeout(()=>{
     try{
-      if(mode!=="local"||!G||!G.game||G.winner!=null||!G.players[G.turn]||!G.players[G.turn].bot)return;
+      if(mode!=="local"||!G||!G.game||G.winner!=null||G.draw||!G.players[G.turn]||!G.players[G.turn].bot)return;
       const RU=GAME_RULES[G.game],seat=G.turn,pv=NG.localPriv,prev=G;let act=null;
       try{act=RU.hidden?RU.bot(G,seat,pv):RU.bot(G)}catch(e){act=null}
       if(act){const err=RU.hidden?RU.legal(G,seat,act,pv):RU.legal(G,seat,act);if(err)act=null}
       if(RU.hidden){const res=act?RU.apply(G,seat,act,pv):RU.skip(G,pv);G=res.g;if(res.privs)NG.localPriv=res.privs;syncHiddenView()}
       else G=act?RU.apply(G,seat,act):RU.skip(G);
       mgSound(prev);mgSettle();mgRender();
-      if(G&&G.winner==null&&G.players[G.turn]&&G.players[G.turn].bot)mgLocalBots();
+      if(G&&G.winner==null&&!G.draw&&G.players[G.turn]&&G.players[G.turn].bot)mgLocalBots();
     }catch(e){}
   },wait);
+}
+function mgBeginLocal(gm,RU,pl,prev,cat,seed){
+  const o={seq:prev?prev.seq+1:1,round:prev?prev.round+1:1,score:prev?Object.assign({},prev.score):{},cat};
+  if(seed){o.seed=seed>>>0;NG.domT0=Date.now()}
+  G=RU.new(distinctSkins(pl),o);
+  if(gm.id==="wordweb"){NG.wwSecret=WW.pick(G.cat||cat);G.len=[...NG.wwSecret].length;NG.wwMine=G.players.map(()=>({tried:[],found:[]}));syncWwView()}
+  else if(RU.hidden&&RU.deal){NG.localPriv=RU.deal(G);syncHiddenView();if(G.game==="domino"&&NG.localPriv&&NG.localPriv[0])NG.domSeed=NG.localPriv[0].seed>>>0}
+  mgBeginRewards();show("mg");mgRender();mgLocalBots();
 }
 function mgStartLocal(withBots,n,prev){
   const gm=gameById(curGame);
   if(gm.id==="nightweb"||gm.id==="ballclash"){toast("هاللعبة تبدأ من غرفة أونلاين","bad");return}
-  clearBot();wwStop();mode="local";hist=[];NG.solo=null;NG.localPriv=null;NG.wwSecret=null;NG.wwMine=null;NG.ww=null;NG.hv=null;NG.wwFocus=0;
+  clearBot();wwStop();mode="local";hist=[];NG.solo=null;NG.localPriv=null;NG.wwSecret=null;NG.wwMine=null;NG.ww=null;NG.hv=null;NG.wwFocus=0;NG.domNonce="";
   const RU=GAME_RULES[gm.id];let pl;
   if(prev)pl=prev.players.map(x=>Object.assign({},x));
-  else if(withBots){const k=Math.min(P.settings.botCount||1,gm.maxBots||3);pl=[{id:"L0",nick:P.nickname||"أنت",skin:skinIdx(eff("skin")),bot:0}];for(let i=0;i<k;i++)pl.push({id:"B"+i,nick:BOT_NAMES[i],skin:i+1,bot:P.settings.botLevel||2})}
-  else{n=Math.min(Math.max(n||2,gm.id==="wordweb"||gm.id==="bluff"||gm.id==="flyhunt"?2:2),gm.maxLocal||4);pl=[...Array(n)].map((_,i)=>({id:"L"+i,nick:"لاعب "+fmt(i+1),skin:i===0?skinIdx(eff("skin")):i,bot:0}))}
+  else if(withBots){const four=gm.id==="domino"&&(P.settings.botCount||1)>=3;const k=gm.id==="domino"?(four?3:1):Math.min(P.settings.botCount||1,gm.maxBots||3);pl=[{id:"L0",nick:P.nickname||"أنت",skin:skinIdx(eff("skin")),bot:0}];for(let i=0;i<k;i++)pl.push({id:"B"+i,nick:BOT_NAMES[i],skin:i+1,bot:P.settings.botLevel||2})}
+  else{n=gm.id==="domino"?(n>=4?4:2):Math.min(Math.max(n||2,gm.id==="wordweb"||gm.id==="bluff"||gm.id==="flyhunt"?2:2),gm.maxLocal||4);pl=[...Array(n)].map((_,i)=>({id:"L"+i,nick:i?("لاعب "+fmt(i+1)):(P.nickname||"لاعب "+fmt(1)),skin:i===0?skinIdx(eff("skin")):i,bot:0}))}
   const cat=(prev&&prev.cat)||wwCat;
-  G=RU.new(distinctSkins(pl),{seq:prev?prev.seq+1:1,round:prev?prev.round+1:1,score:prev?Object.assign({},prev.score):{},cat});
-  if(gm.id==="wordweb"){NG.wwSecret=WW.pick(G.cat||cat);G.len=[...NG.wwSecret].length;NG.wwMine=G.players.map(()=>({tried:[],found:[]}));syncWwView()}
-  else if(RU.hidden&&RU.deal){NG.localPriv=RU.deal(G);syncHiddenView()}
-  mgBeginRewards();show("mg");mgRender();mgLocalBots();
+  if(gm.id==="domino"&&withBots&&!prev&&Cloud.on){
+    const lvl=P.settings.botLevel||2;
+    api("bot_deal",{game:"domino",n:pl.length>=4?4:2,level:lvl}).then(d=>{
+      NG.domNonce=d.nonce||"";
+      mgBeginLocal(gm,RU,pl,prev,cat,d.seed>>>0);
+    }).catch(()=>{NG.domNonce="";mgBeginLocal(gm,RU,pl,prev,cat,0)});
+    return;
+  }
+  mgBeginLocal(gm,RU,pl,prev,cat,0);
 }
 $("mgBoard").addEventListener("click",e=>{
+  const dp=e.target.closest(".dom-play");if(dp&&!dp.disabled&&G&&globalThis.DOMINO){const id=+dp.dataset.id,ends=DOMINO.endsFor(id,G.left,G.right);if(ends.length===1){domSel=null;mgPlay({t:"play",id,end:ends[0]})}else if(ends.length>1){domSel={id,seq:G.seq};mgRender()}else toast("ما ينلعب هالحجر هنا","bad");return}
+  const de=e.target.closest(".dom-end");if(de&&domSel){mgPlay({t:"play",id:domSel.id,end:de.dataset.end});domSel=null;return}
+  const dg=e.target.closest(".dom-go");if(dg&&!dg.disabled){mgPlay({t:dg.dataset.act});return}
   const key=e.target.closest(".ww-k");if(key&&!key.disabled){mgPlay({t:"g",ch:key.dataset.ch});return}
   const dc=e.target.closest(".dm-c");if(dc){dmClick(+dc.dataset.i);return}
   const fc=e.target.closest(".fh-c[data-k]");if(fc&&!fc.disabled){mgPlay({t:"shot",k:+fc.dataset.k});return}

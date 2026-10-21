@@ -428,5 +428,6 @@ const BCR={hidden:true,simultaneous:true,
   skip(g0,pv){return {g:g0,privs:pv}},bot(){return null}
 };
 GAME_RULES.ballclash=BCR;MAX_PLAYERS.ballclash=4;MIN_PLAYERS.ballclash=2;
+if(globalThis.DOMINO&&globalThis.DOMINO.rules){GAME_RULES.domino=globalThis.DOMINO.rules;MIN_PLAYERS.domino=2;MAX_PLAYERS.domino=4}
 SP.games={WG,XO,WW,WL,DM,BF,FH,WR,NST,NW,BCR,GAME_RULES,MIN_PLAYERS,MAX_PLAYERS,WW_CATS};
 })(globalThis.SPIDER_GAMES);
