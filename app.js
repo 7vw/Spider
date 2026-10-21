@@ -820,7 +820,7 @@ function ensureGamesCss(){
     let link=document.querySelector("link[data-games-css]");
     if(link&&link.rel==="stylesheet"){if(link.sheet){ok();return}link.addEventListener("load",()=>ok(),{once:true});link.addEventListener("error",()=>ok(),{once:true});return}
     link=document.createElement("link");
-    link.rel="stylesheet";link.href="games.css?v=10";link.setAttribute("data-games-css","");
+    link.rel="stylesheet";link.href="games.css?v=11";link.setAttribute("data-games-css","");
     link.onload=()=>ok();link.onerror=()=>ok();
     document.head.append(link);
   });
@@ -847,6 +847,18 @@ function ensureGames(){
   return gamesP;
 }
 /* @split-lazy-end */
+/* @kalima-load-start */
+let kalimaP=null;
+function ensureKalima(){
+  if(kalimaP)return kalimaP;
+  kalimaP=(async()=>{
+    await ensureGamesCss();
+    if(!globalThis.KALIMA)await loadGameScript("js/kalima_engine.js?v=1");
+    if(!globalThis.KALIMA_GUESSES)await loadGameScript("js/kalima_guesses.js?v=1");
+  })().catch(e=>{kalimaP=null;throw e});
+  return kalimaP;
+}
+/* @kalima-load-end */
 
 /* ================= player profile (saved on this device) =================
    Private progression (coins, XP, inventory, codes, claims) never leaves the device.
@@ -1995,13 +2007,13 @@ function levelUpSheet(out){
 }
 
 /* ================= navigation ================= */
-const PAGES=["home","games","webbound","leaders","store","profile","about"],SCREENS=["home","games","webbound","leaders","store","profile","about","customize","owner","lobby","game","mg","wl","nst","bc"];
+const PAGES=["home","games","webbound","leaders","store","profile","about"],SCREENS=["home","games","webbound","leaders","store","profile","about","customize","owner","lobby","game","mg","wl","nst","bc","km"];
 let screen="home";
 let lastScreen="home";
 function show(id){if(typeof screen!=="undefined"&&screen&&screen!==id&&screen!=="about")lastScreen=screen;
   if(id==="owner"&&!Owner.verified)id="profile";
   screen=id;
-  document.body.classList.toggle("in-match",["game","mg","wl","nst","bc","lobby"].includes(id));
+  document.body.classList.toggle("in-match",["game","mg","wl","nst","bc","lobby","km"].includes(id));
   for(const s of SCREENS)$(s).classList.toggle("hidden",s!==id);
   const navOn=PAGES.includes(id);
   $("nav").classList.toggle("hidden",!navOn);document.body.classList.toggle("has-nav",navOn);
@@ -2164,7 +2176,7 @@ $("homeGamesAll").addEventListener("click",()=>show("games"));
    cosmetic categories only it uses; for WEBBOUND that is board, web, move, win and lobby.
    Stats and the leaderboard are WEBBOUND's today; a second game gets its own block through a
    data migration when it arrives. Storage keys and database ids stay as they are. */
-const GAME_CATS={arcade:"أركيد",party:"جماعية",strategy:"استراتيجية"};
+const GAME_CATS={arcade:"أركيد",party:"جماعية",strategy:"استراتيجية",word:"كلمات"};
 const GAMES=[{
   id:"webbound",name:"WEBBOUND",nameAr:"ويب باوند",category:"strategy",status:"live",
   tagline:"سباق وخيوط على شبكة ٩×٩",
@@ -2256,6 +2268,13 @@ const GAMES=[{
   players:"٢ أو ٤",length:"٥–١٢ دقيقة",colors:["#E6B85C","#1C140C"],
   modes:["online","bot","local"],cosmetics:["domtile","domtable"],maxBots:3,maxLocal:4,
   rules:["الجولة وحدة، مو سباق لمية.","اثنين: كل واحد ٧ أحجار، والباقي سحب. ما عندك لعب؟ تسحب حجر، وإذا انلعب تكمل، وإلا يمر الدور.","أربعة: فرق متقابلة، ٧ أحجار وما فيه سحب. اللي ما يقدر يلعب يمرّر.","يفتح أعلى دبل، وإذا ما فيه دبل يفتح أعلى مجموع. الدبل يعرض عرض بس وما يفتح طرف ثالث.","اللي يخلّص أحجاره ياخذ نقاط الخصم. وإذا انسدّت الطاولة، الأقل نقاط ياخذ الفرق. التعادل ما يعطي عملات."]
+},{
+  id:"kalima",name:"KALIMA",nameAr:"كلمة اليوم",category:"word",status:"live",
+  tagline:"خمّن كلمة من خمسة حروف",
+  desc:"كلمة واحدة في اليوم، يختارها الخادم وما تنرسل لجهازك. عندك ست محاولات، والحروف تصير أخضر أو ذهبي أو رمادي.",
+  players:"لاعب واحد",length:"دقيقة",colors:["#39FF88","#E6B85C"],
+  modes:["daily","free"],cosmetics:[],maxBots:0,maxLocal:0,
+  rules:["الكلمة خمسة حروف، وشكل الألف والتاء المربوطة يتوحّد.","الأخضر: الحرف في مكانه. الذهبي: الحرف موجود في مكان ثاني. الرمادي: الحرف مو في الكلمة.","كلمة اليوم مرة واحدة لكل يوم، والسلسلة تكمل لو لعبت اليوم اللي بعده.","التدريب يشتغل بدون نت، وما يحسب في السلسلة."]
 }];
 let curGame="webbound";
 let wlBoardCache=null,wlBoardAt=0;
@@ -2276,11 +2295,21 @@ function domCoverSvg(){
 <g transform="translate(188 84) rotate(12)"><rect width="36" height="68" rx="6" fill="#1B2433" stroke="#E6B85C"/><line x1="4" y1="34" x2="32" y2="34" stroke="#E6B85C"/><circle cx="18" cy="12" r="2.6" fill="#E6B85C"/><circle cx="18" cy="22" r="2.6" fill="#E6B85C"/><circle cx="12" cy="46" r="2.6" fill="#E6B85C"/><circle cx="24" cy="46" r="2.6" fill="#E6B85C"/><circle cx="12" cy="56" r="2.6" fill="#E6B85C"/><circle cx="24" cy="56" r="2.6" fill="#E6B85C"/></g>
 </svg>`;
 }
+function kmCoverSvg(){
+  return `<svg viewBox="0 0 360 200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="غلاف كلمة اليوم: خمسة مربعات">
+<rect width="360" height="200" fill="#120E18"/>
+<g transform="translate(70 68)">
+<rect width="40" height="48" rx="8" fill="#1F8A4C"/><rect x="48" width="40" height="48" rx="8" fill="#8A6A22"/><rect x="96" width="40" height="48" rx="8" fill="#2A3142"/><rect x="144" width="40" height="48" rx="8" fill="#2A3142"/><rect x="192" width="40" height="48" rx="8" fill="#1F8A4C"/>
+</g></svg>`;
+}
+function kmIconSvg(){
+  return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#1A1424"/><rect x="8" y="18" width="10" height="12" rx="2" fill="#39FF88"/><rect x="20" y="18" width="10" height="12" rx="2" fill="#E6B85C"/><rect x="32" y="18" width="10" height="12" rx="2" fill="#3A4256"/><rect x="44" y="18" width="10" height="12" rx="2" fill="#3A4256"/><rect x="14" y="34" width="10" height="12" rx="2" fill="#3A4256"/><rect x="26" y="34" width="10" height="12" rx="2" fill="#39FF88"/><rect x="38" y="34" width="10" height="12" rx="2" fill="#E6B85C"/></svg>`;
+}
 function domIconSvg(){
   return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#24180F"/><rect x="22" y="8" width="20" height="48" rx="4" fill="#F3E6C8"/><line x1="26" y1="32" x2="38" y2="32" stroke="#C8B48A"/><circle cx="32" cy="20" r="2.4" fill="#1C140C"/><circle cx="28" cy="42" r="2.2" fill="#1C140C"/><circle cx="36" cy="48" r="2.2" fill="#1C140C"/></svg>`;
 }
-const coverSvg=id=>id==="domino"?domCoverSvg():id==="ballclash"?bcCoverSvg():id==="nightweb"?nwCoverSvg():id==="webnest"?nsCoverSvg():id==="bluff"?bfCoverSvg():id==="flyhunt"?fhCoverSvg():id==="webwar"?wrCoverSvg():id==="dama"?dmCoverSvg():id==="webline"?wlCoverSvg():id==="webgrid"?wgCoverSvg():id==="xo"?xoCoverSvg():id==="wordweb"?wwCoverSvg():wbCoverSvg();
-const iconSvg=id=>id==="domino"?domIconSvg():id==="ballclash"?bcIconSvg():id==="nightweb"?nwIconSvg():id==="webnest"?nsIconSvg():id==="bluff"?bfIconSvg():id==="flyhunt"?fhIconSvg():id==="webwar"?wrIconSvg():id==="dama"?dmIconSvg():id==="webline"?wlIconSvg():id==="webgrid"?wgIconSvg():id==="xo"?xoIconSvg():id==="wordweb"?wwIconSvg():wbIconSvg();
+const coverSvg=id=>id==="kalima"?kmCoverSvg():id==="domino"?domCoverSvg():id==="ballclash"?bcCoverSvg():id==="nightweb"?nwCoverSvg():id==="webnest"?nsCoverSvg():id==="bluff"?bfCoverSvg():id==="flyhunt"?fhCoverSvg():id==="webwar"?wrCoverSvg():id==="dama"?dmCoverSvg():id==="webline"?wlCoverSvg():id==="webgrid"?wgCoverSvg():id==="xo"?xoCoverSvg():id==="wordweb"?wwCoverSvg():wbCoverSvg();
+const iconSvg=id=>id==="kalima"?kmIconSvg():id==="domino"?domIconSvg():id==="ballclash"?bcIconSvg():id==="nightweb"?nwIconSvg():id==="webnest"?nsIconSvg():id==="bluff"?bfIconSvg():id==="flyhunt"?fhIconSvg():id==="webwar"?wrIconSvg():id==="dama"?dmIconSvg():id==="webline"?wlIconSvg():id==="webgrid"?wgIconSvg():id==="xo"?xoIconSvg():id==="wordweb"?wwIconSvg():wbIconSvg();
 const SVGNS="http://www.w3.org/2000/svg";
 function ic(n,cls){const s=document.createElementNS(SVGNS,"svg");s.setAttribute("aria-hidden","true");s.setAttribute("class","ic"+(cls?" "+cls:""));const u=document.createElementNS(SVGNS,"use");u.setAttribute("href","#i-"+n);s.append(u);return s}
 function coinEl(txt){return h("span",{class:"coin-amt"},ic("coin","gold"),h("span",{},String(txt)))}
@@ -2351,6 +2380,20 @@ function preferOfflineMode(g){
 const HERO_IDS=["webbound","ballclash","dama","wordweb","webline"];
 function heroGames(){return HERO_IDS.map(id=>GAMES.find(g=>g.id===id)).filter(Boolean)}
 async function openGame(id,mode){
+  if(id==="kalima"){
+    document.documentElement.classList.add("app-loading");document.documentElement.setAttribute("aria-busy","true");
+    try{
+      await ensureKalima();
+      curGame="kalima";
+      try{localStorage.setItem("spider_last","kalima")}catch(e){}
+      show("km");
+      if(mode==="free")kmStart("practice");
+      else if(mode==="daily")kmStart("daily");
+      else kmStart("pick");
+    }catch(e){toast("تعذّر تحميل اللعبة، تحقق من الاتصال وحاول مرة ثانية","bad")}
+    finally{document.documentElement.classList.remove("app-loading");document.documentElement.removeAttribute("aria-busy")}
+    return;
+  }
   const need=id!=="webbound"&&!(globalThis.SPIDER_GAMES&&globalThis.SPIDER_GAMES.games);
   if(need){document.documentElement.classList.add("app-loading");document.documentElement.setAttribute("aria-busy","true")}
   try{
@@ -2479,7 +2522,7 @@ function renderGames(){
     feat.textContent="";
     if(gameCat==="all"){
       const row=h("div",{class:"hscroll game-feat"});
-      for(const id of ["webbound","ballclash","wordweb","webline"]){
+      for(const id of ["webbound","ballclash","wordweb","kalima","webline"]){
         const fg=GAMES.find(x=>x.id===id);if(!fg)continue;
         row.append(h("button",{class:"gtile feat-tile",onclick:()=>openGame(fg.id)},htmlEl("span","gc-icon",iconSvg(fg.id)),h("span",{class:"gt-t"},h("b",{},fg.name),h("span",{},fg.nameAr))));
       }
@@ -5712,6 +5755,117 @@ addEventListener("keydown",e=>{if(screen!=="nst"||!NSG.run)return;const k={Arrow
 let nsTouch=null;
 $("nsWrap").addEventListener("touchstart",e=>{const t=e.touches[0];nsTouch=[t.clientX,t.clientY]},{passive:true});
 $("nsWrap").addEventListener("touchend",e=>{if(!nsTouch)return;const t=e.changedTouches[0],dx=t.clientX-nsTouch[0],dy=t.clientY-nsTouch[1];nsTouch=null;if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;nsMove(Math.abs(dx)>Math.abs(dy)?(dx>0?1:3):(dy>0?2:0))},{passive:true});
+
+/* ================= كلمة اليوم ================= */
+let kmMode="pick",kmRows=[],kmCur="",kmStatus="open",kmAnswer="",kmStreak=0,kmBest=0,kmMsg="",kmSet=null;
+function kmAllowed(w){if(!kmSet&&globalThis.KALIMA_GUESSES)kmSet=new Set(globalThis.KALIMA_GUESSES);return !!(kmSet&&kmSet.has(w))}
+function kmStart(mode){
+  kmMode=mode;kmRows=[];kmCur="";kmStatus="open";kmAnswer="";kmStreak=0;kmBest=0;kmMsg="";
+  if(mode==="practice"){
+    const list=globalThis.KALIMA_GUESSES||[];
+    kmAnswer=list.length?list[Math.floor(Math.random()*list.length)]:"";
+    kmMsg="تدريب: ست محاولات، بدون سلسلة.";
+    kmRender();return;
+  }
+  if(mode!=="daily"){kmMsg="كلمة اليوم مرة واحدة، أو تدريب بدون نت.";kmRender();return}
+  kmRender();
+  if(!Cloud.on){kmMsg="كلمة اليوم تحتاج اتصال بالخادم";kmStatus="offline";kmRender();return}
+  api("word_start",{}).then(r=>{
+    if(kmMode!=="daily")return;
+    if(r.disabled||r.status==="off"){
+      kmRows=[];kmStatus="off";kmStreak=0;kmBest=0;
+      kmMsg="كلمة اليوم غير مفعّلة على الخادم.";
+      kmRender();return;
+    }
+    kmRows=Array.isArray(r.guesses)?r.guesses.filter(g=>g&&typeof g.w==="string"&&typeof g.m==="string").slice(0,6):[];
+    kmStatus=r.status||"open";kmStreak=r.streak||0;kmBest=r.best||0;
+    kmMsg=kmStatus==="won"?"صح! السلسلة "+fmt(kmStreak):kmStatus==="lost"?"خلصت محاولات اليوم.":"كلمة اليوم · سلسلة "+fmt(kmStreak);
+    kmRender();
+  }).catch(()=>{if(kmMode==="daily"){kmMsg="كلمة اليوم تحتاج اتصال بالخادم";kmStatus="offline";kmRender()}});
+}
+function kmRender(){
+  const K=globalThis.KALIMA;if(!K)return;
+  const grid=$("kmGrid");grid.textContent="";
+  for(let r=0;r<6;r++){
+    const row=h("div",{class:"km-row"});
+    const played=kmRows[r];
+    for(let c=0;c<5;c++){
+      const ch=played?played.w[c]:(r===kmRows.length?kmCur[c]||"":"");
+      const mark=played?played.m[c]:"";
+      row.append(h("div",{class:"km-cell"+(mark?" "+mark:""),"aria-label":ch||"خانة"},ch));
+    }
+    grid.append(row);
+  }
+  const best={};
+  kmRows.forEach(g=>{[...g.w].forEach((ch,i)=>{const m=g.m[i];if(m==="g"||(m==="y"&&best[ch]!=="g")||(m==="b"&&!best[ch]))best[ch]=m})});
+  const keys=$("kmKeys");keys.textContent="";
+  const alpha=K.ALPHA,open=kmStatus==="open"&&(kmMode==="daily"||kmMode==="practice");
+  for(let i=0;i<alpha.length;i+=7){
+    const line=h("div",{class:"km-krow"});
+    for(const ch of alpha.slice(i,i+7)){
+      const m=best[ch]||"";
+      line.append(h("button",{type:"button",class:"km-key"+(m?" "+m:""),disabled:!open,"data-ch":ch},ch));
+    }
+    keys.append(line);
+  }
+  keys.append(h("div",{class:"km-krow"},
+    h("button",{type:"button",class:"km-key wide",disabled:!open,"data-act":"del"},"حذف"),
+    h("button",{type:"button",class:"km-key wide primary",disabled:!open,"data-act":"ok"},"تأكيد")));
+  $("kmStatus").textContent=kmMsg+(kmBest?"":"");
+  if(kmBest&&kmMode==="daily")$("kmStatus").textContent=(kmMsg?kmMsg+" · ":"")+"أفضل سلسلة "+fmt(kmBest);
+  const done=kmStatus==="won"||kmStatus==="lost";
+  $("kmShare").classList.toggle("hidden",!(done&&kmRows.length));
+  $("kmDaily").classList.toggle("hidden",kmMode==="daily"&&kmStatus==="open");
+  $("kmPractice").classList.toggle("hidden",kmMode==="practice"&&kmStatus==="open");
+}
+async function kmSubmit(){
+  const K=globalThis.KALIMA;if(!K||kmStatus!=="open")return;
+  const guess=K.norm(kmCur);
+  if([...guess].length!==5){toast("اكتب خمسة حروف","bad");return}
+  if(kmMode==="practice"){
+    if(!kmAllowed(guess)){toast("الكلمة مو في القائمة","bad");return}
+    const marks=K.score(kmAnswer,guess);
+    kmRows.push({w:guess,m:marks});kmCur="";
+    if(marks==="ggggg"){kmStatus="won";kmMsg="صح! التدريب ما يحسب في السلسلة."}
+    else if(kmRows.length>=6){kmStatus="lost";kmMsg="الكلمة كانت "+kmAnswer}
+    kmRender();return;
+  }
+  if(kmMode!=="daily"||!Cloud.on){kmMsg="كلمة اليوم تحتاج اتصال بالخادم";kmStatus="offline";kmRender();return}
+  try{
+    const r=await api("word_guess",{word:guess});
+    kmRows=Array.isArray(r.guesses)?r.guesses.slice(0,6):kmRows;
+    kmStatus=r.status||kmStatus;kmStreak=r.streak||0;kmBest=r.best||0;kmCur="";
+    kmMsg=kmStatus==="won"?"صح! السلسلة "+fmt(kmStreak):kmStatus==="lost"?"خلصت محاولات اليوم.":"سلسلة "+fmt(kmStreak);
+  }catch(e){toast((e&&e.message)||"ما انحفظ التخمين","bad")}
+  kmRender();
+}
+function kmShareText(){
+  const lines=kmRows.map(r=>[...r.m].map(c=>c==="g"?"🟩":c==="y"?"🟨":"⬛").join(""));
+  const head=(kmMode==="practice"?"تدريب كلمة ":"كلمة اليوم ")+fmt(kmRows.length)+"/٦";
+  return head+"\n"+lines.join("\n");
+}
+$("kmQuit").addEventListener("click",()=>goHome());
+$("kmDaily").addEventListener("click",()=>kmStart("daily"));
+$("kmPractice").addEventListener("click",()=>kmStart("practice"));
+$("kmKeys").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b||b.disabled)return;
+  if(b.dataset.ch){if(kmCur.length<5){kmCur+=b.dataset.ch;kmRender()}}
+  else if(b.dataset.act==="del"){kmCur=kmCur.slice(0,-1);kmRender()}
+  else if(b.dataset.act==="ok")kmSubmit();
+});
+$("kmShare").addEventListener("click",async()=>{
+  const text=kmShareText();
+  if(navigator.share){try{await navigator.share({title:"كلمة اليوم",text});return}catch(e){if(e&&e.name==="AbortError")return}}
+  try{await navigator.clipboard.writeText(text);toast("اننسخت النتيجة","good")}catch(e){openSheet((c,close)=>{c.append(h("h3",{},"النتيجة"),h("p",{class:"lead",style:"white-space:pre-wrap"},text),h("button",{class:"primary",onclick:close},"إغلاق"))})}
+});
+addEventListener("keydown",e=>{
+  if(screen!=="km"||kmStatus!=="open")return;
+  const K=globalThis.KALIMA;if(!K)return;
+  if(e.key==="Enter"){e.preventDefault();kmSubmit();return}
+  if(e.key==="Backspace"){e.preventDefault();kmCur=kmCur.slice(0,-1);kmRender();return}
+  const n=K.norm(e.key);
+  if(n.length===1&&K.ALPHA.includes(n)&&kmCur.length<5){e.preventDefault();kmCur+=n;kmRender()}
+});
 
 /* ---- helpers shared with games that live in their own files (BALL CLASH) ---- */
 window.SP={h,ic,htmlEl,fmt,show,toast,sfx,buzz,openSheet,openGame,api,applyProfile,setCoins,coinEl,online:()=>Platform.kind==="web"&&!!Cloud.on,reduced:()=>matchMedia("(prefers-reduced-motion: reduce)").matches,get P(){return P},get screen(){return screen}};
