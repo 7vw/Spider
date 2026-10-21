@@ -206,7 +206,7 @@ async function startBattle(newSeed){
     h("div",{class:"bc-hud",id:"bcHud"}),
     h("div",{class:"bc-arena",id:"bcArenaWrap"},h("canvas",{id:"bcCanvas",role:"img","aria-label":"ساحة المعركة"}),h("div",{class:"bc-feed",id:"bcFeed","aria-live":"polite"})),
     h("div",{class:"bc-ctl"},h("div",{class:"seg3 bc-speed",role:"group","aria-label":"سرعة المشاهدة"},
-        [1,2,4].map(function(v){return h("button",{class:S.speed===v?"on":"","data-v":String(v),onclick:function(){S.speed=v;speedBtns()}},v+"x")})),
+        [1,2,4].map(function(v){return h("button",{class:S.speed===v?"on":"","data-v":String(v),onclick:function(){S.speed=v;speedBtns()}},fmt(v)+"×")})),
       h("button",{id:"bcPause",onclick:togglePause},ic("pause"),h("span",{},"إيقاف"))),
     h("div",{class:"mg-win hidden",id:"bcWin",role:"dialog","aria-modal":"true"}));
   resize();hud();cancelAnimationFrame(S.raf);S.raf=requestAnimationFrame(loop);
@@ -310,7 +310,8 @@ function showWin(){
   var tbl=h("div",{class:"bc-stats"});st.balls.forEach(function(b){tbl.append(h("div",{class:"bc-sr",style:"--tc:"+st.teams[b.team].color},previewCanvas(b.kind,34),h("b",{},b.K.ar),h("span",{},"ضرر "+fmt(Math.round(b.dealt))),h("span",{},"ضربات "+fmt(b.hits)),h("span",{class:b.alive?"ok":"ko"},b.alive?"صامد":"خرج")))});
   var youWon=!st.draw&&playing&&st.winner===0,kicker=st.draw?"تعادل":!playing?"انتهت":youWon?"فوز":"خسارة";
   var lead=(st.draw&&st.timeout?"خلص الوقت والصحة متعادلة. ":st.timeout?"خلص الوقت، وفاز الأكثر صحة. ":"")+"أفضل كورة: "+mvp.K.ar+" بـ"+fmt(Math.round(mvp.dealt))+" ضرر";
-  w.append(h("div",{class:"card"},h("div",{class:"result-kicker"+(st.draw||!playing?"":youWon?" is-win":" is-loss")},kicker),h("div",{class:"win",style:"color:"+(st.draw?"#fff":st.teams[st.winner].color)},title),
+  var tone=st.draw?" is-draw":(!playing||youWon)?" is-win":" is-loss";
+  w.append(h("div",{class:"card"},h("div",{class:"result-kicker"+(st.draw||!playing?"":youWon?" is-win":" is-loss")},kicker),h("div",{class:"win"+tone},title),
     h("p",{class:"lead"},lead),tbl,
     h("div",{id:"bcReward"},S.srv?h("div",{class:"skel",style:"height:40px"}):h("p",{class:"hint"},S.mode==="custom"?"المعركة المخصصة للمشاهدة، بدون مكافآت.":"معركة تدريب بدون مكافآت.")),
     h("div",{class:"row",style:"margin-top:10px"},h("button",{class:"primary",onclick:function(){startBattle(true)}},"معركة ثانية"),h("button",{onclick:function(){stop();renderPicker()}},"غيّر الكور")),
@@ -318,7 +319,7 @@ function showWin(){
   SP.sfx(!playing||st.winner===0?"unlock":"bad");
   if(S.srv){var sid=S.srv;S.srv=null;SP.api("bc_finish",{id:sid}).then(function(r){SP.applyProfile(r.profile);var box=$("bcReward");if(!box)return;box.textContent="";
       box.append(r.out.capped?h("p",{class:"hint"},"خلصت مكافآت اليوم (١٥ معركة)، والنتيجة انحسبت."):h("div",{class:"chips",style:"justify-content:center"},h("span",{class:"pill"},"+"+fmt(r.out.xp)+" XP"),h("span",{class:"pill coins"},SP.coinEl("+"+fmt(r.out.coins)))),
-        h("p",{class:"hint",style:"margin:6px 0 0"},"السيرفر أعاد حساب المعركة وأكّد النتيجة."))})
+        h("p",{class:"hint",style:"margin:6px 0 0"},"الخادم أعاد حساب المعركة وأكّد النتيجة."))})
     .catch(function(e){var box=$("bcReward");if(box){box.textContent="";box.append(h("p",{class:"err"},e.message))}})}
 }
 /* ---------- tournaments (knock-out brackets against the computer) ---------- */

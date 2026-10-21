@@ -70,7 +70,7 @@ button:disabled{opacity:.38;cursor:default}
 button.primary{border-color:transparent;background:linear-gradient(105deg,var(--acid),var(--violet));color:#fff;box-shadow:0 10px 26px -14px var(--acid)}
 button.sel{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 button.wide{width:100%}
-button.small{min-height:40px;font-size:14px;padding:6px 12px;flex:none}
+button.small{min-height:44px;font-size:14px;padding:6px 12px;flex:none}
 :focus-visible{outline:2px solid var(--violet);outline-offset:2px}
 input{width:100%;font:inherit;font-size:17px;padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:var(--field);color:var(--ink);min-height:48px}
 .row{display:flex;gap:8px}
@@ -104,7 +104,7 @@ input{width:100%;font:inherit;font-size:17px;padding:10px 14px;border-radius:14p
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--field);border:1px solid var(--line);white-space:nowrap;line-height:1.3}
 .pill.coins{color:var(--ink)}
 .pill.hot{border-color:rgba(255,122,31,.5)}
-.rar{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid currentColor;line-height:1.5;white-space:nowrap}
+.rar{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid currentColor;line-height:1.5;white-space:nowrap}
 .r-common{color:var(--r-common)}.r-rare{color:var(--r-rare)}.r-epic{color:var(--r-epic)}.r-legendary{color:var(--r-legendary)}
 .r-secret{color:var(--r-secret);background:linear-gradient(100deg,rgba(57,255,136,.12),rgba(155,92,255,.16))}
 
@@ -187,7 +187,7 @@ input{width:100%;font:inherit;font-size:17px;padding:10px 14px;border-radius:14p
 .item .nm{font-weight:800;font-size:15px;line-height:1.3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item .how{font-size:12.5px;color:var(--muted);line-height:1.35;min-height:17px}
 .item button{width:100%;min-height:42px;font-size:14px;margin-top:2px}
-.item .eq{position:absolute;top:8px;inset-inline-start:8px;font-size:11px;font-weight:800;padding:1px 7px;border-radius:999px;background:var(--acid-ink);color:var(--bg)}
+.item .eq{position:absolute;top:8px;inset-inline-start:8px;font-size:12px;font-weight:800;padding:1px 7px;border-radius:999px;background:var(--acid-ink);color:var(--bg)}
 .item.r-rare-b{border-color:rgba(63,183,255,.35)}
 .item.r-epic-b{border-color:rgba(178,107,255,.45)}
 .item.r-legendary-b{border-color:rgba(255,194,61,.55);box-shadow:0 0 0 1px rgba(255,194,61,.2) inset}
@@ -263,6 +263,9 @@ input{width:100%;font:inherit;font-size:17px;padding:10px 14px;border-radius:14p
 .note{font-size:14px;color:var(--muted);line-height:1.6}
 
 /* code box */
+.store-code{margin:18px 0 8px;text-align:center}
+.store-code .link{width:auto;margin:0 auto}
+.store-code #codeBody{margin-top:10px;text-align:start}
 .codebox .row{margin-top:10px}
 .codebox input{direction:ltr;text-align:center;letter-spacing:.12em;text-transform:uppercase}
 .shake{animation:shake .35s}
@@ -365,13 +368,15 @@ details[open].card>summary::after{content:"−"}
 #winSpider{display:block;width:64px;height:104px;margin:0 auto}
 #winSpider.drop{animation:drop 1s cubic-bezier(.25,1.35,.5,1) both}
 @keyframes drop{from{transform:translateY(-120px)}to{transform:none}}
-.win{font-family:var(--display);font-weight:400;font-size:44px;line-height:1.1;margin:0 0 4px}
+.win{font-family:var(--display);font-weight:700;font-size:44px;line-height:1.1;margin:0 0 4px;color:var(--gold-hi)}
+.win.is-loss{color:var(--danger)}
+.win.is-draw{color:var(--ink)}
 .scores{list-style:none;padding:0;margin:6px 0 16px;text-align:start}
 .scores li{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-weight:600;min-width:0}
 .scores li svg{width:24px;height:24px;flex:none}
 .scores li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .scores li b{margin-inline-start:auto;white-space:nowrap}
-.link{background:none;border:0;color:var(--muted);font-weight:600;font-size:14px;min-height:40px;margin-top:6px;width:100%;text-decoration:underline;text-underline-offset:3px}
+.link{background:none;border:0;color:var(--muted);font-weight:600;font-size:14px;min-height:44px;margin-top:6px;width:100%;text-decoration:underline;text-underline-offset:3px}
 .rwrow{display:flex;justify-content:center;gap:10px;margin:10px 0 6px}
 .rwbox{flex:1;max-width:130px;padding:10px 6px;border-radius:16px;background:var(--field);border:1px solid var(--line)}
 .rwbox b{display:block;font-family:var(--display);font-weight:400;font-size:30px;line-height:1.1}
@@ -409,7 +414,7 @@ details[open].card>summary::after{content:"−"}
 :root:not([data-theme="dark"]) .r-owner{color:#8A5A00}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .r-owner{color:#FFD86B}}
 .item.r-owner-b{border:1.5px solid transparent;background:linear-gradient(var(--panel),var(--panel)) padding-box,conic-gradient(from var(--a),#FFD86B,#9B5CFF,#FFD86B) border-box;animation:rot 5s linear infinite}
-.ownertag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:800;padding:1px 7px;border-radius:999px;color:#1A1200;background:linear-gradient(100deg,#FFD86B,#E9B949);white-space:nowrap;line-height:1.5}
+.ownertag{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:800;padding:1px 7px;border-radius:999px;color:#1A1200;background:linear-gradient(100deg,#FFD86B,#E9B949);white-space:nowrap;line-height:1.5}
 
 /* ===== avatar decorations ===== */
 .av .dec{position:absolute;pointer-events:none;z-index:2}
@@ -634,7 +639,7 @@ button.primary{background:linear-gradient(180deg,#F2425F 0%,#D51F3D 100%);border
 button.primary:hover:not(:disabled){filter:brightness(1.06)}
 button.ghost{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 button.sel,button[aria-pressed="true"]{background:rgba(230,41,72,.14);border-color:rgba(230,41,72,.6);color:#fff}
-button.link{background:none;border:0;color:var(--secondary-hi);min-height:36px;padding:0 4px;font-weight:600}
+button.link{background:none;border:0;color:var(--secondary-hi);min-height:44px;padding:0 8px;font-weight:600}
 input,select,textarea{background:var(--field);border:1px solid var(--line-2);border-radius:var(--rad-md);color:var(--ink);font-family:var(--body)}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--secondary);box-shadow:0 0 0 3px rgba(141,101,246,.22)}
 .pill{background:var(--surface-2);border:1px solid var(--line);color:var(--ink)}
@@ -644,13 +649,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--secondar
 .banner .ic{width:20px;height:20px;flex:none}
 .sheet .sheetCard,#sheetCard{background:var(--surface);border-top:1px solid var(--line-2)}
 .toast{background:var(--surface-3);border:1px solid var(--line-2);box-shadow:var(--e2)}
+body.in-match .toasts{top:auto;bottom:calc(128px + env(safe-area-inset-bottom,0px));z-index:35}
 /* icons */
 .ic{width:20px;height:20px;flex:none;display:inline-block;vertical-align:middle}
 .ic.gold{color:var(--gold)}.ic.ok{color:var(--good)}
 /* nav: five tabs, glass */
 .nav{background:var(--navbg);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);border-top:1px solid var(--line)}
 .nav .in{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))}
-.nav button{color:var(--faint);font-size:11px;font-weight:600;background:none;border:0;min-width:0}
+.nav button{color:var(--faint);font-size:12px;font-weight:600;background:none;border:0;min-width:0}
 .nav button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .nav button.on{color:var(--ink)}
 .nav button.on svg{color:var(--primary-hi)}
@@ -664,8 +670,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--secondar
 .brand .logo{width:30px;height:30px;color:var(--primary);filter:drop-shadow(0 0 10px rgba(230,41,72,.45))}
 .wordmark{font:700 21px/1 var(--display);letter-spacing:.2em;background:linear-gradient(100deg,#fff 30%,#C9CBE0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .tb-end{display:flex;align-items:center;gap:8px}
-.coinchip{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border-radius:999px;background:linear-gradient(180deg,rgba(230,184,92,.16),rgba(230,184,92,.06));border:1px solid rgba(230,184,92,.35);color:var(--gold-hi);font-weight:700;font-variant-numeric:tabular-nums}
-.avbtn{width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--surface-2)}
+.coinchip{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:999px;background:linear-gradient(180deg,rgba(230,184,92,.16),rgba(230,184,92,.06));border:1px solid rgba(230,184,92,.35);color:var(--gold-hi);font-weight:700;font-variant-numeric:tabular-nums}
+.avbtn{width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);flex:none}
 /* hero card */
 .hero-card{position:relative;border-radius:var(--rad-xl);overflow:hidden;min-height:236px;border:1px solid rgba(255,255,255,.08);box-shadow:var(--e2);isolation:isolate}
 .hero-card .hc-art{position:absolute;inset:0;z-index:-2}.hero-card .hc-art svg{width:100%;height:100%;display:block}
@@ -690,7 +696,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--secondar
 .q-bot .qi{background:rgba(141,101,246,.18);color:var(--secondary-hi)}
 .q-local .qi{background:rgba(230,184,92,.15);color:var(--gold-hi)}
 .qtile .qn{font-weight:700;font-size:var(--fs-sm);color:var(--ink)}
-.qtile .qs{font-size:11.5px;color:var(--faint);font-weight:500;line-height:1.35}
+.qtile .qs{font-size:12px;color:var(--faint);font-weight:500;line-height:1.35}
 /* progress */
 .card.prog{padding:14px}
 .card.prog .pstrip{margin:0;background:none;border:0;box-shadow:none;padding:0}
@@ -776,7 +782,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--secondar
 .pf-card{position:relative;margin:-74px 0 12px;padding:0 4px;display:flex;flex-direction:column;align-items:center;text-align:center;background:none!important;border:0!important;box-shadow:none!important}
 .pf-av{border-radius:50%;padding:4px;background:var(--bg);box-shadow:0 0 0 1px rgba(255,255,255,.08),0 18px 40px -14px rgba(230,41,72,.6)}
 .pf-name{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:10px;font:700 22px/1.25 var(--display)}
-.pf-name .edit{width:32px;height:32px;min-height:32px;padding:0;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.06)}
+.pf-name .edit{width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.06)}
 .pf-name .edit .ic{width:15px;height:15px}
 .pf-title{color:var(--muted);font-size:var(--fs-sm);margin-top:2px}
 .pf-level{display:flex;align-items:center;gap:12px;width:100%;margin-top:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--rad-lg);box-shadow:var(--e1)}
@@ -812,7 +818,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--secondar
 .ctile:active{transform:scale(.97)}
 .ctile:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--secondary-hi)}
 .ct-art{position:relative;aspect-ratio:1;height:auto!important;display:grid;place-items:center;border-radius:10px;background:rgba(0,0,0,.28);overflow:hidden;padding:4px}
-.ct-art .ttl{font-size:11.5px;line-height:1.3;white-space:normal}
+.ct-art .ttl{font-size:12px;line-height:1.3;white-space:normal}
 .ct-art>span[style]{font-size:14px!important}
 .ctile.locked .ct-art>*:not(.ct-lock){filter:grayscale(.85) brightness(.55)}
 .ct-lock{position:absolute;bottom:6px;inset-inline-start:6px;width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:rgba(9,11,18,.78);color:var(--muted)}
@@ -820,7 +826,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--secondar
 .ct-eq{position:absolute;top:6px;inset-inline-start:6px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--good);color:#05261A;box-shadow:0 0 0 3px rgba(9,11,18,.6)}
 .ct-eq .ic{width:13px;height:13px}
 .ct-nm{margin-top:7px;font-size:12.5px;font-weight:700;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ct-sub{font-size:11px;color:var(--rc);font-weight:600;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct-sub{font-size:12px;color:var(--rc);font-weight:600;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ctile.unknown{cursor:default}.ctile.unknown .q{font:700 34px/1 var(--display);color:var(--r-secret);opacity:.85}
 .col-prog{padding:12px 14px;margin:4px 0 10px}
 .col-filters{display:flex;gap:8px;align-items:center;margin-bottom:10px}
@@ -828,12 +834,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--secondar
 .seg-mini{display:flex;padding:3px;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:12px;flex:none}
 .seg-mini button{min-height:34px;padding:0 10px;border:0;background:none;color:var(--faint);font-size:12.5px;border-radius:9px}
 .seg-mini button.on{background:var(--surface-3);color:var(--ink)}
-.chip .cnt{font-size:11px;color:var(--faint);font-weight:600}
+.chip .cnt{font-size:12px;color:var(--faint);font-weight:600}
 .chip.on .cnt{color:#4A5068}
 .wr-card{display:flex;align-items:center;gap:16px;padding:14px;margin-bottom:10px}
 .wr-ring{position:relative;width:116px;height:116px;flex:none}.wr-ring svg{width:100%;height:100%;display:block}
 .wr-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.wr-in b{font:700 24px/1 var(--display)}.wr-in span{font-size:11px;color:var(--faint);margin-top:4px}
+.wr-in b{font:700 24px/1 var(--display)}.wr-in span{font-size:12px;color:var(--faint);margin-top:4px}
 .wr-side{flex:1;display:grid;gap:8px;min-width:0}
 .wr-row{display:flex;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:12px;background:var(--surface-2);font-size:var(--fs-sm)}
 .wr-row b{font-variant-numeric:tabular-nums}.good-t{color:var(--good)}
@@ -958,7 +964,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--secondar
 .item:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--secondary-hi)!important}
 .heart{color:var(--faint);line-height:0}.heart .ic{width:20px;height:20px}.heart.on{color:#FF4F7A}
 .fx-mini{display:grid;place-items:center;line-height:0}
-.mini-ttl{font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:6px;background:rgba(141,101,246,.2);color:var(--secondary-hi)}
+.mini-ttl{font-size:12px;font-weight:800;padding:1px 6px;border-radius:6px;background:rgba(141,101,246,.2);color:var(--secondary-hi)}
 .mini-lob{display:inline-block;width:26px;height:18px;padding:0!important;border-radius:6px}
 .rwc svg{vertical-align:middle;margin-inline-end:4px}
 
@@ -982,14 +988,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--secondar
 .slot-nm{display:flex;align-items:center;gap:4px;font-weight:700;font-size:var(--fs-sm);max-width:100%;overflow:hidden}
 .slot-st{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
 .slot-more{grid-column:1/-1;text-align:center;color:var(--muted);font-size:var(--fs-sm)}
-.tagc{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.06);color:var(--muted)}
+.tagc{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.06);color:var(--muted)}
 .tagc .ic{width:13px;height:13px}
 .tagc.ok{color:#7EF0BD;background:rgba(61,220,151,.12)}.tagc.host{color:var(--gold-hi);background:rgba(230,184,92,.12)}.tagc.warn{color:#FFB38A;background:rgba(255,120,60,.12)}
 #btnReady{margin-top:12px}
 .pc .av{flex:none}.pc-ball{line-height:0;flex:none}
 .pc .nm{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 .pc .pc-bot,.scores .pc-bot{width:15px;height:15px;color:var(--secondary-hi)}
-.pc .you{font-size:10.5px;font-weight:700;padding:0 6px;border-radius:999px;background:rgba(141,101,246,.2);color:var(--secondary-hi)}
+.pc .you{font-size:12px;font-weight:700;padding:0 6px;border-radius:999px;background:rgba(141,101,246,.2);color:var(--secondary-hi)}
 .pc .sub{display:flex;align-items:center;gap:8px}
 .pc .arrived,.pc .wins,.scores .wins{display:inline-flex;align-items:center;gap:3px}
 .pc .arrived .ic,.pc .wins .ic,.scores .wins .ic{width:13px;height:13px;color:var(--gold)}
@@ -1001,7 +1007,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--secondar
 .winstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:12px 0 4px}
 .winstats:empty{display:none}
 .wst{display:flex;flex-direction:column;align-items:center;padding:8px 4px;border-radius:12px;background:var(--surface-2)}
-.wst b{font:700 17px/1.2 var(--display);font-variant-numeric:tabular-nums}.wst span{font-size:11px;color:var(--faint)}
+.wst b{font:700 17px/1.2 var(--display);font-variant-numeric:tabular-nums}.wst span{font-size:12px;color:var(--faint)}
 @media (min-width:900px){
   .wrap:has(#game:not(.hidden)){max-width:1120px}
   #game:not(.hidden){display:grid;grid-template-columns:minmax(0,1fr) 340px;column-gap:22px;align-items:start}
@@ -1093,7 +1099,7 @@ button:disabled .ic{width:15px;height:15px;vertical-align:-2px;margin-inline-end
 .cont-card{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;margin:2px 0 6px;border-radius:var(--rad-lg);text-align:start;
   background:linear-gradient(90deg,rgba(141,101,246,.18),rgba(230,41,72,.1)),var(--surface);border:1px solid rgba(141,101,246,.35)}
 .cont-card .gc-icon{width:46px;height:46px;flex:none}.cont-card .gc-icon svg{width:100%;height:100%}
-.cont-card .ck{display:block;font-size:11.5px;color:var(--secondary-hi);font-weight:700}
+.cont-card .ck{display:block;font-size:12px;color:var(--secondary-hi);font-weight:700}
 .cont-card b{display:block;font:700 17px/1.2 var(--display);direction:ltr;text-align:right}
 .cont-card .cs{display:block;font-size:12px;color:var(--muted)}
 .cplay{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--primary);color:#fff;flex:none}.cplay .ic{width:18px;height:18px}
@@ -1102,7 +1108,7 @@ button:disabled .ic{width:15px;height:15px;vertical-align:-2px;margin-inline-end
 .gtile{display:flex;align-items:center;gap:10px;padding:12px;border-radius:var(--rad-md);background:var(--surface);border:1px solid var(--line);text-align:start;min-height:64px}
 .gtile:hover{border-color:rgba(255,255,255,.2)}
 .gtile .gc-icon{width:40px;height:40px;flex:none}.gtile .gc-icon svg{width:100%;height:100%}
-.gt-t{display:flex;flex-direction:column;min-width:0}.gt-t b{font:700 15px/1.2 var(--display);direction:ltr;text-align:right}.gt-t span{font-size:11.5px;color:var(--muted)}
+.gt-t{display:flex;flex-direction:column;min-width:0}.gt-t b{font:700 15px/1.2 var(--display);direction:ltr;text-align:right}.gt-t span{font-size:12px;color:var(--muted)}
 .dcard .di.g{background:none;padding:0}.dcard .di.g svg{width:100%;height:100%;border-radius:12px}
 .car-dots{gap:0;margin-top:2px;max-width:100%;overflow-x:auto;scrollbar-width:none;justify-content:safe center}
 .car-dots::-webkit-scrollbar{display:none}
@@ -1116,7 +1122,7 @@ button:disabled .ic{width:15px;height:15px;vertical-align:-2px;margin-inline-end
 .inst-card{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:8px;border-radius:var(--rad-lg);background:linear-gradient(100deg,rgba(230,41,72,.16),rgba(141,101,246,.16)),var(--surface);border:1px solid rgba(230,41,72,.35)}
 .inst-ic{width:48px;height:48px;border-radius:12px;flex:none;box-shadow:0 8px 20px -8px rgba(230,41,72,.6)}.inst-ic.big{width:64px;height:64px;border-radius:15px}
 .inst-card b{display:block;font-size:15px}.inst-card span{font-size:12px;color:var(--muted)}
-.inst-card .small{flex:none;min-height:38px;padding:0 14px}.inst-x{flex:none;width:30px;height:30px;min-height:0;padding:0;background:none;border:0;color:var(--muted);font-size:20px}
+.inst-card .small{flex:none;min-height:44px;padding:0 14px}.inst-x{flex:none;width:44px;height:44px;min-height:44px;padding:0;background:none;border:0;color:var(--muted);font-size:20px}
 .inst-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
 .inst-step{display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--rad-md);background:var(--surface-2);margin-top:8px}
 .inst-n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--primary);color:#fff;font:700 13px/1 var(--display);flex:none}
@@ -1270,7 +1276,7 @@ body{overflow-x:clip}
       <button class="avbtn" id="homeAv" type="button" aria-label="حسابي"><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg></button>
     </div>
   </header>
-  <p class="home-lead">اثنتا عشرة لعبة عربية، تلعبها مع أصحابك من أي جهاز.</p>
+  <p class="home-lead">ألعاب عربية، تلعبها مع أصحابك من أي جهاز.</p>
   <div class="banners" id="homeBanners"></div>
   <div class="carousel" id="homeCar" role="region" aria-roledescription="شرائح" aria-label="ألعاب SPIDER">
     <div class="car-track" id="homeCarTrack">
@@ -1313,7 +1319,7 @@ body{overflow-x:clip}
     <div class="home-side">
       <div class="sec-title"><h2>تقدّمك</h2></div>
       <div class="card prog">
-        <button class="pstrip" id="homeStrip" type="button"></button>
+        <button class="pstrip" id="homeStrip" type="button" aria-label="تقدّمك، افتح حسابي"></button>
         <div id="homeProg"></div>
       </div>
       <div class="sec-title"><h2>اليوم</h2></div>
@@ -1330,7 +1336,7 @@ body{overflow-x:clip}
 <!-- MATCH SCREEN FOR WEBGRID / XO∞ -->
 <section id="mg" class="hidden">
   <div class="bar">
-    <button class="quit" id="mgQuit">طلوع</button>
+    <button class="quit" id="mgQuit">خروج</button>
     <button class="icon" id="mgSound" aria-label="الصوت"><svg class="ic" aria-hidden="true"><use href="#i-sound"/></svg></button>
     <span class="mg-title" id="mgTitle"></span>
   </div>
@@ -1358,7 +1364,7 @@ body{overflow-x:clip}
 
 <!-- WEBLINE -->
 <section id="wl" class="hidden">
-  <div class="bar"><button class="quit" id="wlQuit">طلوع</button><span class="wl-score" aria-live="polite"><span>النتيجة</span><b id="wlScore">٠</b></span><span class="mg-title">WEBLINE</span></div>
+  <div class="bar"><button class="quit" id="wlQuit">خروج</button><span class="wl-score" aria-live="polite"><span>النتيجة</span><b id="wlScore">٠</b></span><span class="mg-title">WEBLINE</span></div>
   <div class="wl-wrap" id="wlWrap"><canvas id="wlCanvas" role="img" aria-label="ساحة WEBLINE"></canvas><div class="wl-msg hidden" id="wlMsg"></div></div>
   <div class="wl-pad" role="group" aria-label="أزرار الاتجاه">
     <span></span><button data-d="0" aria-label="فوق"><svg class="ic" aria-hidden="true"><use href="#i-up"/></svg></button><span></span>
@@ -1378,7 +1384,7 @@ body{overflow-x:clip}
 
 <!-- WEBNEST -->
 <section id="nst" class="hidden">
-  <div class="bar"><button class="quit" id="nsQuit">طلوع</button><button class="hidden" id="nsUndo">تراجع</button><span class="wl-score" aria-live="polite"><span>النتيجة</span><b id="nsScore">٠</b></span><span class="mg-title">WEBNEST</span></div>
+  <div class="bar"><button class="quit" id="nsQuit">خروج</button><button class="hidden" id="nsUndo">تراجع</button><span class="wl-score" aria-live="polite"><span>النتيجة</span><b id="nsScore">٠</b></span><span class="mg-title">WEBNEST</span></div>
   <p class="hint center" id="nsHint" style="margin:6px 0">اسحب أو استخدم الأسهم. ادمج المراحل المتشابهة لين توصل لملكة العناكب.</p>
   <div class="ns-wrap" id="nsWrap"><div class="ns-grid" id="nsGrid" role="grid" aria-label="بيت العنكبوت"></div></div>
   <div class="ns-pad" id="nsPad" role="group" aria-label="أزرار الاتجاه">
@@ -1466,7 +1472,7 @@ body{overflow-x:clip}
   </div>
   <div class="card hidden" id="wlPanel">
     <h2>تحدي اليوم</h2>
-    <p class="lead">نفس الخريطة ونفس الذباب لكل اللاعبين اليوم، وأعلى نتيجة تتصدر. السيرفر يعيد تشغيل لعبتك ويتأكد من نتيجتك.</p>
+    <p class="lead">نفس الخريطة ونفس الذباب لكل اللاعبين اليوم، وأعلى نتيجة تتصدر. الخادم يعيد تشغيل لعبتك ويتأكد من نتيجتك.</p>
     <div id="wlMine"></div>
     <button class="primary wide" id="wlDaily">ابدأ تحدي اليوم</button>
     <div class="sec-h"><h3>متصدرين اليوم</h3><span id="wlDay"></span></div>
@@ -1542,13 +1548,6 @@ body{overflow-x:clip}
 <!-- STORE -->
 <section id="store" class="page hidden">
   <div class="phead"><h1>المتجر</h1><div class="wallet" id="stWallet"></div></div>
-  <div class="card codebox" id="codeCard">
-    <button class="banner" id="codeToggle" aria-expanded="false"><span class="e"><svg class="ic" aria-hidden="true"><use href="#i-key"/></svg></span><span class="grow">عندك كود سري؟</span><span class="go">‹</span></button>
-    <div class="hidden" id="codeBody">
-      <div class="row"><input id="codeIn" maxlength="32" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="مثال: ABCD-1234" aria-label="الكود السري"><button id="codeBtn" style="flex:none;padding:0 18px">استخدم الكود</button></div>
-      <p class="hidden" id="codeMsg" role="status"></p>
-    </div>
-  </div>
   <div class="toolbar">
     <input id="stSearch" type="search" placeholder="دوّر على عنصر" aria-label="بحث في المتجر" autocomplete="off">
     <button id="stFilterBtn" class="small" aria-expanded="false" style="min-height:44px">تصفية</button>
@@ -1558,6 +1557,13 @@ body{overflow-x:clip}
   <div id="stFeatured"></div>
   <div class="items" id="stItems"></div>
   <div class="empty hidden" id="stEmpty"><div class="empty-ic"><svg class="ic" aria-hidden="true"><use href="#i-web2"/></svg></div><p style="margin:0">ما فيه عناصر بهالتصفية.</p><p class="hint">جرّب تصنيف ثاني، أو امسح البحث.</p></div>
+  <div class="store-code" id="codeCard">
+    <button class="link" id="codeToggle" type="button" aria-expanded="false">عندك كود؟</button>
+    <div class="hidden" id="codeBody">
+      <div class="row"><input id="codeIn" maxlength="32" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="مثال: ABCD-1234" aria-label="الكود السري"><button id="codeBtn" style="flex:none;padding:0 18px">استخدم الكود</button></div>
+      <p class="hidden" id="codeMsg" role="status"></p>
+    </div>
+  </div>
 </section>
 
 <!-- PROFILE -->
@@ -1599,7 +1605,7 @@ body{overflow-x:clip}
   <div class="bar">
     <span class="t">الغرفة</span>
     <span class="chip"><i class="cdot" id="connL"></i><span id="connLt">يتصل…</span></span>
-    <button class="quit" id="btnLeaveLobby">طلوع</button>
+    <button class="quit" id="btnLeaveLobby">خروج</button>
   </div>
   <div class="card center">
     <span class="lbl">كود الغرفة</span>
@@ -1630,7 +1636,7 @@ body{overflow-x:clip}
     <span class="chip hidden" id="connG"><i class="cdot" id="connGd"></i><span class="room" id="roomTag"></span></span>
     <button class="icon" id="btnEmote" aria-label="التفاعلات" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg></button>
     <button class="icon" id="btnSound" aria-label="الصوت"><svg class="ic" aria-hidden="true"><use href="#i-sound"/></svg></button>
-    <button class="quit" id="btnQuit">طلوع</button>
+    <button class="quit" id="btnQuit">خروج</button>
   </div>
   <div class="players" id="players"></div>
   <div class="status" id="status" aria-live="polite"></div>
