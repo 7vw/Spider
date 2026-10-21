@@ -5345,7 +5345,10 @@ function domClaim(){
   if(body.requestId.length<8)body.requestId=("dom-req-"+Date.now()).slice(0,80);
   if(mode==="room"&&NG.room)body.code=NG.room.code;
   else if(mode==="solo"&&NG.solo)body.solo=NG.solo.id;
-  else{body.seed=NG.domSeed>>>0;body.n=G.n;body.moves=G.moves||[];body.bots=(G.players||[]).map(p=>p.bot||0)}
+  else{
+    if(!NG.domNonce){lastResult={mid:G.mid,won:true,skipped:"offline"};return}
+    body.nonce=NG.domNonce;body.moves=G.moves||[];
+  }
   api("dom_finish",body).then(r=>{
     if(typeof r.coins==="number"){P.coins=r.coins;if(r.version)P.__ver=r.version;saveProfile()}
     if(r.capped&&!(r.amount>0))lastResult={mid:G.mid,won:true,skipped:"cap"};
@@ -5528,19 +5531,32 @@ function mgLocalBots(delay){
     }catch(e){}
   },wait);
 }
+function mgBeginLocal(gm,RU,pl,prev,cat,seed){
+  const o={seq:prev?prev.seq+1:1,round:prev?prev.round+1:1,score:prev?Object.assign({},prev.score):{},cat};
+  if(seed)o.seed=seed>>>0;
+  G=RU.new(distinctSkins(pl),o);
+  if(gm.id==="wordweb"){NG.wwSecret=WW.pick(G.cat||cat);G.len=[...NG.wwSecret].length;NG.wwMine=G.players.map(()=>({tried:[],found:[]}));syncWwView()}
+  else if(RU.hidden&&RU.deal){NG.localPriv=RU.deal(G);syncHiddenView();if(G.game==="domino"&&NG.localPriv&&NG.localPriv[0])NG.domSeed=NG.localPriv[0].seed>>>0}
+  mgBeginRewards();show("mg");mgRender();mgLocalBots();
+}
 function mgStartLocal(withBots,n,prev){
   const gm=gameById(curGame);
   if(gm.id==="nightweb"||gm.id==="ballclash"){toast("هاللعبة تبدأ من غرفة أونلاين","bad");return}
-  clearBot();wwStop();mode="local";hist=[];NG.solo=null;NG.localPriv=null;NG.wwSecret=null;NG.wwMine=null;NG.ww=null;NG.hv=null;NG.wwFocus=0;
+  clearBot();wwStop();mode="local";hist=[];NG.solo=null;NG.localPriv=null;NG.wwSecret=null;NG.wwMine=null;NG.ww=null;NG.hv=null;NG.wwFocus=0;NG.domNonce="";
   const RU=GAME_RULES[gm.id];let pl;
   if(prev)pl=prev.players.map(x=>Object.assign({},x));
   else if(withBots){const four=gm.id==="domino"&&(P.settings.botCount||1)>=3;const k=gm.id==="domino"?(four?3:1):Math.min(P.settings.botCount||1,gm.maxBots||3);pl=[{id:"L0",nick:P.nickname||"أنت",skin:skinIdx(eff("skin")),bot:0}];for(let i=0;i<k;i++)pl.push({id:"B"+i,nick:BOT_NAMES[i],skin:i+1,bot:P.settings.botLevel||2})}
   else{n=gm.id==="domino"?(n>=4?4:2):Math.min(Math.max(n||2,gm.id==="wordweb"||gm.id==="bluff"||gm.id==="flyhunt"?2:2),gm.maxLocal||4);pl=[...Array(n)].map((_,i)=>({id:"L"+i,nick:i?("لاعب "+fmt(i+1)):(P.nickname||"لاعب "+fmt(1)),skin:i===0?skinIdx(eff("skin")):i,bot:0}))}
   const cat=(prev&&prev.cat)||wwCat;
-  G=RU.new(distinctSkins(pl),{seq:prev?prev.seq+1:1,round:prev?prev.round+1:1,score:prev?Object.assign({},prev.score):{},cat});
-  if(gm.id==="wordweb"){NG.wwSecret=WW.pick(G.cat||cat);G.len=[...NG.wwSecret].length;NG.wwMine=G.players.map(()=>({tried:[],found:[]}));syncWwView()}
-  else if(RU.hidden&&RU.deal){NG.localPriv=RU.deal(G);syncHiddenView();if(G.game==="domino"&&NG.localPriv&&NG.localPriv[0])NG.domSeed=NG.localPriv[0].seed>>>0}
-  mgBeginRewards();show("mg");mgRender();mgLocalBots();
+  if(gm.id==="domino"&&withBots&&!prev&&Cloud.on){
+    const lvl=P.settings.botLevel||2;
+    api("bot_deal",{game:"domino",n:pl.length>=4?4:2,level:lvl}).then(d=>{
+      NG.domNonce=d.nonce||"";
+      mgBeginLocal(gm,RU,pl,prev,cat,d.seed>>>0);
+    }).catch(()=>{NG.domNonce="";mgBeginLocal(gm,RU,pl,prev,cat,0)});
+    return;
+  }
+  mgBeginLocal(gm,RU,pl,prev,cat,0);
 }
 $("mgBoard").addEventListener("click",e=>{
   const dp=e.target.closest(".dom-play");if(dp&&!dp.disabled&&G&&globalThis.DOMINO){const id=+dp.dataset.id,ends=DOMINO.endsFor(id,G.left,G.right);if(ends.length===1){domSel=null;mgPlay({t:"play",id,end:ends[0]})}else if(ends.length>1){domSel={id,seq:G.seq};mgRender()}else toast("ما ينلعب هالحجر هنا","bad");return}

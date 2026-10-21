@@ -3448,6 +3448,21 @@ async function handle(action,p,user,db){
     if(!r||r.error||!r.data||r.data.code!=="ok")fail("bad","هذي العبارة مو متاحة");
     return {ok:true,id};
   }
+  case "bot_deal":{
+    limit(uid,"deal",12,60000);
+    if(p.game!=="domino")fail("bad","لعبة غير معروفة");
+    const n=p.n===4?4:2;
+    const lvl=isInt(p.level,1,3)?p.level:2;
+    const bots=[0];
+    for(let i=0;i<(n===4?3:1);i++)bots.push(lvl);
+    const seed=(crypto.getRandomValues(new Uint32Array(1))[0]&0x7fffffff)||1;
+    const raw=crypto.getRandomValues(new Uint8Array(18));
+    const alphabet="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let nonce="";for(let i=0;i<raw.length;i++)nonce+=alphabet[raw[i]%alphabet.length];
+    const opened=await db.rpc("bot_deal_open",{p_user:uid,p_nonce:nonce,p_game:"domino",p_seed:seed,p_spec:{n,bots},p_ttl:7200});
+    if(!opened||opened.error||!opened.data||opened.data.code!=="ok")fail("bad","ما قدرنا نوزع الأحجار");
+    return {nonce,seed,n,bots,game:"domino"};
+  }
   case "dom_finish":{
     limit(uid,"dom",20,60000);
     const req=String(p.requestId||"");
@@ -3466,11 +3481,18 @@ async function handle(action,p,user,db){
       if(row.state.winner==null&&!row.state.draw)fail("bad","المباراة ما خلصت");
       won=DOMINO.playerWon(row.state,0);
     }else{
-      const n=p.n===4?4:p.n===2?2:0;if(!n)fail("bad","عدد اللاعبين غير صحيح");
+      const nonce=String(p.nonce||"");
+      if(!/^[A-Za-z0-9]{16,40}$/.test(nonce))fail("bad","التوزيع مو من الخادم");
       const moves=Array.isArray(p.moves)?p.moves.slice(0,201):null;if(!moves||moves.length>200)fail("bad","السجل غير صحيح");
-      const bots=Array.isArray(p.bots)?p.bots.map(x=>Number(x)|0):[];
+      const deal=await db.rpc("bot_deal_take",{p_user:uid,p_nonce:nonce,p_game:"domino",p_min_ms:12000});
+      if(!deal||deal.error||!deal.data)fail("bad","ما لقينا التوزيع");
+      if(deal.data.code==="early")fail("bad","المباراة قصيرة");
+      if(deal.data.code!=="ok")fail("bad","التوزيع ما عاد صالح");
+      const spec=deal.data.spec||{};
+      const n=spec.n===4?4:2;
+      const bots=Array.isArray(spec.bots)?spec.bots.map(x=>Number(x)|0):[];
       if(bots.length!==n||bots[0]!==0||bots.some((b,i)=>i>0&&(b<1||b>3)))fail("bad","الكمبيوتر مو مضبوط");
-      let st;try{st=DOMINO.replay(Number(p.seed)>>>0,n,moves,bots)}catch(e){fail("bad","الحركات ما تطابق اللعب")}
+      let st;try{st=DOMINO.replay(Number(deal.data.seed)>>>0,n,moves,bots)}catch(e){fail("bad","الحركات ما تطابق اللعب")}
       won=DOMINO.playerWon(st,0);
     }
     if(!won)return {won:false,amount:0};
