@@ -14,6 +14,8 @@ const mini = fs.readFileSync(path.join(root, "js", "minigames.js"), "utf8");
 const domino = fs.readFileSync(path.join(root, "js", "domino_engine.js"), "utf8");
 const kalimaEngine = fs.readFileSync(path.join(root, "js", "kalima_engine.js"), "utf8");
 const kalimaGuesses = fs.readFileSync(path.join(root, "js", "kalima_guesses.js"), "utf8");
+const chessLib = fs.readFileSync(path.join(root, "js", "vendor", "chess.global.js"), "utf8");
+const chessRules = fs.readFileSync(path.join(root, "js", "chess_rules.js"), "utf8");
 if (kalimaGuesses.includes("KALIMA_ANSWERS")) throw new Error("answers leaked into guesses");
 if (!mini.includes("SPIDER_GAMES") || /\beval\s*\(/.test(mini) || /new Function\s*\(/.test(mini)) throw new Error("minigames shape");
 
@@ -37,6 +39,10 @@ const ke = app.indexOf("/* @kalima-load-end */");
 if (ks < 0 || ke < ks) throw new Error("kalima markers missing");
 app = app.slice(0, ks) + kalimaEngine + "\n" + kalimaGuesses + "\nfunction ensureKalima(){return Promise.resolve()}\n" + app.slice(ke + "/* @kalima-load-end */".length);
 if (app.includes("KALIMA_ANSWERS") || app.includes("kalima_answers")) throw new Error("answers leaked into artifact");
+const cs = app.indexOf("/* @chess-load-start */");
+const ce = app.indexOf("/* @chess-load-end */");
+if (cs < 0 || ce < cs) throw new Error("chess markers missing");
+app = app.slice(0, cs) + chessLib + "\n" + chessRules + "\nfunction registerChess(){if(!globalThis.CHESS)return;GAME_RULES.chess=globalThis.CHESS.rules;MIN_PLAYERS.chess=2;MAX_PLAYERS.chess=2}\nfunction ensureChess(){registerChess();return Promise.resolve()}\n" + app.slice(ce + "/* @chess-load-end */".length);
 
 html = html.replace(/<link rel="preload" href="ui\.css[^"]*" as="style">\s*/g, "");
 html = html.replace(/<link rel="stylesheet" href="ui\.css[^"]*" media="print" onload="this\.media='all'">\s*/g, "");
