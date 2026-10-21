@@ -15,7 +15,7 @@
     if(started)return;
     started=true;
     var s=document.createElement("script");
-    s.src="app.js?v=13";
+    s.src="app.js?v=14";
     document.body.appendChild(s);
   }
   document.addEventListener("pointerdown",function(e){
@@ -44,7 +44,7 @@
     window.__spiderDress=true;
     var css=document.createElement("link");
     css.rel="stylesheet";
-    css.href="ui.css?v=2";
+    css.href="ui.css?v=3";
     var font=document.createElement("link");
     font.rel="stylesheet";
     font.href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=optional";

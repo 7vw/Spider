@@ -1,6 +1,8 @@
 /* Chess rules for SPIDER. Uses the vendored chess.js (BSD-2-Clause) for legality.
-   The bot is a deterministic alpha-beta search in this file, not a GPL engine.
-   The same file is spliced into the edge function. */
+   The bot is an alpha-beta search in this file, not a GPL engine.
+   Levels 1–2 break equal scores with a seed (g.tie) so two bots do not repeat one line.
+   Levels 3–4, and a missing seed, keep the smallest SAN. A deadline aborts inside the
+   search and keeps the last finished root move. The same file is spliced into the edge function. */
 (function (root) {
   const Chess = root.Chess;
   if (!Chess) throw new Error("chess");
@@ -70,7 +72,7 @@
     const g = {
       game: "chess", n: 2, players: players.slice(0, 2).map(p => ({id: p.id, nick: p.nick, skin: p.skin || 0, bot: p.bot || 0})),
       turn: 0, sans: [], fen: new Chess().fen(), last: null, check: "", offer: null,
-      clock: spec ? o.clock : "",
+      clock: spec ? o.clock : "", tie: o.tie | 0,
       ck: spec ? {base: spec[0], inc: spec[1], left: [spec[0], spec[0]], at: o.now || 0} : null,
       winner: null, draw: false, reason: "",
       seq: o.seq || 1, mid: o.mid || ("ch" + ((o.seed || Math.floor(Math.random() * 1e9)) >>> 0).toString(36)),
@@ -185,17 +187,32 @@
     return (c.turn() === "w" ? -1 : 1) * (100000 + d);
   }
 
-  function pick(g, level) {
+  function tieKey(tie, ply, san) {
+    let h = (tie >>> 0) ^ Math.imul(ply + 1, 0x9E3779B1);
+    for (let i = 0; i < san.length; i++) h = Math.imul(h ^ san.charCodeAt(i), 0x01000193) >>> 0;
+    return h >>> 0;
+  }
+  function asMove(m) {
+    return m ? {t: "mv", from: m.from, to: m.to, promotion: m.promotion || ""} : null;
+  }
+  function pick(g, level, opt) {
     const c = playSans((g && g.sans) || []);
     if (c.isGameOver()) return null;
     const lvl = level >= 1 && level <= 4 ? level | 0 : 1;
     const depth = DEPTH[lvl];
     const cap = CAP[lvl];
-    let nodes = 0;
+    const deadline = opt && opt.deadline || 0;
+    const tie = g && g.tie | 0;
+    const ply = ((g && g.sans) || []).length;
+    const useTie = tie > 0 && lvl <= 2;
+    let nodes = 0, aborted = false;
     const rootMoves = order(c.moves({verbose: true}));
+    if (!rootMoves.length) return null;
+    if (deadline && Date.now() > deadline) return asMove(rootMoves[0]);
     const white = c.turn() === "w";
     let best = null, bestSc = 0, bestSan = "";
     for (let i = 0; i < rootMoves.length; i++) {
+      if (deadline && Date.now() > deadline) break;
       const m = rootMoves[i];
       c.move(m);
       let sc;
@@ -203,28 +220,34 @@
       else if (depth <= 1) sc = (c.isThreefoldRepetition() || c.isDrawByFiftyMoves() || c.isInsufficientMaterial()) ? 0 : material(c);
       else sc = search(depth - 1, -1e15, 1e15);
       c.undo();
+      if (aborted) {
+        aborted = false;
+        if (!best) { best = m; bestSc = sc; bestSan = m.san; }
+        break;
+      }
       let better = !best;
       if (!better && sc !== bestSc) better = white ? sc > bestSc : sc < bestSc;
-      if (!better && sc === bestSc) better = m.san < bestSan;
+      if (!better && sc === bestSc) better = useTie ? tieKey(tie, ply, m.san) < tieKey(tie, ply, bestSan) : m.san < bestSan;
       if (better) { best = m; bestSc = sc; bestSan = m.san; }
     }
-    if (!best) return null;
-    return {t: "mv", from: best.from, to: best.to, promotion: best.promotion || ""};
+    return asMove(best);
 
     function search(d, alpha, beta) {
       nodes++;
-      if (c.isCheckmate()) return mateScore(c, d);
-      if (c.isDraw()) return 0;
+      if ((nodes & 63) === 0 && deadline && Date.now() > deadline) { aborted = true; return material(c); }
+      if (c.isDrawByFiftyMoves() || c.isInsufficientMaterial() || c.isThreefoldRepetition()) return 0;
       if (d <= 0 || nodes > cap) return material(c);
       const w = c.turn() === "w";
       const ms = order(c.moves({verbose: true}));
-      if (!ms.length) return 0;
+      if (!ms.length) return c.inCheck() ? mateScore(c, d) : 0;
       if (w) {
         let bestV = -1e15;
         for (let i = 0; i < ms.length; i++) {
+          if (deadline && Date.now() > deadline) { aborted = true; return material(c); }
           c.move(ms[i]);
           const sc = ms[i].san.indexOf("#") >= 0 ? 100000 + d : search(d - 1, alpha, beta);
           c.undo();
+          if (aborted) return material(c);
           if (sc > bestV) bestV = sc;
           if (sc > alpha) alpha = sc;
           if (alpha >= beta) break;
@@ -233,9 +256,11 @@
       }
       let bestV = 1e15;
       for (let i = 0; i < ms.length; i++) {
+        if (deadline && Date.now() > deadline) { aborted = true; return material(c); }
         c.move(ms[i]);
         const sc = ms[i].san.indexOf("#") >= 0 ? -100000 - d : search(d - 1, alpha, beta);
         c.undo();
+        if (aborted) return material(c);
         if (sc < bestV) bestV = sc;
         if (sc < beta) beta = sc;
         if (alpha >= beta) break;
@@ -247,10 +272,11 @@
   function replay(sans, bots, opt) {
     if (!Array.isArray(sans) || sans.length > 400) throw new Error("long");
     const levels = [bots && bots[0] | 0, bots && bots[1] | 0];
+    const tie = opt && opt.tie | 0;
     let g = fresh([
       {id: "w", nick: "أبيض", bot: levels[0]},
       {id: "b", nick: "أسود", bot: levels[1]}
-    ], {seq: 1, mid: "chreplay"});
+    ], {seq: 1, mid: "chreplay", tie: tie});
     const verify = !(opt && opt.bots === false);
     for (let i = 0; i < sans.length; i++) {
       if (g.winner != null || g.draw) throw new Error("over");

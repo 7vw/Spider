@@ -5644,8 +5644,10 @@ return Chess;
 if (typeof globalThis!=="undefined") globalThis.Chess=Chess;
 
 /* Chess rules for SPIDER. Uses the vendored chess.js (BSD-2-Clause) for legality.
-   The bot is a deterministic alpha-beta search in this file, not a GPL engine.
-   The same file is spliced into the edge function. */
+   The bot is an alpha-beta search in this file, not a GPL engine.
+   Levels 1–2 break equal scores with a seed (g.tie) so two bots do not repeat one line.
+   Levels 3–4, and a missing seed, keep the smallest SAN. A deadline aborts inside the
+   search and keeps the last finished root move. The same file is spliced into the edge function. */
 (function (root) {
   const Chess = root.Chess;
   if (!Chess) throw new Error("chess");
@@ -5715,7 +5717,7 @@ if (typeof globalThis!=="undefined") globalThis.Chess=Chess;
     const g = {
       game: "chess", n: 2, players: players.slice(0, 2).map(p => ({id: p.id, nick: p.nick, skin: p.skin || 0, bot: p.bot || 0})),
       turn: 0, sans: [], fen: new Chess().fen(), last: null, check: "", offer: null,
-      clock: spec ? o.clock : "",
+      clock: spec ? o.clock : "", tie: o.tie | 0,
       ck: spec ? {base: spec[0], inc: spec[1], left: [spec[0], spec[0]], at: o.now || 0} : null,
       winner: null, draw: false, reason: "",
       seq: o.seq || 1, mid: o.mid || ("ch" + ((o.seed || Math.floor(Math.random() * 1e9)) >>> 0).toString(36)),
@@ -5830,17 +5832,32 @@ if (typeof globalThis!=="undefined") globalThis.Chess=Chess;
     return (c.turn() === "w" ? -1 : 1) * (100000 + d);
   }
 
-  function pick(g, level) {
+  function tieKey(tie, ply, san) {
+    let h = (tie >>> 0) ^ Math.imul(ply + 1, 0x9E3779B1);
+    for (let i = 0; i < san.length; i++) h = Math.imul(h ^ san.charCodeAt(i), 0x01000193) >>> 0;
+    return h >>> 0;
+  }
+  function asMove(m) {
+    return m ? {t: "mv", from: m.from, to: m.to, promotion: m.promotion || ""} : null;
+  }
+  function pick(g, level, opt) {
     const c = playSans((g && g.sans) || []);
     if (c.isGameOver()) return null;
     const lvl = level >= 1 && level <= 4 ? level | 0 : 1;
     const depth = DEPTH[lvl];
     const cap = CAP[lvl];
-    let nodes = 0;
+    const deadline = opt && opt.deadline || 0;
+    const tie = g && g.tie | 0;
+    const ply = ((g && g.sans) || []).length;
+    const useTie = tie > 0 && lvl <= 2;
+    let nodes = 0, aborted = false;
     const rootMoves = order(c.moves({verbose: true}));
+    if (!rootMoves.length) return null;
+    if (deadline && Date.now() > deadline) return asMove(rootMoves[0]);
     const white = c.turn() === "w";
     let best = null, bestSc = 0, bestSan = "";
     for (let i = 0; i < rootMoves.length; i++) {
+      if (deadline && Date.now() > deadline) break;
       const m = rootMoves[i];
       c.move(m);
       let sc;
@@ -5848,28 +5865,34 @@ if (typeof globalThis!=="undefined") globalThis.Chess=Chess;
       else if (depth <= 1) sc = (c.isThreefoldRepetition() || c.isDrawByFiftyMoves() || c.isInsufficientMaterial()) ? 0 : material(c);
       else sc = search(depth - 1, -1e15, 1e15);
       c.undo();
+      if (aborted) {
+        aborted = false;
+        if (!best) { best = m; bestSc = sc; bestSan = m.san; }
+        break;
+      }
       let better = !best;
       if (!better && sc !== bestSc) better = white ? sc > bestSc : sc < bestSc;
-      if (!better && sc === bestSc) better = m.san < bestSan;
+      if (!better && sc === bestSc) better = useTie ? tieKey(tie, ply, m.san) < tieKey(tie, ply, bestSan) : m.san < bestSan;
       if (better) { best = m; bestSc = sc; bestSan = m.san; }
     }
-    if (!best) return null;
-    return {t: "mv", from: best.from, to: best.to, promotion: best.promotion || ""};
+    return asMove(best);
 
     function search(d, alpha, beta) {
       nodes++;
-      if (c.isCheckmate()) return mateScore(c, d);
-      if (c.isDraw()) return 0;
+      if ((nodes & 63) === 0 && deadline && Date.now() > deadline) { aborted = true; return material(c); }
+      if (c.isDrawByFiftyMoves() || c.isInsufficientMaterial() || c.isThreefoldRepetition()) return 0;
       if (d <= 0 || nodes > cap) return material(c);
       const w = c.turn() === "w";
       const ms = order(c.moves({verbose: true}));
-      if (!ms.length) return 0;
+      if (!ms.length) return c.inCheck() ? mateScore(c, d) : 0;
       if (w) {
         let bestV = -1e15;
         for (let i = 0; i < ms.length; i++) {
+          if (deadline && Date.now() > deadline) { aborted = true; return material(c); }
           c.move(ms[i]);
           const sc = ms[i].san.indexOf("#") >= 0 ? 100000 + d : search(d - 1, alpha, beta);
           c.undo();
+          if (aborted) return material(c);
           if (sc > bestV) bestV = sc;
           if (sc > alpha) alpha = sc;
           if (alpha >= beta) break;
@@ -5878,9 +5901,11 @@ if (typeof globalThis!=="undefined") globalThis.Chess=Chess;
       }
       let bestV = 1e15;
       for (let i = 0; i < ms.length; i++) {
+        if (deadline && Date.now() > deadline) { aborted = true; return material(c); }
         c.move(ms[i]);
         const sc = ms[i].san.indexOf("#") >= 0 ? -100000 - d : search(d - 1, alpha, beta);
         c.undo();
+        if (aborted) return material(c);
         if (sc < bestV) bestV = sc;
         if (sc < beta) beta = sc;
         if (alpha >= beta) break;
@@ -5892,10 +5917,11 @@ if (typeof globalThis!=="undefined") globalThis.Chess=Chess;
   function replay(sans, bots, opt) {
     if (!Array.isArray(sans) || sans.length > 400) throw new Error("long");
     const levels = [bots && bots[0] | 0, bots && bots[1] | 0];
+    const tie = opt && opt.tie | 0;
     let g = fresh([
       {id: "w", nick: "أبيض", bot: levels[0]},
       {id: "b", nick: "أسود", bot: levels[1]}
-    ], {seq: 1, mid: "chreplay"});
+    ], {seq: 1, mid: "chreplay", tie: tie});
     const verify = !(opt && opt.bots === false);
     for (let i = 0; i < sans.length; i++) {
       if (g.winner != null || g.draw) throw new Error("over");
@@ -6942,7 +6968,8 @@ async function handle(action,p,user,db){
       const cpu={id:"B0",nick:BOT_NAMES_S[0],skin:1,bot:lvl};
       const pl=p.color==="b"?[cpu,human]:[human,cpu];
       const clockKey=["3+2","5+0","10+0"].includes(p.clock)?p.clock:"";
-      let G=extras(GAME_RULES.chess.new(pl,{seq:1,round:1,score:{},clock:clockKey,now:clock.now()}),clock.now());
+      const tie=(crypto.getRandomValues(new Uint32Array(1))[0]&0x7fffffff)||1;
+      let G=extras(GAME_RULES.chess.new(pl,{seq:1,round:1,score:{},clock:clockKey,now:clock.now(),tie}),clock.now());
       const steps=[];G=runBots(G,steps);
       const row=await db.insertSolo({user_id:uid,state:G,history:[],practice:false,seq:1});
       return {id:row.id,state:G,steps};
@@ -7036,6 +7063,7 @@ async function handle(action,p,user,db){
     const {profile,role}=await readProfile(db,uid);P=normalizeProfile(profile);
     pl[0].skin=skinIdx(pubEff("skin",role==="owner"));pl[0].nick=P.nickname||pl[0].nick;distinctSkins(pl);
     const o2={seq:prev.seq+1,round:prev.round+1,score:Object.assign({},prev.score),bs:pubEff("board",role==="owner"),cat:prev.cat,clock:prev.clock||"",now:clock.now()};
+    if(prev.game==="chess")o2.tie=(crypto.getRandomValues(new Uint32Array(1))[0]&0x7fffffff)||1;
     let G=extras(prev.game&&GAME_RULES[prev.game]?GAME_RULES[prev.game].new(pl,o2):newGame(pl,o2),clock.now());
     let word=null;if(G.game==="wordweb"){word=WW.pick(G.cat);G.len=word.length}
     const steps=[],HG2=GAME_RULES[G.game];let privs2=null;
@@ -7047,8 +7075,12 @@ async function handle(action,p,user,db){
     return {id:r2.id,state:G,steps,ww:word?WW.view(word,{tried:[],found:[]},false):undefined};
   }
   case "solo_forfeit":{
-    const row=await db.getSolo(String(p.id),uid);if(!row||row.practice||row.state.winner!=null)return {ok:true};
-    const G=row.state;if(G.game==="chess")return {ok:true};
+    const row=await db.getSolo(String(p.id),uid);if(!row||row.practice||row.state.winner!=null||row.state.draw)return {ok:true};
+    const G=row.state;
+    if(G.game==="chess"){
+      await db.updateSolo(row.id,uid,row.seq,{practice:true,seq:row.seq+1,updated_at:nowIso()});
+      return {ok:true};
+    }
     const acts=((G.mv||[])[0]||0)+G.walls.filter(w=>w[3]===0).length;
     await db.updateSolo(row.id,uid,row.seq,{practice:true,seq:row.seq+1,updated_at:nowIso()});
     if(acts>=3){const w=await withProfile(db,uid,role=>finishMatch(matchCtx(G,0,"bot",false,role,{botLevel:G.players.reduce((m,x)=>Math.max(m,x.bot||0),0),bots:G.players.filter(x=>x.bot).length})));return {ok:true,profile:w.profile,counted:true}}
@@ -7316,15 +7348,23 @@ async function handle(action,p,user,db){
   }
   case "bot_deal":{
     limit(uid,"deal",12,60000);
-    if(p.game!=="domino")fail("bad","لعبة غير معروفة");
-    const n=p.n===4?4:2;
-    const lvl=isInt(p.level,1,3)?p.level:2;
-    const bots=[0];
-    for(let i=0;i<(n===4?3:1);i++)bots.push(lvl);
+    if(p.game!=="domino"&&p.game!=="chess")fail("bad","لعبة غير معروفة");
     const seed=(crypto.getRandomValues(new Uint32Array(1))[0]&0x7fffffff)||1;
     const raw=crypto.getRandomValues(new Uint8Array(18));
     const alphabet="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let nonce="";for(let i=0;i<raw.length;i++)nonce+=alphabet[raw[i]%alphabet.length];
+    if(p.game==="chess"){
+      const lvl=isInt(p.level,1,4)?p.level:1;
+      const color=p.color==="b"?"b":"w";
+      const bots=color==="b"?[lvl,0]:[0,lvl];
+      const opened=await db.rpc("bot_deal_open",{p_user:uid,p_nonce:nonce,p_game:"chess",p_seed:seed,p_spec:{bots,level:lvl,color},p_ttl:7200});
+      if(!opened||opened.error||!opened.data||opened.data.code!=="ok")fail("bad","ما قدرنا نوزع القطع");
+      return {nonce,seed,bots,level:lvl,color,game:"chess"};
+    }
+    const n=p.n===4?4:2;
+    const lvl=isInt(p.level,1,3)?p.level:2;
+    const bots=[0];
+    for(let i=0;i<(n===4?3:1);i++)bots.push(lvl);
     const opened=await db.rpc("bot_deal_open",{p_user:uid,p_nonce:nonce,p_game:"domino",p_seed:seed,p_spec:{n,bots},p_ttl:7200});
     if(!opened||opened.error||!opened.data||opened.data.code!=="ok")fail("bad","ما قدرنا نوزع الأحجار");
     return {nonce,seed,n,bots,game:"domino"};
@@ -7427,17 +7467,24 @@ async function handle(action,p,user,db){
       if(st.winner==null&&!st.draw)fail("bad","المباراة ما خلصت");
       const bots=st.players.map(x=>x.bot|0);
       let replayed;
-      try{replayed=CHESS.replay(st.sans||[],bots)}catch(e){fail("bad","الحركات ما تطابق اللعب")}
+      try{replayed=CHESS.replay(st.sans||[],bots,{tie:st.tie|0})}catch(e){fail("bad","الحركات ما تطابق اللعب")}
       if(replayed.winner!==st.winner||!!replayed.draw!==!!st.draw||replayed.reason!==st.reason)fail("bad","الحركات ما تطابق اللعب");
       won=st.winner===seat&&st.reason==="mate";
     }else{
+      const nonce=String(p.nonce||"");
+      if(!/^[A-Za-z0-9]{16,40}$/.test(nonce))fail("bad","التوزيع مو من الخادم");
       const sans=Array.isArray(p.sans)?p.sans.slice(0,401):null;
-      const bots=Array.isArray(p.bots)?p.bots.map(x=>Number(x)|0):[];
-      if(!sans||sans.length>400||bots.length!==2)fail("bad","السجل غير صحيح");
-      if(bots.filter(b=>b===0).length!==1||bots.some(b=>b!==0&&(b<1||b>4)))fail("bad","الكمبيوتر مو مضبوط");
+      if(!sans||sans.length>400)fail("bad","السجل غير صحيح");
+      const deal=await db.rpc("bot_deal_take",{p_user:uid,p_nonce:nonce,p_game:"chess",p_min_ms:12000});
+      if(!deal||deal.error||!deal.data)fail("bad","ما لقينا التوزيع");
+      if(deal.data.code==="early")fail("bad","المباراة قصيرة");
+      if(deal.data.code!=="ok")fail("bad","التوزيع ما عاد صالح");
+      const spec=deal.data.spec||{};
+      const bots=Array.isArray(spec.bots)?spec.bots.map(x=>Number(x)|0):[];
+      if(bots.length!==2||bots.filter(b=>b===0).length!==1||bots.some(b=>b!==0&&(b<1||b>4)))fail("bad","الكمبيوتر مو مضبوط");
       const seat=bots[0]===0?0:1;
       let st;
-      try{st=CHESS.replay(sans,bots)}catch(e){fail("bad","الحركات ما تطابق اللعب")}
+      try{st=CHESS.replay(sans,bots,{tie:Number(deal.data.seed)>>>0})}catch(e){fail("bad","الحركات ما تطابق اللعب")}
       won=st.winner===seat&&st.reason==="mate";
     }
     if(!won)return {won:false,amount:0};

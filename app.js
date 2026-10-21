@@ -832,7 +832,7 @@ function ensureGamesCss(){
     let link=document.querySelector("link[data-games-css]");
     if(link&&link.rel==="stylesheet"){if(link.sheet){ok();return}link.addEventListener("load",()=>ok(),{once:true});link.addEventListener("error",()=>ok(),{once:true});return}
     link=document.createElement("link");
-    link.rel="stylesheet";link.href="games.css?v=13";link.setAttribute("data-games-css","");
+    link.rel="stylesheet";link.href="games.css?v=14";link.setAttribute("data-games-css","");
     link.onload=()=>ok();link.onerror=()=>ok();
     document.head.append(link);
   });
@@ -884,7 +884,7 @@ function ensureChess(){
   chessP=(async()=>{
     await ensureGamesCss();
     if(!globalThis.Chess)await loadGameScript("js/vendor/chess.global.js?v=1");
-    if(!globalThis.CHESS)await loadGameScript("js/chess_rules.js?v=1");
+    if(!globalThis.CHESS)await loadGameScript("js/chess_rules.js?v=2");
     registerChess();
   })().catch(e=>{chessP=null;throw e});
   return chessP;
@@ -5997,29 +5997,31 @@ function chLook(){
 function chEnsureWorker(){
   if(chWorker)return chWorker;
   try{
-    chWorker=new Worker("js/chess_worker.js");
+    chWorker=new Worker("js/chess_worker.js?v=2");
     chWorker.onmessage=ev=>{const d=ev.data||{},fn=chPending.get(d.id);if(fn){chPending.delete(d.id);fn(d)}};
     chWorker.onerror=()=>{try{chWorker.terminate()}catch(e){}chWorker=null};
   }catch(e){chWorker=null}
   return chWorker;
 }
-function chAsk(sans,level){
+function chAsk(sans,level,tie){
   return new Promise(res=>{
-    const fallback=()=>{try{res(globalThis.CHESS.pick({sans:sans.slice()},level))}catch(e){res(null)}};
     const w=chEnsureWorker();
-    if(!w){setTimeout(fallback,0);return}
+    if(!w){
+      setTimeout(()=>{try{res(globalThis.CHESS.pick({sans:sans.slice(),tie:tie|0},level,{deadline:Date.now()+1800}))}catch(e){res(null)}},0);
+      return;
+    }
     const id=++chReq;
-    const t=setTimeout(()=>{chPending.delete(id);fallback()},12000);
+    const t=setTimeout(()=>{chPending.delete(id);res(null)},5000);
     chPending.set(id,d=>{clearTimeout(t);res(d&&d.ok?d.mv:null)});
-    try{w.postMessage({id,sans,level})}catch(e){clearTimeout(t);chPending.delete(id);fallback()}
+    try{w.postMessage({id,sans,level,tie:tie|0})}catch(e){clearTimeout(t);chPending.delete(id);res(null)}
   });
 }
 function chLocalBot(){
   if(mode!=="local"||!G||G.game!=="chess"||G.winner!=null||G.draw)return;
   if(!G.players[G.turn]||!G.players[G.turn].bot)return;
-  const token=++chBotToken,sans=G.sans.slice(),level=G.players[G.turn].bot||1,seq=G.seq;
+  const token=++chBotToken,sans=G.sans.slice(),level=G.players[G.turn].bot||1,seq=G.seq,tie=G.tie|0;
   setTimeout(()=>{
-    chAsk(sans,level).then(mv=>{
+    chAsk(sans,level,tie).then(mv=>{
       if(token!==chBotToken||!G||G.seq!==seq||mode!=="local"||G.winner!=null||G.draw)return;
       if(!mv)return;
       const act=Object.assign({now:Date.now()},mv);
@@ -6033,15 +6035,26 @@ function chLocalBot(){
     });
   },320);
 }
+function chBeginLocal(pl,tie){
+  NG.chT0=Date.now();
+  G=globalThis.CHESS.rules.new(pl,{seq:1,round:1,score:{},clock:chClock==="none"?"":chClock,now:Date.now(),tie:tie|0});
+  show("ch");chRender();chLocalBot();
+}
 function chStartLocal(){
   if(!globalThis.CHESS)return;
-  chStop();clearBot();mode="local";hist=[];NG.solo=null;M=null;
+  chStop();clearBot();mode="local";hist=[];NG.solo=null;M=null;NG.chNonce="";
   const me={id:"L0",nick:P.nickname?myNick():"أنت",skin:skinIdx(eff("skin")),bot:0};
   const bot={id:"B0",nick:"كمبيوتر",skin:1,bot:chLevel()};
   const pl=chColor==="b"?[bot,me]:[me,bot];
   chFlipManual=null;
-  G=globalThis.CHESS.rules.new(pl,{seq:1,round:1,score:{},clock:chClock==="none"?"":chClock,now:Date.now()});
-  show("ch");chRender();chLocalBot();
+  if(Cloud.on){
+    api("bot_deal",{game:"chess",level:chLevel(),color:chColor==="b"?"b":"w"}).then(d=>{
+      NG.chNonce=d&&d.nonce||"";
+      chBeginLocal(pl,d&&d.seed||0);
+    }).catch(()=>{NG.chNonce="";chBeginLocal(pl,0)});
+    return;
+  }
+  chBeginLocal(pl,(Math.floor(Math.random()*0x7fffffff)||1));
 }
 function chPaintSound(){
   const b=$("chSound");if(!b)return;
@@ -6274,13 +6287,18 @@ function chessClaim(){
   const body={requestId};
   if(mode==="room"&&NG.room)body.code=NG.room.code;
   else if(mode==="solo"&&NG.solo)body.solo=NG.solo.id;
-  else{body.sans=(G.sans||[]).slice();body.bots=(G.players||[]).map(p=>p.bot||0)}
-  api("chess_finish",body).then(r=>{
+  else{
+    if(!NG.chNonce){lastResult={mid:G.mid,won:true,skipped:"offline"};chPaintWin();return}
+    body.nonce=NG.chNonce;body.sans=(G.sans||[]).slice();
+  }
+  const send=()=>api("chess_finish",body).then(r=>{
     if(typeof r.coins==="number"){P.coins=r.coins;if(r.version)P.__ver=r.version;saveProfile()}
     if(r.capped&&!(r.amount>0))lastResult={mid:G.mid,won:true,skipped:"cap"};
     else lastResult={mid:G.mid,won:!!r.won,out:r.won?{xp:0,coins:r.amount||0,items:[],levelUps:[],ach:[],missions:[],xpBefore:P.xp,levelBefore:P.level,streak:0}:null,skipped:r.won?null:"loss"};
     if(screen==="ch")chPaintWin();
   }).catch(()=>{lastResult={mid:G.mid,won:true,skipped:"offline"};if(screen==="ch")chPaintWin()});
+  if(body.nonce){const wait=Math.max(0,12000-(Date.now()-(NG.chT0||Date.now())));setTimeout(send,wait)}
+  else send();
 }
 function chAgain(){
   if(mode==="solo")return netSoloStart(true);

@@ -1,6 +1,6 @@
-/* Perft on the standard positions, plus 1,000 level-1 bot-vs-bot games.
-   Level 1 is depth 1 with a node cap: deep enough to stay legal, fast enough to finish.
-   Higher levels use the same picker at depth 2–4. */
+/* Perft on the standard positions, plus 200 bot-vs-bot games at each level.
+   Levels 1–2 break equal scores with the game seed. Levels 3–4 stay on smallest SAN.
+   Depth 4 is capped by the same time budget the worker uses. */
 import fs from "fs";
 import vm from "vm";
 
@@ -88,27 +88,66 @@ let threw = false;
 try { CHESS.replay(["e4", "a5"], [0, 1]); } catch (e) { threw = true; }
 eq("forged bot rejected", threw, true);
 
-const t0 = Date.now();
-let games = 0, illegal = 0, moves = 0;
-const reasons = {};
-for (let i = 0; i < 1000; i++) {
-  let g = rules.new([{id: "a", nick: "a", bot: 1}, {id: "b", nick: "b", bot: 1}], {mid: "g" + i, seq: 1});
-  let guard = 0;
-  while (g.winner == null && !g.draw && guard++ < 240) {
-    const a = CHESS.pick(g, 1);
-    const err = a && rules.legal(g, g.turn, a);
-    if (!a || err) { illegal++; break; }
-    g = rules.apply(g, g.turn, a);
-    moves++;
-  }
-  try {
-    const st = CHESS.replay(g.sans, [1, 1], {bots: false});
-    if (st.winner !== g.winner || !!st.draw !== !!g.draw || st.reason !== g.reason) illegal++;
-  } catch (e) { illegal++; }
-  reasons[g.reason || "open"] = (reasons[g.reason || "open"] || 0) + 1;
-  games++;
-  if (i && i % 200 === 0) console.log("games", i, "moves", moves, "illegal", illegal, "s", ((Date.now() - t0) / 1000).toFixed(1));
+const openers = new Set();
+for (let tie = 1; tie <= 30; tie++) {
+  const a = CHESS.pick({sans: [], tie}, 1);
+  openers.add(a.from + a.to);
 }
-console.log(JSON.stringify({games, moves, illegal, reasons, seconds: +((Date.now() - t0) / 1000).toFixed(1), fail}));
-if (illegal || fail || games !== 1000) process.exit(1);
+eq("level 1 seeds differ", openers.size > 1, true);
+const deepA = CHESS.pick({sans: [], tie: 1}, 3);
+const deepB = CHESS.pick({sans: [], tie: 99}, 3);
+eq("level 3 ignores the seed", deepA.from + deepA.to + (deepA.promotion || ""), deepB.from + deepB.to + (deepB.promotion || ""));
+const rushed = Date.now();
+const rushedMv = CHESS.pick({sans: [], tie: 1}, 4, {deadline: Date.now() - 1});
+eq("expired budget stays off the clock", Date.now() - rushed < 200, true);
+eq("expired budget is a move", !!(rushedMv && rushedMv.from && rushedMv.to), true);
+
+const BUDGET = {1: 400, 2: 700, 3: 1200, 4: 1800};
+const levels = process.env.CHESS_LEVEL ? [Number(process.env.CHESS_LEVEL)] : [1, 2, 3, 4];
+let shardFrom = 0, shardTo = 200, shardN = 1, shardI = 0;
+if (process.env.CHESS_SHARD) {
+  const parts = process.env.CHESS_SHARD.split("/").map(Number);
+  shardI = parts[0]; shardN = parts[1];
+  const size = Math.ceil(200 / shardN);
+  shardFrom = shardI * size;
+  shardTo = Math.min(200, shardFrom + size);
+}
+const report = {};
+for (const level of levels) {
+  const t0 = Date.now();
+  let games = 0, illegal = 0, moves = 0, slow = 0;
+  const reasons = {};
+  const lines = new Set();
+  for (let i = shardFrom; i < shardTo; i++) {
+    const tie = i + 1;
+    let g = rules.new([{id: "a", nick: "a", bot: level}, {id: "b", nick: "b", bot: level}], {mid: "g" + level + "-" + i, seq: 1, tie});
+    let guard = 0;
+    while (g.winner == null && !g.draw && guard++ < 240) {
+      const started = Date.now();
+      const a = CHESS.pick(g, level, {deadline: started + BUDGET[level]});
+      if (Date.now() - started > BUDGET[level] + 250) slow++;
+      const err = a && rules.legal(g, g.turn, a);
+      if (!a || err) { illegal++; break; }
+      g = rules.apply(g, g.turn, a);
+      moves++;
+    }
+    try {
+      const st = CHESS.replay(g.sans, [level, level], {bots: false, tie});
+      if (st.winner !== g.winner || !!st.draw !== !!g.draw || st.reason !== g.reason) illegal++;
+    } catch (e) { illegal++; }
+    if (level <= 2) {
+      try { CHESS.replay(g.sans, [level, level], {tie}); }
+      catch (e) { illegal++; }
+    }
+    lines.add(g.sans.slice(0, 8).join(" "));
+    reasons[g.reason || "open"] = (reasons[g.reason || "open"] || 0) + 1;
+    games++;
+  }
+  const want = Math.max(0, shardTo - shardFrom);
+  report[level] = {games, moves, illegal, slow, lines: lines.size, reasons, seconds: +((Date.now() - t0) / 1000).toFixed(1), shard: shardI + "/" + shardN};
+  console.log("level", level, JSON.stringify(report[level]));
+  if (illegal || games !== want) fail++;
+}
+console.log(JSON.stringify({report, fail}));
+if (fail) process.exit(1);
 console.log("chess tests passed");
