@@ -808,7 +808,7 @@ function ensureGamesCss(){
     let link=document.querySelector("link[data-games-css]");
     if(link&&link.rel==="stylesheet"){if(link.sheet){ok();return}link.addEventListener("load",()=>ok(),{once:true});link.addEventListener("error",()=>ok(),{once:true});return}
     link=document.createElement("link");
-    link.rel="stylesheet";link.href="games.css?v=8";link.setAttribute("data-games-css","");
+    link.rel="stylesheet";link.href="games.css?v=9";link.setAttribute("data-games-css","");
     link.onload=()=>ok();link.onerror=()=>ok();
     document.head.append(link);
   });
@@ -2336,10 +2336,13 @@ function renderHome(){
   const av=$("homeAv");av.textContent="";av.append(myAvatar(38));
   const cc=$("homeCoins");cc.textContent="";cc.removeAttribute("aria-label");cc.append(ic("coin","gold"),h("span",{class:"sr-only"},"رصيد العملات"),h("span",{},coinsText()));
   const b=$("homeBanners");b.textContent="";
-  {const ic=installCard();if(ic)b.append(ic)}
   const an=Cloud.announce;let annSeen="";try{annSeen=localStorage.getItem("spider_ann")||""}catch(e){}
-  if(an&&an.text&&String(an.id)!==annSeen)b.append(h("div",{class:"announce",role:"status"},ic("bolt"),h("span",{class:"grow"},an.text),h("button",{class:"icon","aria-label":"إخفاء الإعلان",onclick:()=>{try{localStorage.setItem("spider_ann",String(an.id))}catch(e){}renderHome()}},"×")));
-  if(Platform.kind==="web"&&Cloud.offline&&!Cloud.booting)b.append(h("button",{class:"banner warn",onclick:()=>cloudStart()},ic("bolt"),h("span",{class:"grow"},Cloud.err==="rate"?"الخادم مزحوم بتسجيلات جديدة من شبكتك. اضغط للمحاولة مرة ثانية":"ما فيه اتصال بالخادم. اضغط للمحاولة مرة ثانية"),ic("chev")));
+  const offline=Platform.kind==="web"&&Cloud.offline&&!Cloud.booting;
+  /* one banner only, and it overlays, so the hero stays put */
+  if(offline)b.append(h("button",{class:"banner warn",onclick:()=>cloudStart()},ic("bolt"),h("span",{class:"grow"},Cloud.err==="rate"?"الخادم مزحوم بتسجيلات جديدة من شبكتك. اضغط للمحاولة مرة ثانية":"ما فيه اتصال بالخادم. اضغط للمحاولة مرة ثانية"),ic("chev")));
+  else{const card=installCard();
+    if(card)b.append(card);
+    else if(an&&an.text&&String(an.id)!==annSeen)b.append(h("div",{class:"announce",role:"status"},ic("bolt"),h("span",{class:"grow"},an.text),h("button",{class:"icon","aria-label":"إخفاء الإعلان",onclick:()=>{try{localStorage.setItem("spider_ann",String(an.id))}catch(e){}renderHome()}},"×")));}
   /* a short curated row, not one slide per game */
   const heroes=heroGames(),tr=$("homeCarTrack"),dots=$("homeCarDots");
   if(tr.dataset.n!==String(heroes.length)){tr.dataset.n=String(heroes.length);
@@ -2348,8 +2351,6 @@ function renderHome(){
     dots.textContent="";
     heroes.forEach((g,k)=>{
       if(k===0&&keep){
-        const art=keep.querySelector(".hc-art");
-        if(art){art.classList.remove("boot-art");if(!art.querySelector("svg"))art.innerHTML=coverSvg(g.id)}
         const play=keep.querySelector("[data-act=play]");
         const help=keep.querySelector("[data-act=help]");
         if(play)play.onclick=()=>openGame(g.id);
@@ -2666,7 +2667,7 @@ let bcLoading=null;
 function loadBC(){
   if(window.BCUI&&window.BC)return Promise.resolve();
   if(bcLoading)return bcLoading;
-  const add=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src+"?v=12";s.onload=ok;s.onerror=()=>no(new Error("ما قدرنا نحمّل ملفات اللعبة"));document.head.append(s)});
+  const add=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src+"?v=13";s.onload=ok;s.onerror=()=>no(new Error("ما قدرنا نحمّل ملفات اللعبة"));document.head.append(s)});
   bcLoading=add("bc_core.js").then(()=>add("bc_kinds.js")).then(()=>add("bc_new_data.js")).then(()=>add("bc_art.js")).then(()=>add("bc_shop_logic.js")).then(()=>add("bc_ui.js")).catch(e=>{bcLoading=null;throw e});
   return bcLoading;
 }
@@ -2695,9 +2696,9 @@ ${ball(120,120,22,"#C9D6E8","#E62948")}${ball(244,118,24,"#FF8A5C","#8D65F6")}</
 function bcIconSvg(){return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#2A1030"/><path d="M22 40L42 20" stroke="#EEF3FF" stroke-width="4" stroke-linecap="round"/><circle cx="20" cy="42" r="10" fill="#C9D6E8" stroke="#E62948" stroke-width="3"/><circle cx="46" cy="22" r="6" fill="#FF8A5C" stroke="#8D65F6" stroke-width="2.5"/></svg>`}
 
 /* ================= store ================= */
-let stTab="all";
+let stTab="all",stShown=24;
 const SF={q:"",own:"all",rar:"all",sort:"price"};
-const ST_TABS=[["all","الكل"],["wish","المفضلة"],["bundles","الحزم"],["skin","سكنات"],["board","طاولات"],["web","خيوط"],["xmark","XO"],["frame","إطارات"],["deco","زينة"],["bg","خلفيات"],["badge","شارات"],["theme","ألوان الاسم"],["title","ألقاب"],["move","تأثيرات الحركة"],["win","تأثيرات الفوز"],["emote","تفاعلات"],["lobby","غرف الانتظار"],["sound","أصوات"]];
+const ST_TABS=[["all","الكل"],["wish","المفضلة"],["bundles","الحزم"],["balls","صراع الكور"],["skin","سكنات"],["board","طاولات"],["web","خيوط"],["xmark","XO"],["frame","إطارات"],["deco","زينة"],["bg","خلفيات"],["badge","شارات"],["theme","ألوان الاسم"],["title","ألقاب"],["move","تأثيرات الحركة"],["win","تأثيرات الفوز"],["emote","تفاعلات"],["lobby","غرف الانتظار"],["sound","أصوات"]];
 function tabs(el,list,cur,onPick){
   el.textContent="";
   for(const [id,label] of list)el.append(h("button",{class:"tab"+(id===cur?" on":""),role:"tab","aria-selected":String(id===cur),onclick:()=>onPick(id)},label));
@@ -2791,7 +2792,7 @@ function bundleCard(b,wide){
 }
 function renderStore(){
   const w=$("stWallet");w.textContent="";w.append(h("span",{class:"pill coins"},coinEl(coinsText())),h("span",{class:"pill"},"المستوى "+fmt(P.level)));
-  tabs($("stTabs"),ST_TABS,stTab,id=>{stTab=id;renderStore()});
+  tabs($("stTabs"),ST_TABS,stTab,id=>{stTab=id;stShown=24;renderStore()});
   renderStoreFilters();
   const fb=$("stFeatured");fb.textContent="";
   if(stTab==="all"&&!SF.q.trim()){
@@ -2799,13 +2800,27 @@ function renderStore(){
     fb.append(h("div",{class:"sec-h",style:"margin-top:0"},h("h3",{},"مميّز"),h("span",{},"حزم وعناصر أسطورية")),row,h("div",{class:"sec-h"},h("h3",{},"كل العناصر")));
   }
   const box=$("stItems");box.textContent="";
-  if(stTab==="bundles"){box.className="list";for(const b of BUNDLES)box.append(bundleCard(b,true));$("stEmpty").classList.add("hidden");return}
+  let more=$("stMore");
+  if(!more){more=h("button",{id:"stMore",class:"wide",type:"button"});box.after(more);more.onclick=()=>{stShown+=24;renderStore()}}
+  if(stTab==="balls"){
+    box.className="list";
+    box.append(h("div",{class:"card bc-shop-card"},h("h3",{class:"ic-h"},ic("spark"),"متجر صراع الكور"),
+      h("p",{class:"lead"},"كور ومظاهر وساحات خاصة بالمعركة. الشراء من نفس المتجر، والرصيد واحد."),
+      h("button",{class:"primary",onclick:()=>openMainBcShop()},"افتح متجر الكور")));
+    $("stEmpty").classList.add("hidden");more.classList.add("hidden");return}
+  if(stTab==="bundles"){box.className="list";for(const b of BUNDLES)box.append(bundleCard(b,true));$("stEmpty").classList.add("hidden");more.classList.add("hidden");return}
   box.className="items";
-  const list=storeList();for(const [t,it] of list)box.append(storeCard(t,it));
+  const list=storeList(),shown=list.slice(0,stShown);
+  for(const [t,it] of shown)box.append(storeCard(t,it));
+  more.classList.toggle("hidden",list.length<=stShown);
+  more.textContent="اعرض المزيد · "+fmt(Math.max(0,list.length-stShown))+" باقي";
   const empty=$("stEmpty");empty.classList.toggle("hidden",list.length>0);
   empty.querySelector("p").textContent=stTab==="wish"&&!P.wishlist.length?"ما أضفت شي للمفضلة. اضغط على القلب في أي عنصر يعجبك.":"ما فيه عناصر بهالبحث أو التصفية.";
 }
-$("stSearch").addEventListener("input",()=>{SF.q=$("stSearch").value;renderStore()});
+async function openMainBcShop(){
+  try{await loadBC();window.BCUI.openShop()}catch(e){toast((e&&e.message)||"ما قدرنا نفتح متجر الكور","bad")}
+}
+$("stSearch").addEventListener("input",()=>{SF.q=$("stSearch").value;stShown=24;renderStore()});
 $("stFilterBtn").addEventListener("click",()=>{const f=$("stFilters"),open=f.classList.contains("hidden");f.classList.toggle("hidden",!open);$("stFilterBtn").setAttribute("aria-expanded",String(open))});
 function tryBuy(t,it,after){
   const free=freeCoins();
@@ -4839,6 +4854,29 @@ const bootOut=newOut();weeklyRollover(bootOut);
 saveProfile();
 if($("heroWeb"))cornerWeb($("heroWeb"),0,0,1,1,150,"currentColor",.8);
 renderFaq();renderSound();show("home");
+setTimeout(maybeIntro,500);
+function maybeIntro(){
+  let seen="";try{seen=localStorage.getItem("spider_intro")||""}catch(e){return}
+  if(seen||screen!=="home")return;
+  const steps=[
+    ["أهلًا في SPIDER","ألعاب عربية، تلعبها مع أصحابك من أي جهاز. ولو ما فيه نت، تلعب ضد الكمبيوتر."],
+    ["اختر لعبة وابدأ","من الرئيسية أو صفحة الألعاب. تبويب «ضد الكمبيوتر» يشتغل بدون حساب."],
+    ["تقدّمك عندك","كل فوز يرفع مستواك. المتجر فيه الأشكال، وكود الهدية تحت في حسابك."]
+  ];
+  let i=0;
+  const done=close=>{try{localStorage.setItem("spider_intro","1")}catch(e){}close()};
+  openSheet((c,close)=>{
+    const paint=()=>{c.textContent="";
+      c.append(h("p",{class:"hint",style:"margin:0"},fmt(i+1)+" من "+fmt(steps.length)),
+        h("h3",{style:"margin:8px 0 4px"},steps[i][0]),
+        h("p",{class:"lead"},steps[i][1]),
+        h("div",{class:"row"},
+          h("button",{type:"button",onclick:()=>done(close)},"تخطّي"),
+          h("button",{class:"primary",type:"button",onclick:()=>{if(i<steps.length-1){i++;paint()}else done(close)}},i<steps.length-1?"التالي":"يلا نلعب")));
+    };
+    paint();
+  });
+}
 if(bootOut.items.length)setTimeout(()=>{sfx("unlock");toast("فزت ببطل الأسبوع الماضي! شارتك ولقبك في حسابك","good")},600);
 Platform.ready.then(()=>{
   if(Platform.kind==="web"){onAuthChange();cloudStart();

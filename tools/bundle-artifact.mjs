@@ -8,6 +8,7 @@ import {fileURLToPath} from "url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 let html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const css = fs.readFileSync(path.join(root, "games.css"), "utf8");
+const ui = fs.existsSync(path.join(root, "ui.css")) ? fs.readFileSync(path.join(root, "ui.css"), "utf8") : "";
 let app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 const mini = fs.readFileSync(path.join(root, "js", "minigames.js"), "utf8");
 if (!mini.includes("SPIDER_GAMES") || /\beval\s*\(/.test(mini) || /new Function\s*\(/.test(mini)) throw new Error("minigames shape");
@@ -27,9 +28,12 @@ function ensureGames(){return Promise.resolve()}
 `;
 app = app.slice(0, a) + inline + app.slice(b + "/* @split-lazy-end */".length);
 
+html = html.replace(/<link rel="preload" href="ui\.css[^"]*" as="style">\s*/g, "");
+html = html.replace(/<link rel="stylesheet" href="ui\.css[^"]*" media="print" onload="this\.media='all'">\s*/g, "");
+html = html.replace(/<noscript><link rel="stylesheet" href="ui\.css[^"]*"><\/noscript>\s*/g, "");
 const styleEnd = html.lastIndexOf("</style>");
 if (styleEnd < 0) throw new Error("style");
-html = html.slice(0, styleEnd) + "\n" + css + "\n" + html.slice(styleEnd);
+html = html.slice(0, styleEnd) + "\n" + ui + "\n" + css + "\n" + html.slice(styleEnd);
 html = html.replace('<script src="boot.js" defer></script>', '<script type="module">\n' + app + "\n</script>");
 if (html.includes("boot.js") || html.includes("@split-lazy-start")) throw new Error("bundle still split");
 if (/\beval\s*\(|\bnew Function\s*\(/.test(app)) throw new Error("bundle still executes strings");

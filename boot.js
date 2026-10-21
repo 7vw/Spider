@@ -5,6 +5,7 @@
     return {id:t.id||"",game:t.getAttribute("data-game")||"",act:t.getAttribute("data-act")||"",go:t.getAttribute("data-go")||""};
   }
   function arm(intent){
+    dress();
     if(window.__spiderReady)return;
     if(intent){
       window.__spiderIntent=intent;
@@ -14,7 +15,7 @@
     if(started)return;
     started=true;
     var s=document.createElement("script");
-    s.src="app.js?v=7";
+    s.src="app.js?v=8";
     document.body.appendChild(s);
   }
   document.addEventListener("pointerdown",function(e){
@@ -38,5 +39,21 @@
     e.preventDefault();
     arm(intentFrom(t));
   },true);
-  window.addEventListener("load",function(){setTimeout(function(){arm(null)},12000)});
+  function dress(){
+    if(window.__spiderDress)return;
+    window.__spiderDress=true;
+    var css=document.createElement("link");
+    css.rel="stylesheet";
+    css.href="ui.css?v=1";
+    var font=document.createElement("link");
+    font.rel="stylesheet";
+    font.href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=optional";
+    document.head.appendChild(css);
+    document.head.appendChild(font);
+  }
+  document.addEventListener("pointerdown",function(){dress()}, {capture:true, passive:true});
+  window.addEventListener("load",function(){
+    setTimeout(dress, 6000);
+    setTimeout(function(){arm(null)},12000);
+  });
 })();
