@@ -1,0 +1,84 @@
+/* Each theme sets the full palette. Components only ever read these variables. */
+:root,
+[data-theme='classic'] {
+  --bg: #08090d;
+  --bg-2: #101d35;
+  --bg-3: #1a0b10;
+  --accent: #e62429;
+  --accent-hi: #ff5257;
+  --accent-2: #2b4b8c;
+  --on-accent: #ffffff;
+  --text: #f5f5f7;
+  --text-dim: rgba(245, 245, 247, 0.68);
+  --text-faint: rgba(245, 245, 247, 0.42);
+  --glass: rgba(16, 20, 32, 0.55);
+  --glass-hi: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --focus-bg: #f5f5f7;
+  --focus-fg: #08090d;
+  --focus-ring: #f5f5f7;
+  --focus-glow: rgba(230, 36, 41, 0.55);
+  --pattern: rgba(245, 245, 247, 0.075);
+  --pattern-2: rgba(230, 36, 41, 0.18);
+  --halftone: rgba(230, 36, 41, 0.22);
+  --ok: #46d48a;
+  --warn: #ffb547;
+  --bad: #ff5a5f;
+}
+
+[data-theme='miles'] {
+  --bg: #050506;
+  --bg-2: #160509;
+  --bg-3: #24060e;
+  --accent: #ff1f3d;
+  --accent-hi: #ff5a72;
+  --accent-2: #7a1fff;
+  --on-accent: #ffffff;
+  --glass: rgba(14, 8, 10, 0.6);
+  --glass-border: rgba(255, 31, 61, 0.22);
+  --focus-bg: #ff1f3d;
+  --focus-fg: #ffffff;
+  --focus-ring: #ff1f3d;
+  --focus-glow: rgba(255, 31, 61, 0.75);
+  --pattern: rgba(255, 31, 61, 0.12);
+  --pattern-2: rgba(0, 229, 255, 0.12);
+  --halftone: rgba(255, 31, 61, 0.35);
+}
+
+[data-theme='symbiote'] {
+  --bg: #040404;
+  --bg-2: #111113;
+  --bg-3: #1b1b1e;
+  --accent: #f5f5f7;
+  --accent-hi: #ffffff;
+  --accent-2: #5d5d66;
+  --on-accent: #050505;
+  --glass: rgba(12, 12, 14, 0.62);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --focus-bg: #f5f5f7;
+  --focus-fg: #050505;
+  --focus-ring: #ffffff;
+  --focus-glow: rgba(255, 255, 255, 0.35);
+  --pattern: rgba(255, 255, 255, 0.07);
+  --pattern-2: rgba(255, 255, 255, 0.05);
+  --halftone: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='2099'] {
+  --bg: #060a16;
+  --bg-2: #0f2453;
+  --bg-3: #101d35;
+  --accent: #e62429;
+  --accent-hi: #ff5257;
+  --accent-2: #2f6bff;
+  --on-accent: #ffffff;
+  --glass: rgba(10, 18, 40, 0.58);
+  --glass-border: rgba(80, 140, 255, 0.2);
+  --focus-bg: #e9f0ff;
+  --focus-fg: #060a16;
+  --focus-ring: #6fa0ff;
+  --focus-glow: rgba(47, 107, 255, 0.6);
+  --pattern: rgba(111, 160, 255, 0.1);
+  --pattern-2: rgba(230, 36, 41, 0.16);
+  --halftone: rgba(47, 107, 255, 0.25);
+}

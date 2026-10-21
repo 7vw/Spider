@@ -1,0 +1,773 @@
+/* ---------- Shell & safe area ---------- */
+.shell {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+.safe {
+  position: absolute;
+  inset: var(--overscan);
+  display: flex;
+  flex-direction: column;
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  animation: stage-in var(--t-slow) var(--ease-out) both;
+}
+
+/* Opacity only: a transform here would become the containing block of the fixed backdrop. */
+@keyframes stage-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  position: relative;
+  z-index: 5;
+  height: var(--topbar-h);
+  padding: 0 var(--gutter);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 2rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.logo__word {
+  font-weight: 800;
+  font-size: 1.85rem;
+  letter-spacing: 0.14em;
+  direction: ltr;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo__tv {
+  font-size: 0.8em;
+  letter-spacing: 0.08em;
+  padding: 0.05em 0.4em;
+  border-radius: 0.35rem;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 0 1.25rem var(--focus-glow);
+}
+
+.emblem {
+  filter: drop-shadow(0 0 0.9rem var(--focus-glow));
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  border-radius: 999px;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  height: 3.6rem;
+  padding: 0 1.6rem;
+  border-radius: 999px;
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  transition:
+    background var(--t-fast),
+    color var(--t-fast),
+    transform var(--t-med) var(--ease-spring);
+  position: relative;
+}
+
+.tab svg {
+  font-size: 1.5rem;
+}
+
+.tab.is-active {
+  color: var(--text);
+}
+
+.tab.is-active::after {
+  content: '';
+  position: absolute;
+  inset-inline: 1.4rem;
+  bottom: 0.45rem;
+  height: 0.2rem;
+  border-radius: 1rem;
+  background: var(--accent);
+  box-shadow: 0 0 0.75rem var(--focus-glow);
+}
+
+.tab:focus {
+  background: var(--focus-bg);
+  color: var(--focus-fg);
+  transform: scale(1.06);
+  box-shadow: 0 0 2rem var(--focus-glow);
+}
+
+.tab:focus::after {
+  opacity: 0;
+}
+
+.tab--icon {
+  width: 3.6rem;
+  padding: 0;
+  justify-content: center;
+}
+
+.tabs__sep {
+  width: 1px;
+  height: 2rem;
+  background: var(--glass-border);
+  margin: 0 0.35rem;
+}
+
+.topbar__status {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+}
+
+.clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+}
+
+.clock__time {
+  font-size: 2rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock__date {
+  font-size: 1.05rem;
+  color: var(--text-dim);
+}
+
+.net {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  color: var(--text-dim);
+}
+
+.net svg {
+  font-size: 1.5rem;
+}
+
+.net.is-online svg {
+  color: var(--ok);
+}
+
+.net.is-offline svg {
+  color: var(--bad);
+}
+
+/* ---------- Chips, badges, buttons ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 2.3rem;
+  padding: 0 0.95rem;
+  border-radius: 999px;
+  font-size: 1.05rem;
+  font-weight: 500;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+}
+
+.chip svg {
+  font-size: 1.1rem;
+}
+
+.chip--ok svg {
+  color: var(--ok);
+}
+
+.chip--warn {
+  color: var(--warn);
+  border-color: rgba(255, 181, 71, 0.35);
+  background: rgba(255, 181, 71, 0.08);
+}
+
+.badge {
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.btn-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  height: 4rem;
+  padding: 0 1.9rem;
+  border-radius: 999px;
+  font-size: 1.35rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
+  transition:
+    transform var(--t-med) var(--ease-spring),
+    background var(--t-fast),
+    color var(--t-fast),
+    box-shadow var(--t-med);
+}
+
+.btn svg {
+  font-size: 1.5rem;
+}
+
+.btn--primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: transparent;
+}
+
+.btn:focus {
+  background: var(--focus-bg);
+  color: var(--focus-fg);
+  transform: scale(1.06);
+  box-shadow: 0 0 0 0.2rem var(--focus-ring), 0 0 2.5rem var(--focus-glow);
+}
+
+/* ---------- Backdrop ---------- */
+.bd {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bd__base {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(70% 90% at 100% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%),
+    radial-gradient(80% 80% at 0% 100%, color-mix(in srgb, var(--bg-2) 95%, transparent), transparent 70%),
+    radial-gradient(50% 60% at 60% 40%, var(--bg-3), transparent 70%),
+    var(--bg);
+}
+
+[dir='rtl'] .bd__base,
+[dir='rtl'] .bd__layer,
+[dir='rtl'] .bd__pattern,
+[dir='rtl'] .bd__halftone {
+  transform: scaleX(-1);
+}
+
+.bd__layer {
+  position: absolute;
+  inset: 0;
+  transition: opacity var(--t-slow) var(--ease-out);
+}
+
+.bd__layer.is-in {
+  animation: art-in 900ms var(--ease-out) both;
+}
+
+.bd__layer.is-out {
+  opacity: 0;
+}
+
+@keyframes art-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.bd__art {
+  position: absolute;
+  inset: 0 0 0 30%;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 45%), linear-gradient(0deg, transparent 5%, #000 55%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0%, #000 45%), linear-gradient(0deg, transparent 5%, #000 55%);
+  mask-composite: intersect;
+}
+
+.bd__art--app {
+  background:
+    radial-gradient(60% 70% at 70% 30%, color-mix(in srgb, var(--brand) 55%, transparent), transparent 70%),
+    linear-gradient(135deg, var(--brand-bg), color-mix(in srgb, var(--brand) 30%, var(--brand-bg)));
+  overflow: hidden;
+}
+
+.bd__art--app::before {
+  /* Diagonal speed streaks, a nod to comic motion lines. */
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background: repeating-linear-gradient(115deg, transparent 0 3.5rem, color-mix(in srgb, var(--brand) 14%, transparent) 3.5rem 3.65rem);
+  animation: streaks 30s linear infinite;
+}
+
+@keyframes streaks {
+  to {
+    transform: translateX(10rem);
+  }
+}
+
+.bd__art-word {
+  position: absolute;
+  top: 8%;
+  inset-inline-end: -4%;
+  direction: ltr;
+  font-size: 18rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 2px color-mix(in srgb, var(--brand) 70%, white 10%);
+  opacity: 0.55;
+  transform: rotate(-6deg);
+}
+
+[dir='rtl'] .bd__art-word {
+  transform: scaleX(-1) rotate(-6deg);
+}
+
+.bd__art--media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(1.1) contrast(1.05);
+}
+
+.bd__art-fallback,
+.bd__art--ambient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(50% 60% at 70% 35%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%);
+}
+
+.bd__pattern {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: var(--pattern);
+  stroke-width: 1.2;
+  animation: drift 90s ease-in-out infinite alternate;
+}
+
+.bd__pattern--veins {
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  filter: blur(0.5px);
+}
+
+.bd__pattern--grid {
+  stroke-width: 1;
+  -webkit-mask-image: radial-gradient(90% 80% at 80% 20%, #000, transparent 75%);
+  mask-image: radial-gradient(90% 80% at 80% 20%, #000, transparent 75%);
+}
+
+.bd__pattern-ghost {
+  stroke: var(--pattern-2);
+  transform: translate(6px, 3px);
+  animation: glitch-shift 6s steps(1) infinite;
+}
+
+@keyframes drift {
+  to {
+    transform: translate(-1.5rem, 1rem) scale(1.03);
+  }
+}
+
+[dir='rtl'] .bd__pattern {
+  animation-name: drift-rtl;
+}
+
+@keyframes drift-rtl {
+  from {
+    transform: scaleX(-1);
+  }
+  to {
+    transform: scaleX(-1) translate(-1.5rem, 1rem) scale(1.03);
+  }
+}
+
+@keyframes glitch-shift {
+  0%,
+  90% {
+    transform: translate(6px, 3px);
+  }
+  92% {
+    transform: translate(-10px, 0);
+  }
+  95% {
+    transform: translate(14px, -4px);
+  }
+}
+
+.bd__halftone {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--halftone) 22%, transparent 24%);
+  background-size: 0.75rem 0.75rem;
+  -webkit-mask-image: radial-gradient(60% 55% at 100% 100%, #000 0%, transparent 70%), radial-gradient(35% 40% at 92% 6%, #000, transparent 70%);
+  mask-image: radial-gradient(60% 55% at 100% 100%, #000 0%, transparent 70%), radial-gradient(35% 40% at 92% 6%, #000, transparent 70%);
+  opacity: 0.8;
+}
+
+[data-theme='miles'] .bd__halftone {
+  background-size: 0.6rem 0.6rem;
+  opacity: 1;
+}
+
+[data-theme='symbiote'] .bd__halftone {
+  opacity: 0.4;
+}
+
+.bd__shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 70%, transparent) 35%, transparent 65%),
+    linear-gradient(0deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 75%, transparent) 38%, transparent 70%);
+}
+
+[dir='rtl'] .bd__shade {
+  background:
+    linear-gradient(270deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 70%, transparent) 35%, transparent 65%),
+    linear-gradient(0deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 75%, transparent) 38%, transparent 70%);
+}
+
+.bd__grain {
+  position: absolute;
+  inset: -50%;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* ---------- Sheet (modal) ---------- */
+.sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 4, 8, 0.6);
+  backdrop-filter: blur(0.5rem);
+  animation: fade-in var(--t-med) var(--ease-out) both;
+}
+
+.sheet {
+  border-radius: var(--radius-lg);
+  padding: 3rem;
+  max-width: 82rem;
+  animation: sheet-in var(--t-slow) var(--ease-out) both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(2rem) scale(0.97);
+  }
+}
+
+/* ---------- Toasts & HUD ---------- */
+.toasts {
+  position: fixed;
+  z-index: 80;
+  bottom: calc(3rem + var(--overscan));
+  inset-inline-end: calc(var(--gutter) + var(--overscan));
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.toast {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  max-width: 40rem;
+  padding: 1.25rem 1.6rem;
+  border-radius: var(--radius);
+  animation: toast-in var(--t-slow) var(--ease-out) both;
+  border-inline-start: 0.3rem solid var(--accent);
+}
+
+.toast svg {
+  font-size: 1.75rem;
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+.toast strong {
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.toast p {
+  font-size: 1.15rem;
+  color: var(--text-dim);
+  margin-top: 0.2rem;
+}
+
+.toast--success svg {
+  color: var(--ok);
+}
+
+.toast--error {
+  border-inline-start-color: var(--bad);
+}
+
+.toast--error svg {
+  color: var(--bad);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+}
+
+.volume-hud {
+  position: fixed;
+  z-index: 90;
+  top: 50%;
+  inset-inline-end: calc(3rem + var(--overscan));
+  transform: translateY(-50%);
+  width: 6rem;
+  padding: 1.5rem 0;
+  border-radius: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  animation: fade-in var(--t-med) both;
+}
+
+.volume-hud svg {
+  font-size: 2rem;
+}
+
+.volume-hud__bar {
+  width: 0.6rem;
+  height: 16rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.volume-hud__bar span {
+  width: 100%;
+  background: var(--accent);
+  box-shadow: 0 0 1rem var(--focus-glow);
+  transition: height var(--t-fast);
+}
+
+.volume-hud__value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Splash ---------- */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(60% 60% at 50% 50%, var(--bg-2), var(--bg) 70%);
+  animation: splash-out 450ms var(--ease-out) 1300ms forwards;
+}
+
+.splash__web {
+  position: absolute;
+  width: 140vmin;
+  height: 140vmin;
+  fill: none;
+  stroke: var(--pattern);
+  stroke-width: 0.3;
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  animation: web-draw 1.4s var(--ease-out) forwards;
+}
+
+.splash__mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  animation: mark-in 900ms var(--ease-spring) 150ms both;
+}
+
+.splash__word {
+  font-size: 4rem;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  direction: ltr;
+  text-shadow: -3px 0 color-mix(in srgb, var(--accent) 80%, transparent), 3px 0 color-mix(in srgb, var(--accent-2) 70%, transparent);
+}
+
+.splash__word span {
+  color: var(--accent);
+  margin-inline-start: 0.3em;
+}
+
+@keyframes web-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes mark-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+    filter: blur(0.75rem);
+  }
+}
+
+@keyframes splash-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.overscan-guide {
+  position: fixed;
+  inset: var(--overscan);
+  z-index: 70;
+  border: 0.3rem dashed var(--accent);
+  pointer-events: none;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.35);
+}
+
+/* ---------- Theme identity over contextual art ---------- */
+/* Brand art should never drown out the theme: each theme filters and overlays it differently. */
+.bd__layer {
+  opacity: var(--art-opacity, 0.9);
+}
+
+[data-theme='miles'] {
+  --art-opacity: 0.8;
+}
+
+[data-theme='miles'] .bd__layer {
+  filter: saturate(1.25) contrast(1.1);
+}
+
+[data-theme='miles'] .bd__halftone {
+  -webkit-mask-image: radial-gradient(75% 85% at 85% 35%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(75% 85% at 85% 35%, #000 0%, transparent 72%);
+  background-size: 0.55rem 0.55rem;
+  background-image: radial-gradient(rgba(5, 5, 6, 0.85) 30%, transparent 32%);
+}
+
+[data-theme='miles'] .bd__pattern {
+  stroke-width: 1.6;
+}
+
+[data-theme='miles'] .bd__base::after {
+  /* Spray-paint bursts in the corners. */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(18% 26% at 6% 92%, rgba(255, 31, 61, 0.28), transparent 70%),
+    radial-gradient(12% 18% at 44% 8%, rgba(122, 31, 255, 0.2), transparent 70%);
+}
+
+[data-theme='symbiote'] {
+  --art-opacity: 0.75;
+}
+
+[data-theme='symbiote'] .bd__layer {
+  filter: grayscale(1) contrast(1.25) brightness(0.85);
+}
+
+[data-theme='symbiote'] .bd__base {
+  background:
+    radial-gradient(60% 80% at 100% 0%, rgba(255, 255, 255, 0.08), transparent 60%),
+    radial-gradient(70% 70% at 0% 100%, #121214, transparent 70%),
+    var(--bg);
+}
+
+[data-theme='symbiote'] .bd__pattern {
+  stroke: rgba(255, 255, 255, 0.09);
+  animation-duration: 40s;
+}
+
+[data-theme='2099'] {
+  --art-opacity: 0.7;
+}
+
+[data-theme='2099'] .bd__layer {
+  filter: saturate(0.8) hue-rotate(-12deg);
+}
+
+[data-theme='2099'] .bd__base::after {
+  /* Cool blue wash and a horizon line. */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 62%, rgba(47, 107, 255, 0.16) 62.1%, transparent 62.6%),
+    radial-gradient(90% 70% at 70% 30%, rgba(47, 107, 255, 0.28), transparent 70%);
+}
+
+[data-theme='2099'] .bd__pattern {
+  stroke: rgba(111, 160, 255, 0.16);
+  z-index: 0;
+}
+
+[data-theme='2099'] .bd__layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(16, 29, 53, 0.55), rgba(47, 107, 255, 0.18));
+  mix-blend-mode: multiply;
+}

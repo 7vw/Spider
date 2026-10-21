@@ -1,0 +1,306 @@
+[dir='rtl'] .bd__art--media img {
+  transform: scaleX(-1);
+}
+
+/* ---------- Tiles ---------- */
+.tile {
+  position: relative;
+  flex: none;
+  width: var(--tile-w, 20rem);
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius);
+  scroll-margin-inline: var(--gutter);
+  transition:
+    transform var(--t-med) var(--ease-spring),
+    box-shadow var(--t-med) var(--ease-out);
+  box-shadow: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.45);
+}
+
+.tile__inner {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.tile::after {
+  /* Focus ring lives outside the clipped area so it can glow. */
+  content: '';
+  position: absolute;
+  inset: -0.35rem;
+  border-radius: calc(var(--radius) + 0.35rem);
+  border: 0.22rem solid var(--focus-ring);
+  opacity: 0;
+  transform: scale(0.97);
+  transition:
+    opacity var(--t-fast),
+    transform var(--t-med) var(--ease-spring);
+  pointer-events: none;
+}
+
+.tile:focus {
+  transform: scale(1.09) translateY(-0.4rem);
+  z-index: 2;
+  box-shadow:
+    0 1.75rem 3.5rem rgba(0, 0, 0, 0.6),
+    0 0 3rem var(--focus-glow);
+}
+
+.tile:focus::after {
+  opacity: 1;
+  transform: none;
+}
+
+.tile__sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.tile__sheen::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  transform: skewX(-18deg);
+}
+
+.tile:focus .tile__sheen::before {
+  animation: sheen 1.1s var(--ease-out) 120ms;
+}
+
+@keyframes sheen {
+  to {
+    left: 130%;
+  }
+}
+
+/* Spider-Verse touch: corner web strands appear on focus. */
+.tile:focus .tile__inner::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  width: 5rem;
+  height: 5rem;
+  background:
+    linear-gradient(225deg, transparent 49%, rgba(255, 255, 255, 0.35) 50%, transparent 51%),
+    radial-gradient(circle at 100% 0, transparent 1.4rem, rgba(255, 255, 255, 0.3) 1.45rem, transparent 1.55rem),
+    radial-gradient(circle at 100% 0, transparent 2.6rem, rgba(255, 255, 255, 0.25) 2.65rem, transparent 2.75rem),
+    radial-gradient(circle at 100% 0, transparent 3.8rem, rgba(255, 255, 255, 0.2) 3.85rem, transparent 3.95rem);
+  animation: fade-in var(--t-med) both;
+}
+
+[dir='rtl'] .tile:focus .tile__inner::after {
+  transform: scaleX(-1);
+}
+
+/* Miles: chromatic split + quick glitch on focus. */
+[data-theme='miles'] .tile:focus {
+  animation: tile-glitch 380ms steps(2) 1;
+}
+
+@keyframes tile-glitch {
+  0% {
+    filter: drop-shadow(-0.35rem 0 0 rgba(0, 229, 255, 0.7)) drop-shadow(0.35rem 0 0 rgba(255, 31, 61, 0.8));
+  }
+  60% {
+    filter: drop-shadow(0.25rem 0 0 rgba(0, 229, 255, 0.6)) drop-shadow(-0.25rem 0 0 rgba(255, 31, 61, 0.7));
+  }
+  100% {
+    filter: none;
+  }
+}
+
+.tile__fav {
+  position: absolute;
+  top: 0.75rem;
+  inset-inline-end: 0.75rem;
+  font-size: 1.5rem;
+  color: #ffd166;
+  filter: drop-shadow(0 0.2rem 0.4rem rgba(0, 0, 0, 0.6));
+}
+
+/* ---------- App art ---------- */
+.app-art {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.6rem;
+  background:
+    radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--brand) 40%, transparent), transparent 60%),
+    linear-gradient(160deg, color-mix(in srgb, var(--brand-bg) 80%, #222), var(--brand-bg));
+  overflow: hidden;
+}
+
+.app-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(115deg, transparent 0 1.6rem, rgba(255, 255, 255, 0.025) 1.6rem 1.7rem);
+}
+
+.app-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.app-art__glow {
+  position: absolute;
+  width: 70%;
+  height: 70%;
+  bottom: -35%;
+  left: 15%;
+  border-radius: 50%;
+  background: var(--brand);
+  filter: blur(3rem);
+  opacity: 0.35;
+}
+
+.app-art__icon {
+  position: relative;
+  font-size: 3rem;
+  color: var(--brand);
+}
+
+.app-art__name {
+  position: relative;
+  direction: ltr;
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fff;
+  text-shadow: 0 0.15rem 1rem rgba(0, 0, 0, 0.5);
+}
+
+.app-art__name::after {
+  content: '';
+  display: block;
+  height: 0.22rem;
+  width: 40%;
+  margin: 0.35rem auto 0;
+  border-radius: 1rem;
+  background: var(--brand);
+}
+
+.app-art--lg .app-art__name {
+  font-size: 3.4rem;
+}
+
+.app-art--lg .app-art__icon {
+  font-size: 5rem;
+}
+
+/* ---------- Media tiles ---------- */
+.media-thumb {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(150deg, var(--bg-3), var(--bg-2));
+}
+
+.media-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), transparent 55%);
+}
+
+.media-thumb__fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 3.5rem;
+  color: color-mix(in srgb, var(--accent) 70%, white 10%);
+  background:
+    radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--accent) 25%, transparent), transparent 60%),
+    radial-gradient(var(--halftone) 20%, transparent 22%) 0 0 / 0.6rem 0.6rem;
+}
+
+.media-thumb__title {
+  position: absolute;
+  z-index: 1;
+  inset-inline: 1rem;
+  bottom: 0.9rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.progress {
+  position: absolute;
+  z-index: 2;
+  inset-inline: 1rem;
+  bottom: 0.5rem;
+  height: 0.3rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  box-shadow: 0 0 0.6rem var(--focus-glow);
+}
+
+.tile--media .media-thumb__title {
+  bottom: 1.2rem;
+}
+
+.progress--hero {
+  position: relative;
+  inset: auto;
+  width: 18rem;
+  height: 0.4rem;
+}
+
+/* ---------- Action tile ---------- */
+.tile--action .tile__inner {
+  background: var(--glass);
+  border: 0.15rem dashed var(--glass-border);
+  backdrop-filter: blur(1rem);
+}
+
+.tile-action {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.6rem;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.tile-action svg {
+  font-size: 2.6rem;
+  color: var(--accent);
+}
+
+.tile--action:focus .tile-action {
+  color: var(--text);
+}

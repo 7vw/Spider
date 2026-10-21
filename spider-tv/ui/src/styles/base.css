@@ -1,0 +1,91 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 1.5rem;
+  line-height: 1.45;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  user-select: none;
+  cursor: default;
+}
+
+/* The pointer is only useful while developing on a Mac; hide it when idle on the TV. */
+body:not(:hover) {
+  cursor: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-align: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+:focus {
+  outline: none;
+}
+
+[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+/* Directional glyphs mirror in RTL. */
+[dir='rtl'] .settings__chev,
+[dir='rtl'] .file-row__chev,
+[dir='rtl'] .btn .icon-dir {
+  transform: scaleX(-1);
+}
+
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(1.75rem) saturate(140%);
+  -webkit-backdrop-filter: blur(1.75rem) saturate(140%);
+  box-shadow: inset 0 1px 0 var(--glass-hi), 0 1.5rem 3rem rgba(0, 0, 0, 0.35);
+}
+
+.ok {
+  color: var(--ok);
+}
+.bad {
+  color: var(--bad);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fast: 0ms;
+    --t-med: 0ms;
+    --t-slow: 0ms;
+  }
+}

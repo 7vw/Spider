@@ -1,0 +1,103 @@
+{
+  "$comment": "Single source of truth for launchable apps. The agent only launches URLs listed here; the UI only sends app ids. 'support' describes what is verified to work, not what we hope works.",
+  "apps": [
+    {
+      "id": "youtube",
+      "name": "YouTube",
+      "kind": "web",
+      "url": "https://www.youtube.com/tv",
+      "profile": "tv-ua",
+      "userAgent": "Mozilla/5.0 (Linux; Tizen 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Version/5.0 TV Safari/537.36",
+      "brand": { "bg": "#1a0606", "accent": "#ff0033", "fg": "#ffffff" },
+      "support": "works",
+      "drm": false,
+      "noteKey": "youtube"
+    },
+    {
+      "id": "netflix",
+      "name": "Netflix",
+      "kind": "web",
+      "url": "https://www.netflix.com/browse",
+      "profile": "default",
+      "brand": { "bg": "#120203", "accent": "#e50914", "fg": "#ffffff" },
+      "support": "drm-limited",
+      "drm": true,
+      "noteKey": "drm"
+    },
+    {
+      "id": "prime",
+      "name": "Prime Video",
+      "kind": "web",
+      "url": "https://www.primevideo.com",
+      "profile": "default",
+      "brand": { "bg": "#04121d", "accent": "#1aa3ff", "fg": "#ffffff" },
+      "support": "drm-limited",
+      "drm": true,
+      "noteKey": "drm"
+    },
+    {
+      "id": "disney",
+      "name": "Disney+",
+      "kind": "web",
+      "url": "https://www.disneyplus.com",
+      "profile": "default",
+      "brand": { "bg": "#050a24", "accent": "#3b7bff", "fg": "#ffffff" },
+      "support": "drm-limited",
+      "drm": true,
+      "noteKey": "drm"
+    },
+    {
+      "id": "shahid",
+      "name": "Shahid",
+      "kind": "web",
+      "url": "https://shahid.mbc.net",
+      "profile": "default",
+      "brand": { "bg": "#0f0a02", "accent": "#f5b800", "fg": "#ffffff" },
+      "support": "drm-limited",
+      "drm": true,
+      "noteKey": "drm"
+    },
+    {
+      "id": "spotify",
+      "name": "Spotify",
+      "kind": "web",
+      "url": "https://open.spotify.com",
+      "profile": "default",
+      "brand": { "bg": "#03130a", "accent": "#1ed760", "fg": "#ffffff" },
+      "support": "drm-limited",
+      "drm": true,
+      "noteKey": "spotify"
+    },
+    {
+      "id": "browser",
+      "name": "Browser",
+      "kind": "browser",
+      "url": "https://www.google.com",
+      "profile": "default",
+      "brand": { "bg": "#0a0f1c", "accent": "#7aa7ff", "fg": "#ffffff" },
+      "support": "works",
+      "drm": false,
+      "noteKey": "browser"
+    },
+    {
+      "id": "media",
+      "name": "Media Player",
+      "kind": "builtin",
+      "route": "media",
+      "brand": { "bg": "#14060a", "accent": "#e62429", "fg": "#ffffff" },
+      "support": "works",
+      "drm": false,
+      "noteKey": "media"
+    },
+    {
+      "id": "files",
+      "name": "Files",
+      "kind": "builtin",
+      "route": "files",
+      "brand": { "bg": "#071022", "accent": "#4c8dff", "fg": "#ffffff" },
+      "support": "works",
+      "drm": false,
+      "noteKey": "files"
+    }
+  ]
+}
