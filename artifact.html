@@ -1311,6 +1311,18 @@ body.in-match .controls,body.in-match .ww-kb,body.in-match .wl-pad,body.in-match
 #stMore{margin:8px 0 4px}
 #btnBots{position:sticky;bottom:calc(var(--nav-h) + 10px);z-index:4}
 .bc-shop-card{display:flex;flex-direction:column;gap:8px;padding:16px}
+#chatBox{display:none}
+body.has-chat #chatBox{display:block}
+.chat-tray{display:flex;gap:8px;overflow-x:auto;padding:4px 0 2px;scrollbar-width:none}
+.chat-tray button{flex:none;min-height:44px;min-width:44px;padding:0 14px;border-radius:999px;font-size:var(--fs-sm)}
+.chat-log{display:flex;flex-direction:column;gap:4px;margin-top:8px;min-height:0}
+.chat-log p{margin:0;font-size:var(--fs-sm);color:var(--ink)}
+.chat-line{min-height:0;font-size:var(--fs-sm);color:var(--gold-hi);padding:0 4px}
+.av-pick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.av-pick button{min-height:44px;min-width:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:var(--rad-md);font-size:var(--fs-xs)}
+.av-pick button.on{outline:2px solid var(--gold);color:var(--gold-hi)}
+.fcode{font-size:var(--fs-2xl);letter-spacing:.18em;font-weight:800;direction:ltr;text-align:center}
+@media (min-width:700px){.av-pick{grid-template-columns:repeat(6,minmax(0,1fr))}}
 
 /* ===================== WEBGRID / XO∞ match screen ===================== */
 #mg .bar{display:flex;align-items:center;gap:8px}.mg-title{margin-inline-start:auto;font:700 var(--fs-xl)/1 var(--display);letter-spacing:.06em;direction:ltr;background:linear-gradient(100deg,#fff,var(--secondary-hi));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
@@ -1984,7 +1996,9 @@ body.in-match .controls,body.in-match .ww-kb,body.in-match .wl-pad,body.in-match
     <span class="lbl">كود الغرفة</span>
     <div class="code" id="lobbyCode">----</div>
     <div class="row"><button id="btnCopy">انسخ الدعوة</button><button id="btnShare">شارك</button></div>
-    <p class="hint" id="lobbyInviteHint">ادعُ صاحبك للعبة من زر المشاركة، وخله يدخل الكود هذا.</p>
+    <p class="hint" id="lobbyInviteHint">شارك الرابط، ويفتح عند صاحبك الغرفة الخاصة مباشرة.</p>
+    <div id="chatLog" class="chat-log" aria-live="polite"></div>
+    <div id="chatLobby" class="chat-tray" role="group" aria-label="دردشة سريعة"></div>
   </div>
   <div class="card">
     <h2>اللاعبين</h2>
@@ -2013,9 +2027,14 @@ body.in-match .controls,body.in-match .ww-kb,body.in-match .wl-pad,body.in-match
   </div>
   <div class="players" id="players"></div>
   <div class="status" id="status" aria-live="polite"></div>
+  <div id="chatLine" class="chat-line" aria-live="polite"></div>
   <div class="tbar hidden" id="tbar"><i id="tfill"></i></div>
   <div class="boardbox" id="boardbox"><svg id="board" viewBox="-4.5 -4.5 108 108" role="img" aria-label="لوحة اللعب"></svg></div>
   <div class="controls">
+    <div id="chatBox">
+      <div id="chatGame" class="chat-tray" role="group" aria-label="عبارات جاهزة"></div>
+      <p class="hint" id="chatHint" style="margin:6px 0 0">عبارات وإيموجي بس، بدون كتابة حرة.</p>
+    </div>
     <div class="hidden" id="emoteBox">
       <div class="emotray" id="emoteTray"></div>
       <div class="row" style="margin-top:6px;align-items:center"><span class="hint" style="margin:0;flex:1" id="emoteHint">اضغط تفاعل يطلع فوق اسمك.</span><button class="small" id="btnMuteEmo"></button></div>
@@ -5413,6 +5432,18 @@ function openCodeSheet(){
 /* ================= profile ================= */
 let pfTab="stats",colTab="skin",editingName=false;
 const PF_TABS=[["stats","الإحصائيات"],["friends","أصحابي"],["collection","المجموعة"],["loadouts","تنسيقاتي"],["ach","الإنجازات"],["missions","المهام"],["levels","المستويات"],["history","السجل"],["settings","الإعدادات"]];
+const AVATAR_ICONS=[["spark","شرارة"],["moon","قمر"],["star","نجمة"],["heart","قلب"],["crown","تاج"],["bolt","برق"],["flame","لهب"],["globe","عالم"],["target","هدف"],["medal","ميدالية"],["cloud","غيم"],["eye","عين"]];
+const CHAT_PRESETS=[["hi","هلا والله"],["come","يلا تعال"],["nice","كفو عليك"],["wait","استنى شوي"],["gg","لعبة حلوة"],["again","نلعب مرة ثانية؟"],["fast","يلا بسرعة"],["luck","حظ أوفر"]];
+const CHAT_EMOJI=[["e0","😂"],["e1","🔥"],["e2","👏"],["e3","😎"],["e4","🕸️"],["e5","👍"],["e6","😮"],["e7","❤️"]];
+let JOIN_CODE=(()=>{try{const q=new URLSearchParams(location.search).get("join")||"";const c=q.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,4);return /^[A-Z0-9]{4}$/.test(c)?c:""}catch(e){return ""}})();
+function localFriendCode(){
+  const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let h=2166136261;const s=String((P&&P.id)||"spider");
+  for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);
+  let o="";for(let i=0;i<6;i++){o+=A[Math.abs(h)%32];h=Math.imul(h,1664525)+1013904223}
+  return o;
+}
+function chatLabel(id){const p=CHAT_PRESETS.find(x=>x[0]===id);if(p)return p[1];const e=CHAT_EMOJI.find(x=>x[0]===id);return e?e[1]:""}
 const DIFF=["—","سهل","متوسط","صعب"];
 function netRank(){if(Platform.kind==="web"){const rows=lbCache&&lbCache.rows;if(!rows)return 0;const k=rows.findIndex(r=>r.id===cid);return k<0?0:k+1}return (lbSorted().find(r=>r.me)||{}).rank||0}
 const qstat=(icon,v,label)=>h("div",{class:"qs"},h("span",{class:"qsi"},icon),h("b",{},v),h("span",{},label));
@@ -5462,7 +5493,30 @@ function renderProfile(){
 }
 const stat=(v,label)=>h("div",{class:"stat"},h("b",{},v),h("span",{},label));
 const visibleItems=t=>CATS[t].filter(it=>!isOwnerItem(it)||Owner.verified||isOwned(t,it.id));
+function pfIdentity(b){
+  const cur=AVATAR_ICONS.some(x=>x[0]===P.avatarIcon)?P.avatarIcon:"spark";
+  const grid=h("div",{class:"av-pick",role:"group","aria-label":"اختر أيقونة"});
+  for(const [id,name] of AVATAR_ICONS){
+    grid.append(h("button",{type:"button",class:id===cur?"on":"","aria-pressed":String(id===cur),"aria-label":name,onclick:async()=>{
+      P.avatarIcon=id;saveProfile();
+      if(Cloud.on){try{const r=await api("social_card",{avatar:id,fav:P.favGame||""});if(r&&r.profile)applyProfile(r.profile);P.avatarIcon=id}catch(e){toast(e.message,"bad")}}
+      renderProfile();
+    }},ic(id),h("span",{},name)));
+  }
+  const fav=h("select",{"aria-label":"لعبتك المفضلة",onchange:async e=>{
+    P.favGame=e.target.value;saveProfile();
+    if(Cloud.on){try{const r=await api("social_card",{avatar:P.avatarIcon||"spark",fav:P.favGame||""});if(r&&r.profile)applyProfile(r.profile);P.favGame=e.target.value}catch(err){toast(err.message,"bad")}}
+  }},h("option",{value:""},"بدون"),...GAMES.map(g=>h("option",{value:g.id,selected:(P.favGame||"")===g.id},g.nameAr)));
+  const li=levelInfo(P.xp);
+  b.append(h("div",{class:"card",id:"pfIdentity"},
+    h("h3",{style:"margin:0 0 8px"},"صورتك"),
+    h("p",{class:"hint",style:"margin:0 0 8px"},"أيقونات جاهزة من اللعبة. ما فيه رفع صور، وإيميلك ما يظهر لأحد."),
+    grid,
+    h("div",{class:"pf-level",style:"margin-top:12px"},h("span",{class:"lvl-badge","aria-hidden":"true"},fmt(li.L)),h("div",{class:"grow"},h("div",{class:"prow"},h("span",{},"المستوى "+fmt(li.L)),h("span",{class:"faint"},"الإنجازات من تبويبها")))),
+    h("span",{class:"lbl mt"},"لعبتك المفضلة"),fav));
+}
 function pfStats(b){
+  pfIdentity(b);
   const wr=P.totalGames?Math.round(P.wins/P.totalGames*100):0;
   const ring=h("div",{class:"wr-ring",role:"img","aria-label":"نسبة الفوز "+fmt(wr)+"٪"});
   ring.innerHTML='<svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="10"/><circle cx="60" cy="60" r="50" fill="none" stroke="url(#wrg)" stroke-width="10" stroke-linecap="round" stroke-dasharray="'+(wr*3.1416).toFixed(1)+' 400" transform="rotate(-90 60 60)"/><defs><linearGradient id="wrg"><stop offset="0" stop-color="#E62948"/><stop offset="1" stop-color="#8D65F6"/></linearGradient></defs></svg>';
@@ -5701,31 +5755,63 @@ $("homeStrip").addEventListener("click",()=>show("profile"));
 
 /* ----- friends ----- */
 let frCache=null,frLoading=false;
-async function loadFriends(){if(frLoading)return;frLoading=true;try{frCache=await api("friends_list",{})}catch(e){frCache={error:e.message}}frLoading=false;if(screen==="profile"&&pfTab==="friends")renderProfile()}
+async function loadFriends(){
+  if(frLoading)return;frLoading=true;
+  try{
+    if(Platform.kind!=="web"||!Cloud.on)frCache={offline:true,friendCode:localFriendCode(),friends:[],incoming:[],outgoing:[],blocked:[],count:0};
+    else{try{frCache=await api("social_list",{})}catch(e){if(/غير معروف/.test(String(e.message||"")))frCache=await api("friends_list",{});else throw e}}
+  }catch(e){frCache={error:softenErr(e.message)||e.message}}
+  frLoading=false;if(screen==="profile"&&pfTab==="friends")renderProfile();
+}
+function friendView(f){
+  if(f&&f.card){const c=f.card,pub=sanPub(c.pub,!!c.is_owner)||{};return {id:f.id,nick:c.nickname||"لاعب",level:c.level||1,seen:c.updated_at,avatar:"spark",pub,owner:!!(f.owner||c.is_owner)}}
+  return {id:f.id,nick:f.nick||"لاعب",level:f.level||1,seen:f.seen,avatar:AVATAR_ICONS.some(x=>x[0]===f.avatar)?f.avatar:"spark",pub:null,owner:false};
+}
+function seenLabel(s){const t=Date.parse(s||"");if(!t)return "ما دخل قريب";const m=Math.round((Date.now()-t)/60000);if(m<2)return "متصل";return lastSeen(s)}
 const lastSeen=s=>{const t=Date.parse(s||"");if(!t)return "";const m=Math.round((Date.now()-t)/60000);return m<10?"نشط الحين":m<60?"نشط قبل "+fmt(m)+" دقيقة":m<1440?"نشط قبل "+fmt(Math.round(m/60))+" ساعة":"نشط قبل "+fmt(Math.round(m/1440))+" يوم"};
 function friendRow(f,kind){
-  const c=f.card||{},pub=sanPub(c.pub,!!c.is_owner)||{},sk=SKINS[pub.sk]||SKINS[0];
+  const v=friendView(f),pub=v.pub||{},sk=SKINS[pub.sk]||SKINS[0];
+  const face=v.pub?avatar(sk.id,pub.fr,44,pub.dc):h("span",{class:"pc-ball","aria-hidden":"true"},ic(v.avatar));
   const acts=[];
-  if(kind==="in")acts.push(h("button",{class:"primary small",onclick:()=>frAct("friend_respond",{id:f.id,accept:true},"صرتوا أصحاب")},"قبول"),h("button",{class:"small",onclick:()=>frAct("friend_respond",{id:f.id,accept:false},"انرفض الطلب")},"رفض"));
+  const social=!!(frCache&&frCache.friendCode);
+  if(kind==="in")acts.push(h("button",{class:"primary small",onclick:()=>frAct(social?"social_respond":"friend_respond",{id:v.id,accept:true},"صرتوا أصحاب")},"قبول"),h("button",{class:"small",onclick:()=>frAct(social?"social_respond":"friend_respond",{id:v.id,accept:false},"انرفض الطلب")},"رفض"));
   else if(kind==="out")acts.push(h("span",{class:"tagc"},"بانتظار الرد"));
-  else{if(Owner.verified&&!f.owner)acts.push(h("button",{class:"small",onclick:()=>giftTo(f.id,c.nickname)},ic("gift"),"هدية"));
-    if(!f.owner)acts.push(h("button",{class:"small",onclick:()=>confirmSheet("حذف صاحب","تحذف "+(c.nickname||"هذا اللاعب")+" من أصحابك؟","احذف",()=>frAct("friend_remove",{id:f.id},"انحذف"))},"حذف"))}
-  return h("div",{class:"frow"},avatar(sk.id,pub.fr,44,pub.dc),h("div",{class:"grow"},h("div",{class:"fn"},nameEl(c.nickname||"لاعب",pub.th),pub.bd?badgeEl(pub.bd,16):null,f.owner||c.is_owner?ownerTag():null),
-    h("div",{class:"fm"},"المستوى "+fmt(c.level||1)+(c.updated_at?" · "+lastSeen(c.updated_at):""))),...acts);
+  else if(kind==="hit")acts.push(h("button",{class:"primary small",onclick:()=>frAct("social_request",{id:v.id},"انرسل الطلب")},"أضف"));
+  else if(kind==="block")acts.push(h("button",{class:"small",onclick:()=>frAct("social_block",{id:v.id,on:false},"انفك الحظر")},"فك الحظر"));
+  else{if(Owner.verified&&!v.owner)acts.push(h("button",{class:"small",onclick:()=>giftTo(v.id,v.nick)},ic("gift"),"هدية"));
+    if(!v.owner)acts.push(h("button",{class:"small",onclick:()=>confirmSheet("حذف صاحب","تحذف "+v.nick+" من أصحابك؟","احذف",()=>frAct(social?"social_remove":"friend_remove",{id:v.id},"انحذف"))},"حذف"),
+      social?h("button",{class:"small",onclick:()=>confirmSheet("حظر","ما يقدر "+v.nick+" يرسل لك أو يبقى من أصحابك.","احظر",()=>frAct("social_block",{id:v.id,on:true},"انحظر"))},"حظر"):null)}
+  return h("div",{class:"frow"},face,h("div",{class:"grow"},h("div",{class:"fn"},nameEl(v.nick,pub.th),pub.bd?badgeEl(pub.bd,16):null,v.owner?ownerTag():null),
+    h("div",{class:"fm"},"المستوى "+fmt(v.level||1)+(kind==="hit"?"":" · "+seenLabel(v.seen)))),...acts);
 }
 async function frAct(action,payload,ok){try{await api(action,payload);toast(ok,"good");frCache=null;loadFriends()}catch(e){toast(e.message,"bad")}}
 function pfFriends(b){
-  if(Platform.kind!=="web"||!Cloud.on){b.append(h("div",{class:"card empty"},h("div",{class:"empty-ic"},ic("users")),h("p",{style:"margin:0"},"الأصحاب متاحين في نسخة الموقع وأنت متصل بالخادم.")));return}
   if(!frCache){b.append(h("div",{class:"skel",style:"height:120px"}));loadFriends();return}
-  if(frCache.error){b.append(h("p",{class:"err"},frCache.error),h("button",{onclick:()=>{frCache=null;renderProfile()}},"حاول مرة ثانية"));return}
-  const inp=h("input",{placeholder:"اسم المستخدم حق صاحبك",autocapitalize:"none",spellcheck:"false",maxlength:"20",style:"direction:ltr;text-align:left","aria-label":"اسم المستخدم"});
-  const add=h("button",{class:"primary",style:"flex:none;padding:0 16px",onclick:async()=>{const v=inp.value.trim().toLowerCase();if(!v)return;add.disabled=true;
-    try{const r=await api("friend_add",{username:v});toast(r.accepted?"صرتوا أصحاب":"انرسل طلب الصداقة","good");inp.value="";frCache=null;loadFriends()}catch(e){toast(e.message,"bad")}finally{add.disabled=false}}},"أضف");
-  b.append(h("div",{class:"card frhead"},h("div",{class:"fr-count"},h("b",{},fmt(frCache.count)),h("span",{},frCache.count===1?"صاحب":"أصحاب")),
-    h("p",{class:"hint",style:"margin:6px 0 10px"},Cloud.username?"أصحابك يضيفونك باسم المستخدم: @"+Cloud.username:"سوّ اسم مستخدم من بطاقة «حسابك» عشان أصحابك يقدرون يضيفونك."),h("div",{class:"row"},inp,add)));
-  if(frCache.incoming.length){b.append(h("div",{class:"sec-h"},h("h3",{},"طلبات صداقة"),h("span",{},fmt(frCache.incoming.length))));const l=h("div",{class:"list"});for(const f of frCache.incoming)l.append(friendRow(f,"in"));b.append(l)}
-  b.append(h("div",{class:"sec-h"},h("h3",{},"أصحابي")));const l=h("div",{class:"list"});for(const f of frCache.friends)l.append(friendRow(f,"ok"));b.append(l);
-  if(frCache.outgoing.length){b.append(h("div",{class:"sec-h"},h("h3",{},"طلبات أرسلتها")));const o=h("div",{class:"list"});for(const f of frCache.outgoing)o.append(friendRow(f,"out"));b.append(o)}
+  if(frCache.error){b.append(h("p",{class:"err"},softenErr(frCache.error)||frCache.error),h("button",{onclick:()=>{frCache=null;renderProfile()}},"حاول مرة ثانية"));return}
+  const code=(frCache.friendCode)||localFriendCode();
+  const inp=h("input",{id:"friendQ",placeholder:"اسم اللاعب أو كود الصاحب",maxlength:"16","aria-label":"ابحث بالاسم أو بالكود"});
+  const hits=h("div",{class:"list",id:"friendHits"});
+  const add=h("button",{class:"primary",style:"flex:none;padding:0 16px",onclick:async()=>{
+    const v=inp.value.trim();if(v.length<2){toast("اكتب حرفين على الأقل");return}
+    if(!Cloud.on){toast(OFFLINE_MSG);return}
+    add.disabled=true;hits.textContent="";
+    try{const r=await api("social_search",{q:v});const rows=r&&r.rows||[];
+      if(!rows.length)hits.append(h("p",{class:"hint"},"ما لقينا أحد."));
+      else for(const f of rows)hits.append(friendRow(f,"hit"));
+    }catch(e){toast(e.message,"bad")}finally{add.disabled=false}}},"دور");
+  b.append(h("div",{class:"card center",id:"friendCodeCard"},h("span",{class:"lbl"},"كود صاحبك"),h("div",{class:"fcode"},code),
+    h("button",{type:"button",onclick:async()=>{try{await navigator.clipboard.writeText(code);toast("اننسخ الكود","good")}catch(e){toast(code,"good")}}},"انسخ الكود"),
+    h("p",{class:"hint"},"البحث بالاسم أو بالكود. الإيميل ما ينرسل ولا يطلع في النتائج.")),
+    h("div",{class:"card frhead"},h("div",{class:"fr-count"},h("b",{},fmt(frCache.count||0)),h("span",{},(frCache.count||0)===1?"صاحب":"أصحاب")),
+      frCache.offline?h("p",{class:"hint"},OFFLINE_MSG):h("p",{class:"hint",style:"margin:6px 0 10px"},"المتصل ظهره خلال دقيقتين. الباقي آخر ظهور."),
+      h("div",{class:"row"},inp,add),hits));
+  const incoming=frCache.incoming||[],friends=frCache.friends||[],outgoing=frCache.outgoing||[],blocked=frCache.blocked||[];
+  if(incoming.length){b.append(h("div",{class:"sec-h"},h("h3",{},"طلبات صداقة"),h("span",{},fmt(incoming.length))));const l=h("div",{class:"list"});for(const f of incoming)l.append(friendRow(f,"in"));b.append(l)}
+  b.append(h("div",{class:"sec-h"},h("h3",{},"أصحابي")));const l=h("div",{class:"list"});
+  if(!friends.length)l.append(h("p",{class:"hint",style:"margin:8px"},"ما عندك أصحاب هنا للحين."));
+  for(const f of friends)l.append(friendRow(f,"ok"));b.append(l);
+  if(outgoing.length){b.append(h("div",{class:"sec-h"},h("h3",{},"طلبات أرسلتها")));const o=h("div",{class:"list"});for(const f of outgoing)o.append(friendRow(f,"out"));b.append(o)}
+  if(blocked.length){b.append(h("div",{class:"sec-h"},h("h3",{},"محظورين")));const o=h("div",{class:"list"});for(const f of blocked)o.append(friendRow(f,"block"));b.append(o)}
 }
 function giftTo(id,nick){
   openSheet((c,close)=>{
@@ -6186,7 +6272,11 @@ function renderConn(){
 function renderLobby(){renderLobbyBase();if(mode==="room")decorateNetLobby()}
 function renderLobbyBase(){
   if(screen!=="lobby")return;
-  const r=roster(),hst=hostEntry(r),host=amHost();
+  let r=roster(),hst=hostEntry(r),host=amHost();
+  if(mode==="invite"){
+    r=[{id:cid||"me",nick:myNick(),skin:skinIdx(eff("skin")),host:true,isMe:true,owner:!!Owner.verified,pub:myPub(Owner.verified),lt:eff("lobby"),bs:eff("board"),timer:P.settings.timer}];
+    hst=r[0];host=true;
+  }
   r.sort((a,b)=>((hst&&b.id===hst.id)-(hst&&a.id===hst.id))||(a.id<b.id?-1:a.id>b.id?1:0));
   const list=$("lobbyList");list.textContent="";
   if(!r.length)list.append(h("li",{},"يتصل بالغرفة…"));
@@ -6212,10 +6302,14 @@ function renderLobbyBase(){
       onclick:async()=>{if(mode==="room"){try{await Act.equip("skin",id);await api("room_me",{code:roomCode})}catch(x){toast(x.message,"bad")}return}equip("skin",id,Owner.verified);pushPresence();renderLobby()}},ballSvg(it)))}
   const tv=rs?(rs.timer||0):host?P.settings.timer:(hst?hst.timer:0);
   seg("timerSeg",tv,v=>{if(mode==="room"){Act.settings({timer:v});api("room_settings",{code:roomCode,timer:v}).catch(x=>toast(x.message,"bad"));return}P.settings.timer=v;saveProfile();pushPresence();renderLobby()},!host);
-  $("btnStart").classList.toggle("hidden",!host);$("btnStart").disabled=r.length<2;
-  $("lobbyHint").textContent=host
-    ?(r.length<2?"ننتظر لاعب ثاني على الأقل…":r.length>4?"أول ٤ لاعبين يلعبون، والباقي يتفرّجون.":"جاهزين؟ ابدأ متى ما تبي.")
+  $("btnStart").classList.toggle("hidden",!host);$("btnStart").disabled=mode==="invite"?false:r.length<2;
+  $("lobbyHint").textContent=mode==="invite"
+    ?"غرفة خاصة. شارك الرابط ويفتح عند صاحبك مباشرة، أو ابدأ والكمبيوتر يكمّل المقاعد."
+    :host?(r.length<2?"ننتظر لاعب ثاني على الأقل…":r.length>4?"أول ٤ لاعبين يلعبون، والباقي يتفرّجون.":"جاهزين؟ ابدأ متى ما تبي.")
     :(hst?"ننتظر صاحب الغرفة يبدأ المباراة…":"ننتظر صاحب الغرفة يدخل…");
+  if(mode==="invite"){$("connLt").textContent=Cloud.on?"متصل":"على جهازك";$("connL").classList.toggle("on",!!Cloud.on)}
+  paintChat($("chatLobby"));
+  syncChat();
 }
 function startOnline(){
   if(!room)return;
@@ -6695,6 +6789,7 @@ function render(){
   renderPlayers();renderStatus();renderBoard();renderControls();renderWin();renderConn();scheduleBot();tick();
   try{drawOwnerFx()}catch(e){}
   const hb=$("btnHint");if(hb)hb.classList.toggle("hidden",!(G&&ownerSees("seeHint")&&canAct()));
+  syncChat();
 }
 
 /* ================= emotes =================
@@ -6722,6 +6817,39 @@ function renderEmoteTray(){
   for(const it of EMOTES){if(!isOwned("emote",it.id)||(isOwnerItem(it)&&!Owner.verified))continue;tr.append(h("button",{onclick:()=>sendEmote(it.id),"aria-label":"أرسل "+it.name},emoteNode(it,30)))}
   $("btnMuteEmo").textContent=P.settings.muteEmotes?"تفاعلات الآخرين مكتومة":"تفاعلات الآخرين ظاهرة";
   $("emoteHint").textContent=(mode==="online"||mode==="room")?"يطلع فوق اسمك عند الكل.":"يطلع فوق اسمك.";
+}
+const chatTimes=[];
+function paintChat(el){
+  if(!el)return;el.textContent="";
+  for(const [id,t] of CHAT_PRESETS)el.append(h("button",{type:"button",onclick:()=>sendChat(id)},t));
+  for(const [id,t] of CHAT_EMOJI)el.append(h("button",{type:"button","aria-label":"إيموجي "+t,onclick:()=>sendChat(id)},t));
+}
+function showChatLine(nick,text){
+  const log=$("chatLog");if(log){log.append(h("p",{},h("b",{},nick+"：")," "+text));while(log.children.length>4)log.firstChild.remove()}
+  const live=$("chatLine");if(live)live.textContent=nick+"： "+text;
+}
+async function sendChat(id){
+  const text=chatLabel(id);if(!text)return;
+  const now=Date.now(),recent=chatTimes.filter(t=>now-t<60000);
+  if(recent.length&&now-recent[recent.length-1]<2500){toast("استنى شوي قبل الرسالة الجاية");return}
+  if(recent.length>=8){toast("وصلت الحد، جرّب بعد دقيقة");return}
+  if(Cloud.on){try{await api("social_chat",{id})}catch(e){toast(e.message,"bad");return}}
+  chatTimes.length=0;chatTimes.push(...recent,now);
+  showChatLine(myNick(),text);
+  if(mode==="room"&&NG.ch){try{NG.ch.send({type:"broadcast",event:"chat",payload:{from:cid,id}})}catch(e){}}
+}
+function onNetChat(p){
+  if(!p||!chatLabel(p.id))return;
+  if(Array.isArray(P.blockIds)&&P.blockIds.includes(p.from))return;
+  const m=NG.room&&NG.room.members&&NG.room.members.find(x=>x.id===p.from);
+  showChatLine((m&&m.nick)||"لاعب",chatLabel(p.id));
+}
+function syncChat(){
+  const on=mode==="room"||mode==="invite"||mode==="online";
+  document.body.classList.toggle("has-chat",on);
+  const el=$("chatGame");
+  if(on&&el&&!el.childElementCount)paintChat(el);
+  if(!on&&el)el.textContent="";
 }
 $("btnEmote").addEventListener("click",()=>{const b=$("emoteBox"),open=b.classList.contains("hidden");b.classList.toggle("hidden",!open);$("btnEmote").setAttribute("aria-expanded",String(open));if(open)renderEmoteTray()});
 $("btnMuteEmo").addEventListener("click",()=>{P.settings.muteEmotes=!P.settings.muteEmotes;saveProfile();renderEmoteTray()});
@@ -6774,6 +6902,7 @@ joinEl.addEventListener("input",()=>{const v=joinEl.value.toUpperCase().replace(
 joinEl.addEventListener("keydown",e=>{if(e.key==="Enter")$("btnJoin").click()});
 $("btnJoin").onclick=()=>{const c=joinEl.value.trim().toUpperCase();if(!/^[A-Z0-9]{4}$/.test(c)){onlineErr("كود الغرفة ٤ حروف وأرقام، تأكد منه.");return}enterRoom(c,false)};
 $("btnStart").onclick=()=>{
+  if(mode==="invite"){curGame="webbound";beginLocal([{id:"L0",nick:P.nickname?myNick():"أنت",skin:skinIdx(eff("skin")),bot:0},{id:"B0",nick:BOT_NAMES[0],skin:1,bot:P.settings.botLevel}]);return}
   if(mode!=="room")return startOnline();
   const row=NG.room,wait=row?row.members.slice(0,4).filter(m=>m.id!==row.host&&!m.ready):[];
   if(wait.length)confirmSheet("تبدأ الحين؟",(wait.length===1?wait[0].nick+" ما ضغط «أنا جاهز»":"فيه "+fmt(wait.length)+" لاعبين ما ضغطوا «أنا جاهز»")+". تبدأ رغم كذا؟","ابدأ",()=>netRoomCall("room_start",{force:true}));
@@ -6783,15 +6912,27 @@ $("btnQuick").addEventListener("click",()=>netRoomQuick());
 $("btnPublic").addEventListener("click",()=>netRoomEnter(true,null,{public:true}));
 $("btnRooms").addEventListener("click",()=>loadRooms());
 $("btnLobby").addEventListener("click",()=>{winDismissed=G?G.seq:-1;netRoomCall("room_lobby")});
-$("btnShare").addEventListener("click",async()=>{
-  const link=/^https?:/.test(location.href)?location.href.split("#")[0]:"";
-  const txt="تعال نلعب WEBBOUND على SPIDER، كود الغرفة: "+roomCode;
-  if(navigator.share){try{await navigator.share({title:"WEBBOUND",text:txt,url:link||undefined});return}catch(e){if(e&&e.name==="AbortError")return}}
-  $("btnCopy").click();
-});
+function inviteUrl(code){
+  if(!code||!/^https?:/.test(location.href))return "";
+  const u=new URL(location.href);u.search="";u.hash="";u.searchParams.set("join",code);return u.toString();
+}
+function inviteText(code){const url=inviteUrl(code);return "تعال نلعب معي على SPIDER 🕸️\nالغرفة الخاصة: "+code+(url?"\n"+url:"")}
+async function shareRoom(){
+  const code=roomCode||($("lobbyCode")&&$("lobbyCode").textContent)||"";
+  if(!/^[A-Z0-9]{4}$/.test(code)){toast("ادخل غرفة أول");return}
+  const text=inviteText(code),url=inviteUrl(code);
+  if(navigator.share){try{await navigator.share({title:"SPIDER",text,url:url||undefined});return}catch(e){if(e&&e.name==="AbortError")return}}
+  const wa="https://wa.me/?text="+encodeURIComponent(text);
+  openSheet((c,close)=>{
+    c.append(h("h3",{},"شارك الغرفة"),h("p",{class:"lead",style:"white-space:pre-wrap"},text),
+      h("a",{class:"primary",href:wa,target:"_blank",rel:"noopener noreferrer",style:"display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:14px;text-decoration:none;margin-bottom:8px"},"واتساب"),
+      h("div",{class:"row"},h("button",{class:"primary",onclick:async()=>{try{await navigator.clipboard.writeText(text);toast("اننسخت الدعوة","good")}catch(e){toast(code,"good")}close()}},"انسخ النص"),h("button",{onclick:close},"إغلاق")));
+  });
+}
+$("btnShare").addEventListener("click",()=>{shareRoom()});
 $("btnCopy").onclick=async()=>{
-  const link=Platform.kind==="web"&&/^https?:/.test(location.href)?" "+location.href.split("#")[0]:"";
-  const txt="تعال نلعب WEBBOUND على SPIDER 🕸️"+link+" كود الغرفة: "+roomCode;let ok=false;
+  const code=roomCode||($("lobbyCode")&&$("lobbyCode").textContent)||"";
+  const txt=inviteText(code);let ok=false;
   try{await navigator.clipboard.writeText(txt);ok=true}catch(e){
     try{const ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";document.body.append(ta);ta.select();ok=document.execCommand("copy");ta.remove()}catch(_){}}
   $("btnCopy").textContent=ok?"انسخت ✓":"ما قدرت أنسخ، اكتب الكود لصاحبك";
@@ -6808,6 +6949,7 @@ function goHome(){
   G=null;M=null;hist=[];ghost=null;tool="move";mode="local";boardKey="";L=null;winBuiltMid=null;bubbles={};lastEmo={};emoteState=null;
   NG.localPriv=null;NG.wwSecret=null;NG.wwMine=null;NG.ww=null;NG.hv=null;NG.wwFocus=null;
   $("emoteBox").classList.add("hidden");$("btnEmote").setAttribute("aria-expanded","false");
+  document.body.classList.remove("has-chat");
   if(wasOnline)leaveRoom();
   show("home");
 }
@@ -7213,6 +7355,7 @@ function subscribeNetRoom(code){
     if(pl.eventType==="DELETE"){netRoomGone();return}
     if(pl.new&&pl.new.code===code)onRoomRow(pl.new)});
   ch.on("broadcast",{event:"emote"},msg=>onNetEmote(msg&&msg.payload));
+  ch.on("broadcast",{event:"chat"},msg=>onNetChat(msg&&msg.payload));
   ch.on("presence",{event:"sync"},()=>{NG.online=new Set(Object.keys(ch.presenceState()||{}));if(screen==="lobby")renderLobby();else if(G&&screen==="game")renderPlayers()});
   ch.subscribe(async st=>{
     NG.connected=connected=st==="SUBSCRIBED";renderConn();
@@ -7332,7 +7475,13 @@ saveProfile();
 if($("heroWeb"))cornerWeb($("heroWeb"),0,0,1,1,150,"currentColor",.8);
 renderFaq();renderSound();show("home");
 setTimeout(maybeIntro,500);
+function openInvite(code){
+  JOIN_CODE="";roomCode=code;mode="invite";isCreator=true;G=null;hist=[];
+  try{const u=new URL(location.href);u.searchParams.delete("join");history.replaceState({},"",u.pathname+u.search+u.hash)}catch(e){}
+  const box=$("lobbyCode");if(box)box.textContent=code;show("lobby");
+}
 function maybeIntro(){
+  if(JOIN_CODE){openInvite(JOIN_CODE);return}
   let seen="";try{seen=localStorage.getItem("spider_intro")||""}catch(e){return}
   if(seen||screen!=="home")return;
   const steps=[

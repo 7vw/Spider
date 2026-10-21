@@ -25,7 +25,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <title>SPIDER</title>
-<noscript><link rel="stylesheet" href="ui.css?v=1"></noscript>
+<noscript><link rel="stylesheet" href="ui.css?v=2"></noscript>
 <noscript><link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=optional" rel="stylesheet"></noscript>
 <style>
 @property --a{syntax:"<angle>";inherits:false;initial-value:0deg}
@@ -761,7 +761,9 @@ body{overflow-x:clip}
     <span class="lbl">كود الغرفة</span>
     <div class="code" id="lobbyCode">----</div>
     <div class="row"><button id="btnCopy">انسخ الدعوة</button><button id="btnShare">شارك</button></div>
-    <p class="hint" id="lobbyInviteHint">ادعُ صاحبك للعبة من زر المشاركة، وخله يدخل الكود هذا.</p>
+    <p class="hint" id="lobbyInviteHint">شارك الرابط، ويفتح عند صاحبك الغرفة الخاصة مباشرة.</p>
+    <div id="chatLog" class="chat-log" aria-live="polite"></div>
+    <div id="chatLobby" class="chat-tray" role="group" aria-label="دردشة سريعة"></div>
   </div>
   <div class="card">
     <h2>اللاعبين</h2>
@@ -790,9 +792,14 @@ body{overflow-x:clip}
   </div>
   <div class="players" id="players"></div>
   <div class="status" id="status" aria-live="polite"></div>
+  <div id="chatLine" class="chat-line" aria-live="polite"></div>
   <div class="tbar hidden" id="tbar"><i id="tfill"></i></div>
   <div class="boardbox" id="boardbox"><svg id="board" viewBox="-4.5 -4.5 108 108" role="img" aria-label="لوحة اللعب"></svg></div>
   <div class="controls">
+    <div id="chatBox">
+      <div id="chatGame" class="chat-tray" role="group" aria-label="عبارات جاهزة"></div>
+      <p class="hint" id="chatHint" style="margin:6px 0 0">عبارات وإيموجي بس، بدون كتابة حرة.</p>
+    </div>
     <div class="hidden" id="emoteBox">
       <div class="emotray" id="emoteTray"></div>
       <div class="row" style="margin-top:6px;align-items:center"><span class="hint" style="margin:0;flex:1" id="emoteHint">اضغط تفاعل يطلع فوق اسمك.</span><button class="small" id="btnMuteEmo"></button></div>

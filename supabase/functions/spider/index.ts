@@ -1,4 +1,4 @@
-// SPIDER — Supabase Edge Function "spider" v9
+// SPIDER — Supabase Edge Function "spider" v9 + social actions (v10 grows in later stacked commits)
 // Live v8 plus the Ball Clash coin shop. Paste this whole file into
 // Supabase Dashboard → Edge Functions → spider → Code → Deploy.
 // Rollback is the saved v8 file (v8.index.ts). Do not deploy until Mohammed approves.
@@ -3029,6 +3029,77 @@ async function handle(action,p,user,db){
     const code=String(p.code||"").toUpperCase();const room=await db.getRoom(code);
     if(!room||!room.member_ids.includes(uid))fail("no_room","الغرفة مو موجودة");
     return {room};
+  }
+  /* ---- social: friend code, requests, block, last_seen. No email leaves the server. ---- */
+  case "social_touch":{
+    const r=await db.rpc("social_touch",{p_user:uid});
+    if(!r||r.error)fail("bad","تعذّر تحديث الحضور");
+    return r.data||{code:"ok"};
+  }
+  case "social_list":{
+    const r=await db.rpc("social_list",{p_user:uid});
+    if(!r||r.error)fail("bad","تعذّر قراءة الأصحاب");
+    return r.data||{code:"bad_request"};
+  }
+  case "social_search":{
+    limit(uid,"social",20,60000);
+    const r=await db.rpc("social_search",{p_user:uid,p_q:String(p.q||"").slice(0,16)});
+    if(!r||r.error)fail("bad","تعذّر البحث");
+    return r.data||{code:"bad_request",rows:[]};
+  }
+  case "social_request":{
+    limit(uid,"social",12,60000);
+    const other=String(p.id||"");
+    if(!/^[0-9a-f-]{36}$/i.test(other))fail("bad","اختر لاعب من نتائج البحث");
+    const r=await db.rpc("social_request",{p_user:uid,p_other:other});
+    if(!r||r.error)fail("bad","ما انرسل الطلب");
+    const d=r.data||{};
+    if(d.code==="blocked")fail("bad","ما تقدر ترسل لهذا اللاعب");
+    if(d.code==="missing")fail("bad","ما لقينا اللاعب");
+    if(d.code==="full")fail("bad","وصلت الحد الأعلى للأصحاب");
+    if(d.code!=="ok")fail("bad","ما انرسل الطلب");
+    return d;
+  }
+  case "social_respond":{
+    const other=String(p.id||"");
+    if(!/^[0-9a-f-]{36}$/i.test(other))fail("bad","ما فيه طلب");
+    const r=await db.rpc("social_respond",{p_user:uid,p_other:other,p_accept:!!p.accept});
+    if(!r||r.error||!r.data||r.data.code!=="ok")fail("bad","ما فيه طلب");
+    return r.data;
+  }
+  case "social_remove":{
+    const other=String(p.id||"");
+    if(!/^[0-9a-f-]{36}$/i.test(other))fail("bad","اختر صاحب");
+    const r=await db.rpc("social_remove",{p_user:uid,p_other:other});
+    if(!r||r.error)fail("bad","ما انحذف");
+    return r.data||{code:"ok"};
+  }
+  case "social_block":{
+    limit(uid,"social",12,60000);
+    const other=String(p.id||"");
+    if(!/^[0-9a-f-]{36}$/i.test(other))fail("bad","اختر لاعب");
+    const r=await db.rpc("social_block",{p_user:uid,p_other:other,p_on:p.on!==false});
+    if(!r||r.error)fail("bad","ما تغيّر الحظر");
+    return r.data||{code:"ok"};
+  }
+  case "social_card":{
+    const r=await db.rpc("social_card_set",{p_user:uid,p_avatar:typeof p.avatar==="string"?p.avatar:"",p_fav:typeof p.fav==="string"?p.fav:""});
+    if(!r||r.error)fail("bad","ما انحفظت البطاقة");
+    const w=await withProfile(db,uid,()=>{
+      const icons=["spark","moon","star","heart","crown","bolt","flame","globe","target","medal","cloud","eye"];
+      const games=["","webbound","webgrid","xo","wordweb","webline","dama","bluff","flyhunt","webwar","webnest","nightweb","ballclash","domino","kalima"];
+      if(icons.includes(p.avatar))P.avatarIcon=p.avatar;
+      if(typeof p.fav==="string"&&games.includes(p.fav))P.favGame=p.fav;
+    });
+    return {profile:w.profile,card:r.data};
+  }
+  case "social_chat":{
+    limit(uid,"chatfast",1,2500);
+    limit(uid,"chat",8,60000);
+    const id=String(p.id||"");
+    const r=await db.rpc("social_chat_ok",{p_id:id});
+    if(!r||r.error||!r.data||r.data.code!=="ok")fail("bad","هذي العبارة مو متاحة");
+    return {ok:true,id};
   }
   }
   fail("bad","طلب غير معروف");
