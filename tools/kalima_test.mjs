@@ -80,4 +80,4 @@ assert.equal(guess.includes("كلمة اليوم غير مفعّلة"), true);
 assert.equal(guess.includes("kalimaAnswer"), true);
 assert.equal(guess.includes("KALIMA.dayIndex"), false);
 assert.equal(app.includes("كلمة اليوم غير مفعّلة على الخادم."), true);
-console.log("ok kalima engine", ans.length, "answers", gset.size, "guesses", "hmac", a1, b1);
+console.log("ok kalima engine", ans.length, "answers", gset.size, "guesses", "hmac stable");
